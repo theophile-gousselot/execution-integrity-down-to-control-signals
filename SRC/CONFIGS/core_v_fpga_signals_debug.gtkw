@@ -1,0 +1,91 @@
+[*]
+[*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
+[*] Tue Mar 19 10:40:18 2024
+[*]
+[dumpfile] "/home/theophile/these/gitlab_emse/integrity/core-v-fpga-verilator/OBJ/PROGRAMS/cubic/SIM/VCD/cubic_c.vcd"
+[dumpfile_mtime] "Tue Mar 19 10:37:09 2024"
+[dumpfile_size] 918977219
+[savefile] "/home/theophile/these/gitlab_emse/integrity/core-v-fpga-verilator/SRC/core_v_fpga_signals_debug.gtkw"
+[timestart] 95614
+[size] 1858 1016
+[pos] -1 -1
+*-2.861887 95625 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.core_v_fpga_top_veri.
+[treeopen] TOP.core_v_fpga_top_veri.ascon_decryption_i.
+[treeopen] TOP.core_v_fpga_top_veri.cv32e40p_core_i.
+[treeopen] TOP.core_v_fpga_top_veri.cv32e40p_core_i.id_stage_i.
+[sst_width] 233
+[signals_width] 545
+[sst_expanded] 1
+[sst_vpaned_height] 426
+@200
+-TOP I/O
+@28
+TOP.clk_ascon_fast_i
+TOP.clk_core_slow_i
+@22
+TOP.led_o[7:0]
+@28
+TOP.rst_i
+@200
+-
+-TOP SIGNALS
+-
+-CV32E40P
+@22
+TOP.core_v_fpga_top_veri.instr_addr_s[31:0]
+TOP.core_v_fpga_top_veri.cv32e40p_core_i.pc_if[31:0]
+TOP.core_v_fpga_top_veri.cv32e40p_core_i.pc_id[31:0]
+TOP.core_v_fpga_top_veri.cv32e40p_core_i.pc_ex[31:0]
+@200
+-
+@22
+TOP.core_v_fpga_top_veri.cv32e40p_core_i.instr_rdata_i[31:0]
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_datapath_i.instr_rdata_cipher_i[31:0]
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_datapath_i.instr_rdata_plain_o[31:0]
+TOP.core_v_fpga_top_veri.cv32e40p_core_i.instr_rdata_id[31:0]
+@200
+-
+@28
+TOP.core_v_fpga_top_veri.cv32e40p_core_i.id_stage_i.illegal_insn_dec
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_datapath_i.invalid_addr_redirection_s
+@200
+-
+-REGISTERS
+@22
+TOP.core_v_fpga_top_veri.cv32e40p_core_i.id_stage_i.register_file_i.mem[1023:0]
+@200
+-
+-FSM
+@28
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_fsm_i.branch_decision_i
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_fsm_i.branch_in_ex_i
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_fsm_i.ctrl_transfer_insn_in_id_i[1:0]
+@29
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_fsm_i.pc_set_i
+@28
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_fsm_i.state_s[2:0]
+@200
+-
+-ASCON
+@22
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_datapath_i.state_not_patched[319:0]
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_datapath_i.state_patched[319:0]
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_datapath_i.state_patch2xor[319:0]
+@200
+-
+-PATCHES
+@28
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_datapath_i.apply_patch_i
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_datapath_i.sel_addr_redirected_i
+@22
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_datapath_i.patch_i[319:0]
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_if_reg_s[319:0]
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_id_reg_s[319:0]
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_ex_reg_s[319:0]
+TOP.core_v_fpga_top_veri.ascon_decryption_i.ascon_datapath_i.patch_to_ascon_s[319:0]
+@200
+-
+[pattern_trace] 1
+[pattern_trace] 0

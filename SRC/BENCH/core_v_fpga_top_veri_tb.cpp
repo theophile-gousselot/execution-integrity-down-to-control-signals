@@ -1,0 +1,333 @@
+#include <stdlib.h>
+#include <iostream>
+#include <boost/format.hpp>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <ctime>
+
+// #include <cstdlib>
+#include <verilated.h>
+#include <verilated_vcd_c.h>
+#include "Vcore_v_fpga_top_veri.h"
+#include "Vcore_v_fpga_top_veri_core_v_fpga_top_veri.h"
+#include "Vcore_v_fpga_top_veri_cv32e40p_core__FB1.h"
+#include "Vcore_v_fpga_top_veri_cv32e40p_if_stage__FB1.h"
+#include "Vcore_v_fpga_top_veri_program_mem.h"
+#ifdef ENCRYPT
+#include "Vcore_v_fpga_top_veri_patch_mem.h"
+#endif
+// #include "Vcore_v_fpga_top_veri___024unit.h"
+
+using namespace std;
+using namespace boost;
+
+#ifndef MAX_SIM_TIME
+#define MAX_SIM_TIME 5000000
+#endif
+
+int exit_error_argv(int argc, char** argv) {
+    cout <<  endl << "usage: " << argv[0] << " <program_name> " << "[--verif, --save_ref]" << endl;
+    cout << argv[0] << ": error: unrecognized or invalid arguments";
+    for (int j = 0; j < argc; j++) {cout << " " << argv[j];}
+    cout << endl;
+    exit(EXIT_FAILURE);
+    return 0;
+}
+
+void argv_analyze(int argc, char** argv, string &program_name, bool &verif_mode) {
+    std::vector<std::string> args(argv, argv+argc);
+
+    program_name = args[1];
+    for (int j = 2; j < args.size(); j++) {
+        if (args[j] == "--verif") {verif_mode = true;}
+        else if (args[j] == "--save_ref") {verif_mode = false;}
+        else {exit_error_argv(argc, argv);}
+    }
+}
+
+vector<vector<string>> read_ref(string ref_path) {
+    vector<string> row;
+    vector<vector<string>> content;
+
+    string line, word;
+    fstream ref_file(ref_path);
+    if (ref_file.is_open()) {
+        while (getline(ref_file, line)) {
+            row.clear();
+
+            stringstream str(line);
+
+            while (getline(str, word, ','))
+                row.push_back(word);
+            content.push_back(row);
+        }
+    } else {
+        cout << "ERROR: " << ref_path << ": No such file or directory" << endl;
+        cout << "Please execute with option --save_ref" << endl;
+        exit(EXIT_FAILURE);
+    }
+    ref_file.close();
+    return content;
+}
+
+void write_log(ostream &os1, ostream &os2, string str) {
+    os1 << str;
+    os2 << str;
+}
+
+void log_start_simu(ofstream& log_file, string program_name, bool verif_mode) {
+    write_log(cout, log_file,  "\n" + string(19, '-') + " VERILATOR SIMULATION " + string(19, '-') + "\n\n");
+    write_log(cout, log_file, "VERILATOR:      Simulation launched...\n");
+    write_log(cout, log_file, "PROGRAM:        " + program_name + "\n");
+    if (verif_mode) {
+        write_log(cout, log_file, "MODE:           VERIFICATION of PC/instr\n\n");
+    } else {
+        write_log(cout, log_file, "MODE:           SAVE REFERENCE of PC/instr\n\n");
+    }
+    write_log(cout, log_file, string(2, '#') + " REPORTED WARNINGS/ERRORS:" + "\n");
+}
+
+
+void log_end_simu(ofstream& log_file, bool verif_mode, int64_t sim_time, int error_n, int first_error_sample_n, string ref_path, string vcd_path, string reason_stop) {
+    write_log(cout, log_file, "\n" + string(2, '#') + " SIMULATION ENDING:\n");
+    write_log(cout, log_file, "REASON:         " + reason_stop + "\n");
+
+    if (verif_mode) {
+        if (error_n == 0) {
+            write_log(cout, log_file, "VERIFICATION:   TEST SUCCESS(Expected PC/instruction at every cycle)\n");
+        } else {
+            write_log(cout, log_file, "VERIFICATION:   TEST FAILURE(" + to_string(error_n) + " errors");
+            write_log(cout, log_file, ", first error appeard at " + to_string(first_error_sample_n) + " cycles)\n");
+        }
+    }
+
+    write_log(cout, log_file, "\nsim_time:       " + to_string(sim_time) + "\n");
+    if (!verif_mode) {
+        write_log(cout, log_file, "PC and instruction references are saved in: " + ref_path + "\n");
+    }
+#ifdef VCD
+    if (access(vcd_path.c_str(), F_OK) != -1) {
+        write_log(cout, log_file, "Waveform is saved in: " + vcd_path + "\n");
+    } else {
+        write_log(cout, log_file, "Failed to save waveform in: " + vcd_path + ": No such file or directory" + "\n");
+    }
+#endif
+    write_log(cout, log_file, string(60, '-') + "\n");
+}
+
+
+void log_start_overview(bool verif_mode, string program_name) {
+    ofstream overview_log_file;
+    overview_log_file.open("OBJ/LOG/overview.log", ios_base::app);
+    overview_log_file << format("|%=18i") % program_name;
+#ifdef ENCRYPT
+    overview_log_file << format("|%=9i") % "ENCRYPT";
+#else
+    overview_log_file << format("|%=9i") % "";
+#endif
+    if (verif_mode) {
+        overview_log_file << format("|%=10i") % "VERIF";
+    } else {
+        overview_log_file << format("|%=10i") % "SAVE_REF";
+    }
+
+    overview_log_file.close();
+
+}
+
+void log_end_overview(bool verif_mode, string program_name, vluint64_t sim_time, int error_n, int first_error_sample_n, string reason_stop) {
+    ofstream overview_log_file;
+    overview_log_file.open("OBJ/LOG/overview.log", ios_base::app);
+    time_t result = time(nullptr);
+    if (verif_mode) {
+        if (error_n == 0) {
+            overview_log_file << format("|%=11i") % "SUCCESS";
+        } else {
+            overview_log_file << format("|%=11i") % "FAILURE";
+        }
+    } else {
+        overview_log_file << format("|%=11i") % "";
+    }
+    overview_log_file << format("|%=13i") % reason_stop;
+
+    overview_log_file << format("|%11i ") % sim_time;
+    if (error_n == 0) {
+        overview_log_file << format("|%11i ") % "";
+    } else {
+        overview_log_file << format("|%11i ") % first_error_sample_n;
+    }
+    overview_log_file << "| " <<  asctime(localtime(&result));
+    overview_log_file.close();
+
+}
+
+
+void write_ref(ostream &os1, Vcore_v_fpga_top_veri *dut) {
+    os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->if_stage_i->pc_id_o << ",";
+    os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->if_stage_i->instr_rdata_id_o << "\n";
+}
+
+void compare_ref(ofstream& log_file, int &sample_index, int64_t pc_id, int64_t instr_id, Vcore_v_fpga_top_veri *dut, vluint64_t sim_time, int &first_error_sample_n, int &error_n, bool &stop_sim, string &reason_stop) {
+    
+    // COMPARE PC_ID
+    if (pc_id != dut->core_v_fpga_top_veri->cv32e40p_core_i->if_stage_i->pc_id_o) {
+        if (first_error_sample_n == -1) {first_error_sample_n = sim_time;}
+        stop_sim = true;
+        reason_stop = "REF ERROR";
+        error_n++;
+        ostringstream pc_id_expec_stream, pc_id_receiv_stream;
+        pc_id_expec_stream << hex << pc_id;
+        pc_id_receiv_stream << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->if_stage_i->pc_id_o; 
+        write_log(cout, log_file, "ERROR(t=" + to_string(sim_time) + ") Expected PC= " + pc_id_expec_stream.str() + " Received= ");
+        write_log(cout, log_file, pc_id_receiv_stream.str() + "\n");
+    }
+
+    // COMPARE INSTRUCTION_IF
+    if (instr_id != dut->core_v_fpga_top_veri->cv32e40p_core_i->if_stage_i->instr_rdata_id_o) {
+        if (first_error_sample_n == -1) {first_error_sample_n = sim_time;}
+        stop_sim = true;
+        reason_stop = "REF ERROR";
+        error_n++;
+        ostringstream instr_id_expec_stream, instr_id_receiv_stream;
+        instr_id_expec_stream << hex << instr_id;
+        instr_id_receiv_stream << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->if_stage_i->instr_rdata_id_o; 
+        write_log(cout, log_file, "ERROR(t=" + to_string(sim_time) + ") Expected Instruction= " + instr_id_expec_stream.str() + " Received= ");
+        write_log(cout, log_file, instr_id_receiv_stream.str() + "\n");
+    }
+    sample_index++;
+}
+
+void check_ref_size(ofstream& log_file, int sample_index, int ref_samples_n, string ref_path) {
+    if (sample_index >= ref_samples_n) {
+        write_log(cout, log_file, "Error: " + ref_path + " contains only ");
+        write_log(cout, log_file, to_string(ref_samples_n) + " samples. Please reduce MAX_SIM_TIME.");
+        exit(EXIT_FAILURE);
+    }
+}
+
+int main(int argc, char** argv, char** env) {
+    string program_name, program_path, vcd_path, ref_path, log_path;
+    bool verif_mode = true;
+    argv_analyze(argc, argv, program_name, verif_mode);
+
+    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/" + program_name + ".vcd";
+#ifdef ENCRYPT
+    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/" + program_name + "_c.vcd";
+#endif
+    ref_path = "OBJ/PROGRAMS/" + program_name + "/SIM/REF/ref_decode_pc_instr_patch.csv";
+    program_path = "OBJ/PROGRAMS/" + program_name + "/PROGRAM_COMPILED/" + program_name;
+    if (verif_mode) {
+#ifdef ENCRYPT
+        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/" + program_name + "_c_verif.log";
+#else
+        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/" + program_name + "_verif.log";
+#endif
+    } else {
+        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/" + program_name + "_save_ref.log";
+    }
+
+    // Open REF PC/instr file
+    vector<vector<string>> content;
+    ofstream log_file;
+    log_file.open(log_path);
+    ofstream ref_file;
+    if (verif_mode) {
+        content = read_ref(ref_path);
+    } else {
+        ref_file.open(ref_path);
+    }
+    int ref_samples_n = content.size();
+
+    log_start_simu(log_file, program_name, verif_mode); 
+    log_start_overview(verif_mode, program_name);
+
+
+    // Variables
+    vluint64_t sim_time = 0;
+    bool stop_sim = false;
+    string reason_stop = "no reason";
+    int stop_sim_cnt = 20;
+    int sample_index = 0;
+    int error_n = 0;
+    int first_error_sample_n = -1;
+    int64_t pc_id;
+    int64_t instr_id;
+
+    // DUT Instanciation
+    Vcore_v_fpga_top_veri *dut = new Vcore_v_fpga_top_veri;
+
+    // VCD Generation
+#ifdef VCD
+    Verilated::traceEverOn(true);
+    VerilatedVcdC *m_trace = new VerilatedVcdC;
+    dut->trace(m_trace, 5);
+    m_trace->open(vcd_path.c_str());
+#endif
+
+    // DUT input ports initialization
+    dut->rst_i = 1;
+    dut->clk_core_slow_i = 0;
+    dut->clk_ascon_fast_i = 0;
+    dut->core_v_fpga_top_veri->program_mem_i->program_path = program_path;
+#ifdef ENCRYPT
+    dut->core_v_fpga_top_veri->patch_mem_i->program_path = program_path;
+#endif
+
+    // SIMULATION 
+    while (sim_time < MAX_SIM_TIME && stop_sim_cnt != 0) {
+
+        // DISABLE RESET
+        if (sim_time > 20) {
+            dut->rst_i = 0;
+        }
+
+        // CLOCK EDGE
+        dut->clk_core_slow_i ^= 1;
+        dut->clk_ascon_fast_i ^= 1;
+
+        // EVALUATE THE MODEL (as top level IOs change)
+        dut->eval();
+
+        // PROGRAM EXECUTION SUCCESS
+        if (stop_sim) {
+            stop_sim_cnt--;
+        }
+        if (dut->core_v_fpga_top_veri->exit_valid_mem_s == 1) {
+            reason_stop = "VALID EXEC";
+            stop_sim = true;
+        }
+
+        // REF (PC/instr) Verification or Saving
+        if (verif_mode) {
+            check_ref_size(log_file, sample_index, ref_samples_n, ref_path);
+            pc_id = stol(content[sample_index][0], nullptr, 16);
+            instr_id = stol(content[sample_index][1], nullptr, 16);
+            compare_ref(log_file, sample_index, pc_id, instr_id, dut, sim_time, first_error_sample_n, error_n, stop_sim, reason_stop);
+        } else {
+            write_ref(ref_file, dut);
+        }
+
+        // VCD DUMPING of SIGNALS
+#ifdef VCD
+            m_trace->dump(sim_time);
+#endif
+
+        // sim_time_incr
+        sim_time++;
+    }
+    if (sim_time == MAX_SIM_TIME) {
+        reason_stop = "TIMEOUT";
+    }
+
+    log_end_simu(log_file, verif_mode, sim_time, error_n, first_error_sample_n, ref_path, vcd_path, reason_stop);
+    log_file.close(); // LOG FILE
+    log_end_overview(verif_mode, program_name, sim_time, error_n, first_error_sample_n, reason_stop);
+#ifdef VCD
+        m_trace->close(); // VCD FILE
+#endif
+    ref_file.close(); // REF FILE
+    delete dut;
+    exit(EXIT_SUCCESS);
+}
