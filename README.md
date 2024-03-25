@@ -21,17 +21,22 @@
  make OBJ/PROGRAMS/fibonacci/SIM/LOG/fibonacci_c_verif.log PROGRAM=fibonacci ENCRYPT=1 VCD=1
 ```
 
-5. For all programs: simulate without encryption to save PC/instr and with encryption with comparison of PC/instr.
+5. Simulate execution of `fibonacci`, **with** and **without encryption**, firstly save PC/instr in Fetch at every cycle then, seconbdly compare them for encryption execution.
+``` bash
+make all ENCRYPT=1 PROGRAM=fibonacci
+```
+
+6. For all programs: simulate without encryption to save PC/instr and with encryption with comparison of PC/instr.
 ``` bash
 source ./launch_sim_all_programs__save_ref__verif.sh
 ```
 
-6. Every time a simulation is performed, a log file is generated :
+7. Every time a simulation is performed, a log file is generated :
     - `OBJ/PROGRAMS/<program_name>/SIM/LOG/<program_name>_save_ref.log`
     - `OBJ/PROGRAMS/<program_name>/SIM/LOG/<program_name>_verif.log`
     - `OBJ/PROGRAMS/<program_name>/SIM/LOG/<program_name>_c_verif.log`
 
-7. Every time a simulation is performed, a line is added in `OBJ/LOG/overview.log`, after `source ./launch_sim_all_programs__save_ref__verif.sh` execution, `overview.log` looks like this:
+8. Every time a simulation is performed, a line is added in `OBJ/LOG/overview.log`, after `source ./launch_sim_all_programs__save_ref__verif.sh` execution, `overview.log` looks like this:
 
 |   PROGRAM_NAME   | ENCRYPT |   MODE   |    TEST   | REASON END. |  SIM_TIME  | FIRST ERR. |       TIMESTAMP        |
 |:----------------:|:-------:|:--------:|:---------:|:-----------:|:----------:|:----------:|:----------------------:|

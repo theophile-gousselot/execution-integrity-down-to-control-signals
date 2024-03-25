@@ -138,6 +138,9 @@ $(info MAX_SIM_TIME   = $(MAX_SIM_TIME))
 ##   \_/ \___|_|  |_|_|\__,_|\__\___/|_|   
 ##                                         
 
+.PHONY : all
+all : $(OBJ_LOG_DIR)/$(PROGRAM)_save_ref.log $(OBJ_LOG_DIR)/$(PROGRAM)$(ENC_EXT)_verif.log 
+
 
 $(OBJ_LOG_DIR)/$(PROGRAM)_save_ref.log : $(OBJ_OVERVIEW_LOG) $(VERILATOR_EXE) $(OBJ_COMPILED_DIR)/.mem$(ENC_EXT).timestamp $(SIM_DEPENDENCIES)
 	@echo  "\n\n########## SIMULATE  ##########"
