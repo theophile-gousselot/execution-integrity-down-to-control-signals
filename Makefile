@@ -8,14 +8,7 @@
 ##################################################
 
 #==== DEFAULT USER MACROS ===#
-VCD 				:= 0
-VERIF				:= 1
-TRACE_PC_INSTR		:= 0
 MAX_SIM_TIME		:= 10000000
-
-
-
-#==== PROGRAMS ====#
 
 
 #==== RISCV ====#
@@ -40,37 +33,25 @@ SV_RTL_DIR	 		:= $(SRC_DIR)/RTL
 SV_BENCH_DIR		:= $(SRC_DIR)/BENCH
 SRC_BSP_DIR	 		:= $(SRC_DIR)/PROGRAM_TOOLS/BSP
 BSP_RESULT_FILES	:= $(patsubst %,$(SRC_BSP_DIR)/%,crt0.o handlers.o syscalls.o vectors.o libcv-verif.a)
-SRC_PROGRAM_DIR		:= $(SRC_DIR)/PROGRAMS
 
 SRC_RTL				:= $(shell cat ./SRC/RTL/rtl.flist)
 SRC_RTL_ENCRYPTED	:= $(shell cat ./SRC/RTL/rtl_encrypted.flist)
 SRC_TB_FILE			:= $(SV_BENCH_DIR)/core_v_fpga_top_veri_tb.cpp
+
+TB_CPP_NAME			:= core_v_fpga_top_veri
 
 #==== CV32E40P ====#
 CV_CORE_PKG 		:= $(SV_RTL_DIR)/iea_cv32e40p_fpga_dev
 CV_CORE_BRANCH 		:= iea_cv32e40p_fpga_dev
 CV_CORE_REPO   		:= git@gitlab.emse.fr:theophile.gousselot/cv32e40p_cfi.git
 
-TB_CPP_NAME			:= core_v_fpga_top_veri
 
 
 #==== OBJECT PATHS ====#
 OBJ_DIR                 := ./OBJ
-OBJ_PROGRAMS_DIR        := $(OBJ_DIR)/PROGRAMS
-OBJ_OVERVIEW_LOG_DIR    := $(OBJ_DIR)/LOG
-OBJ_VERI_DIR  := $(OBJ_DIR)/VERILATOR_OBJ_DIR
-OBJ_FAST_VERILATOR_DIR  := $(OBJ_VERI_DIR)/$(TB_CPP_NAME)
-VERILATOR_EXE 			:= $(OBJ_VERILATOR_DIR)/V$(TB_CPP_NAME)
-FAST_VERILATOR_EXE 		:= $(OBJ_FAST_VERILATOR_DIR)/V$(TB_CPP_NAME)
+OBJ_VERI_DIR 			:= $(OBJ_DIR)/VERILATOR_OBJ_DIR
 OBJ_TOOLS_DIR           := $(OBJ_DIR)/PROGRAM_TOOLS
 OBJ_BSP_DIR             := $(OBJ_TOOLS_DIR)/BSP
-
-OBJ_OVERVIEW_LOG 		:= $(OBJ_OVERVIEW_LOG_DIR)/overview.log
-
-
-
-
-#==== RAISE ERRORS ====#
 
 
 ########################################
@@ -82,7 +63,7 @@ OBJ_OVERVIEW_LOG 		:= $(OBJ_OVERVIEW_LOG_DIR)/overview.log
 ##                |___/               ##
 ########################################
 
-$(info MAX_SIM_TIME   = $(MAX_SIM_TIME))
+#$(info MAX_SIM_TIME   = $(MAX_SIM_TIME))
 
 .PHONY: dummy
 dummy:
@@ -122,7 +103,9 @@ OBJ/PROGRAMS/%/SIM/VCD/program_encrypted.vcd : \
 
 #==== SAVE REF ====#
 .PRECIOUS: OBJ/PROGRAMS/%/SIM/LOG/program_save_ref.log
-OBJ/PROGRAMS/%/SIM/LOG/program_save_ref.log : OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
+OBJ/PROGRAMS/%/SIM/LOG/program_save_ref.log :
+	make OBJ/PROGRAMS/$*/SIM/REF/ref_decode_pc_instr_patch.csv
+
 
 
 .PRECIOUS: OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
