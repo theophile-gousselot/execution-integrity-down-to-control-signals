@@ -18,8 +18,6 @@ sys.setrecursionlimit(10000)
 
 ###### Arguments ######
 parser = argparse.ArgumentParser(description="generate patch from itb file")
-parser.add_argument("program", help="specify the program_name",
-                    type=str, nargs='?', const="", default="")
 parser.add_argument("src_path", help="specify the source path",
                     type=str, nargs='?', const="", default="")
 parser.add_argument("obj_path", help="specify the object path",
@@ -29,16 +27,16 @@ parser.add_argument("-v", "--verbose",
 args = parser.parse_args()
 
 ###### Paths ######
-PROGRAM = args.program
+PROGRAM = "program"
 OBJ_PATH = args.obj_path
 SRC_PATH = args.src_path
 ITB_PATH = f"{OBJ_PATH}/{PROGRAM}.itb"
-STATES_DEC_CSV_PATH = f"{OBJ_PATH}/{PROGRAM}_c_states_dec.csv"
+STATES_DEC_CSV_PATH = f"{OBJ_PATH}/{PROGRAM}_encrypted_states_dec.csv"
 EDGES_PATH = f"{OBJ_PATH}/{PROGRAM}_edges.csv"
-PATCHES_HEX_PATH = f"{OBJ_PATH}/{PROGRAM}_c_patches.hex"
+PATCHES_HEX_PATH = f"{OBJ_PATH}/{PROGRAM}_encrypted_patches.hex"
 PATCHES_HEX_CSV_PATH = f"{OBJ_PATH}/{PROGRAM}_patches_hex.csv"
 SUCCESSORS_PATH = f"{OBJ_PATH}/{PROGRAM}.successors"
-JALR_SUCCESSORS_PATH = f"{SRC_PATH}/{PROGRAM}/{PROGRAM}_jalr_successors.csv"
+JALR_SUCCESSORS_PATH = f"{OBJ_PATH}//{PROGRAM}_jalr_successors.csv"
 FILE_GET_JALR_SUCC_PATH = "a script"
 
 ##### RISC-V Dict #####
@@ -130,8 +128,6 @@ class Instruction:
         number of words in self.asm
     asm : str
          assembler mnemonics
-    extra_cyc : int
-         number of extra cycles needed to be executed
     asm_list : list of str
          list of self.asm words
     inst : str
@@ -182,7 +178,6 @@ class Instruction:
         self.mcode = mcode
         self.asm_len = int(asm_len)
         self.asm = asm
-        self.extra_cyc = 0
 
         # Build a list of instr, fields and comments
         self.asm_list = list(self.asm.split(' '))
@@ -385,9 +380,8 @@ class Code:
         for s in jalr_successors:
             s = list(map(int, s.split(',')))
 
-            self.instrs[s[0]].successors = s[2:]
-            self.instrs[s[0]].extra_cyc = s[1]
-            self.instrs[s[0]].successors_n += len(s[2:])
+            self.instrs[s[0]].successors = s[1:]
+            self.instrs[s[0]].successors_n += len(s[1:])
 
     def write_successors(self):
         '''
