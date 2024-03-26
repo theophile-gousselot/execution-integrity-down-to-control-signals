@@ -28,7 +28,7 @@ using namespace boost;
 #endif
 
 int exit_error_argv(int argc, char** argv) {
-    cout <<  endl << "usage: " << argv[0] << " <program_name> " << "[--verif, --save_ref]" << endl;
+    cout <<  endl << "usage: " << argv[0] << " <program_name> " << "[--verif, --save_ref, --trace_signals]" << endl;
     cout << argv[0] << ": error: unrecognized or invalid arguments";
     for (int j = 0; j < argc; j++) {cout << " " << argv[j];}
     cout << endl;
@@ -36,13 +36,14 @@ int exit_error_argv(int argc, char** argv) {
     return 0;
 }
 
-void argv_analyze(int argc, char** argv, string &program_name, bool &verif_mode) {
+void argv_analyze(int argc, char** argv, string &program_name, bool &verif_mode, bool &trace_signals_mode) {
     std::vector<std::string> args(argv, argv+argc);
 
     program_name = args[1];
     for (int j = 2; j < args.size(); j++) {
         if (args[j] == "--verif") {verif_mode = true;}
         else if (args[j] == "--save_ref") {verif_mode = false;}
+        else if (args[j] == "--trace_signals") {trace_signals_mode = true;}
         else {exit_error_argv(argc, argv);}
     }
 }
@@ -77,20 +78,23 @@ void write_log(ostream &os1, ostream &os2, string str) {
     os2 << str;
 }
 
-void log_start_simu(ofstream& log_file, string program_name, bool verif_mode) {
+void log_start_simu(ofstream& log_file, string program_name, bool verif_mode, bool trace_signals_mode) {
     write_log(cout, log_file,  "\n" + string(19, '-') + " VERILATOR SIMULATION " + string(19, '-') + "\n\n");
     write_log(cout, log_file, "VERILATOR:      Simulation launched...\n");
     write_log(cout, log_file, "PROGRAM:        " + program_name + "\n");
     if (verif_mode) {
         write_log(cout, log_file, "MODE:           VERIFICATION of PC/instr\n\n");
     } else {
-        write_log(cout, log_file, "MODE:           SAVE REFERENCE of PC/instr\n\n");
+        write_log(cout, log_file, "MODE:           SAVE REFERENCE of PC/instr\n");
     }
-    write_log(cout, log_file, string(2, '#') + " REPORTED WARNINGS/ERRORS:" + "\n");
+    if (trace_signals_mode) {
+        write_log(cout, log_file, "MODE:           SAVE TRACE SIGNALS of diverse PC/instr\n");
+    }
+    write_log(cout, log_file, "\n" + string(2, '#') + " REPORTED WARNINGS/ERRORS:" + "\n");
 }
 
 
-void log_end_simu(ofstream& log_file, bool verif_mode, int64_t sim_time, int error_n, int first_error_sample_n, string ref_path, string vcd_path, string reason_stop) {
+void log_end_simu(ofstream& log_file, bool verif_mode, bool trace_signals_mode, int64_t sim_time, int error_n, int first_error_sample_n, string ref_path, string trace_signals_path, string vcd_path, string reason_stop) {
     write_log(cout, log_file, "\n" + string(2, '#') + " SIMULATION ENDING:\n");
     write_log(cout, log_file, "REASON:         " + reason_stop + "\n");
 
@@ -107,6 +111,9 @@ void log_end_simu(ofstream& log_file, bool verif_mode, int64_t sim_time, int err
     if (!verif_mode) {
         write_log(cout, log_file, "PC and instruction references are saved in: " + ref_path + "\n");
     }
+    if (trace_signals_mode) {
+        write_log(cout, log_file, "TRACE SIGNALS of diverse PC/instr are saved in: " + trace_signals_path + "\n");
+    }
 #ifdef VCD
     if (access(vcd_path.c_str(), F_OK) != -1) {
         write_log(cout, log_file, "Waveform is saved in: " + vcd_path + "\n");
@@ -118,7 +125,7 @@ void log_end_simu(ofstream& log_file, bool verif_mode, int64_t sim_time, int err
 }
 
 
-void log_start_overview(bool verif_mode, string program_name) {
+void log_start_overview(bool verif_mode, bool trace_signals_mode, string program_name) {
     ofstream overview_log_file;
     overview_log_file.open("OBJ/LOG/overview.log", ios_base::app);
     overview_log_file << format("|%=18i") % program_name;
@@ -130,7 +137,11 @@ void log_start_overview(bool verif_mode, string program_name) {
     if (verif_mode) {
         overview_log_file << format("|%=10i") % "VERIF";
     } else {
-        overview_log_file << format("|%=10i") % "SAVE_REF";
+        if (trace_signals_mode) {
+            overview_log_file << format("|%=10i") % "SAVE/TRACE";
+        } else {
+            overview_log_file << format("|%=10i") % "SAVE_REF";
+        }
     }
 
     overview_log_file.close();
@@ -167,6 +178,20 @@ void log_end_overview(bool verif_mode, string program_name, vluint64_t sim_time,
 void write_ref(ostream &os1, Vcore_v_fpga_top_veri *dut) {
     os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->if_stage_i->pc_id_o << ",";
     os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->if_stage_i->instr_rdata_id_o << "\n";
+}
+
+
+void write_trace_signals(ostream &os1, Vcore_v_fpga_top_veri *dut) {
+	os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->instr_addr_o << ",";
+	os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->pc_if << ",";
+	os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->pc_id << ",";
+	os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->instr_rdata_i << ",";
+	os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->instr_rdata_id << ",";
+	if (dut->core_v_fpga_top_veri->cv32e40p_core_i->mhpmevent_jump == 1) {
+        os1 << "1" << endl;
+    } else {
+        os1 << "0" << endl;
+    }
 }
 
 void compare_ref(ofstream& log_file, int &sample_index, int64_t pc_id, int64_t instr_id, Vcore_v_fpga_top_veri *dut, vluint64_t sim_time, int &first_error_sample_n, int &error_n, bool &stop_sim, string &reason_stop) {
@@ -208,24 +233,38 @@ void check_ref_size(ofstream& log_file, int sample_index, int ref_samples_n, str
 }
 
 int main(int argc, char** argv, char** env) {
-    string program_name, program_path, vcd_path, ref_path, log_path;
+    string program_name, program_path, vcd_path, ref_path, log_path, trace_signals_path;
     bool verif_mode = true;
-    argv_analyze(argc, argv, program_name, verif_mode);
+    bool trace_signals_mode = false;
+    argv_analyze(argc, argv, program_name, verif_mode, trace_signals_mode);
 
-    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/" + program_name + ".vcd";
 #ifdef ENCRYPT
-    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/" + program_name + "_c.vcd";
+    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program_encrypted.vcd";
+#else
+    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program.vcd";
 #endif
+
     ref_path = "OBJ/PROGRAMS/" + program_name + "/SIM/REF/ref_decode_pc_instr_patch.csv";
-    program_path = "OBJ/PROGRAMS/" + program_name + "/PROGRAM_COMPILED/" + program_name;
+    program_path = "OBJ/PROGRAMS/" + program_name + "/PROGRAM_COMPILED/program";
+
     if (verif_mode) {
 #ifdef ENCRYPT
-        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/" + program_name + "_c_verif.log";
+        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_encrypted_verif.log";
 #else
-        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/" + program_name + "_verif.log";
+        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_verif.log";
 #endif
     } else {
-        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/" + program_name + "_save_ref.log";
+        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_save_ref.log";
+    }
+
+    ofstream trace_signal_file;
+    if (trace_signals_mode) {
+#ifdef ENCRYPT
+        cout << "Error: JALR_DEST macro cannot be used with ENCRYPT macro\n";
+        exit(EXIT_FAILURE);
+#endif
+        trace_signals_path =  "OBJ/PROGRAMS/" + program_name + "/SIM/REF/program_trace_signals.csv";
+        trace_signal_file.open(trace_signals_path);
     }
 
     // Open REF PC/instr file
@@ -240,8 +279,8 @@ int main(int argc, char** argv, char** env) {
     }
     int ref_samples_n = content.size();
 
-    log_start_simu(log_file, program_name, verif_mode); 
-    log_start_overview(verif_mode, program_name);
+    log_start_simu(log_file, program_name, verif_mode, trace_signals_mode); 
+    log_start_overview(verif_mode, trace_signals_mode, program_name);
 
 
     // Variables
@@ -274,7 +313,7 @@ int main(int argc, char** argv, char** env) {
 #ifdef ENCRYPT
     dut->core_v_fpga_top_veri->patch_mem_i->program_path = program_path;
 #endif
-
+    
     // SIMULATION 
     while (sim_time < MAX_SIM_TIME && stop_sim_cnt != 0) {
 
@@ -294,19 +333,25 @@ int main(int argc, char** argv, char** env) {
         if (stop_sim) {
             stop_sim_cnt--;
         }
-        if (dut->core_v_fpga_top_veri->exit_valid_mem_s == 1) {
-            reason_stop = "VALID EXEC";
-            stop_sim = true;
-        }
+        if (dut->clk_core_slow_i == 0) {
+            if (dut->core_v_fpga_top_veri->exit_valid_mem_s == 1) {
+                reason_stop = "VALID EXEC";
+                stop_sim = true;
+            }
 
-        // REF (PC/instr) Verification or Saving
-        if (verif_mode) {
-            check_ref_size(log_file, sample_index, ref_samples_n, ref_path);
-            pc_id = stol(content[sample_index][0], nullptr, 16);
-            instr_id = stol(content[sample_index][1], nullptr, 16);
-            compare_ref(log_file, sample_index, pc_id, instr_id, dut, sim_time, first_error_sample_n, error_n, stop_sim, reason_stop);
-        } else {
-            write_ref(ref_file, dut);
+            // REF (PC/instr) Verification or Saving
+            if (verif_mode) {
+                check_ref_size(log_file, sample_index, ref_samples_n, ref_path);
+                pc_id = stol(content[sample_index][0], nullptr, 16);
+                instr_id = stol(content[sample_index][1], nullptr, 16);
+                compare_ref(log_file, sample_index, pc_id, instr_id, dut, sim_time, first_error_sample_n, error_n, stop_sim, reason_stop);
+            } else {
+                write_ref(ref_file, dut);
+            }
+
+            if (trace_signals_mode) {
+                write_trace_signals(trace_signal_file, dut);
+            }
         }
 
         // VCD DUMPING of SIGNALS
@@ -321,13 +366,17 @@ int main(int argc, char** argv, char** env) {
         reason_stop = "TIMEOUT";
     }
 
-    log_end_simu(log_file, verif_mode, sim_time, error_n, first_error_sample_n, ref_path, vcd_path, reason_stop);
+    log_end_simu(log_file, verif_mode, trace_signals_mode, sim_time, error_n, first_error_sample_n, ref_path, trace_signals_path, vcd_path, reason_stop);
     log_file.close(); // LOG FILE
     log_end_overview(verif_mode, program_name, sim_time, error_n, first_error_sample_n, reason_stop);
 #ifdef VCD
         m_trace->close(); // VCD FILE
 #endif
     ref_file.close(); // REF FILE
+
+    if (trace_signals_mode) {
+        trace_signal_file.close();
+    }
     delete dut;
     exit(EXIT_SUCCESS);
 }

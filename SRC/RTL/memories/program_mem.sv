@@ -64,10 +64,10 @@ module program_mem
 
 
 `ifdef ENCRYPT
-	$readmemh({program_path,"_c_0.mem"}, ram0);
-	$readmemh({program_path,"_c_1.mem"}, ram1);
-	$readmemh({program_path,"_c_2.mem"}, ram2);
-	$readmemh({program_path,"_c_3.mem"}, ram3);
+	$readmemh({program_path,"_encrypted_0.mem"}, ram0);
+	$readmemh({program_path,"_encrypted_1.mem"}, ram1);
+	$readmemh({program_path,"_encrypted_2.mem"}, ram2);
+	$readmemh({program_path,"_encrypted_3.mem"}, ram3);
 `else
 	$readmemh({program_path,"_0.mem"}, ram0);
 	$readmemh({program_path,"_1.mem"}, ram1);

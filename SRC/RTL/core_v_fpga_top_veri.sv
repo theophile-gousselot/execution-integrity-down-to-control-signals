@@ -1,7 +1,13 @@
 `timescale 1ns / 1ps
 
 module core_v_fpga_top_veri
-(
+`ifdef ENCRYPT
+# (
+    parameter HW_PERMUTATION_N = 6
+
+)
+`endif
+    (
     input logic clk_core_slow_i,
     input logic clk_ascon_fast_i,
     input logic rst_i,
@@ -17,7 +23,6 @@ module core_v_fpga_top_veri
 
 `ifdef ENCRYPT
     localparam PB_ROUNDS              = 6;
-    localparam HW_PERMUTATION_N       = 6;
     localparam PATCH_WIDTH            = 320;
     localparam PATCH_MEM_ADDR_WIDTH   = 16;
 `endif

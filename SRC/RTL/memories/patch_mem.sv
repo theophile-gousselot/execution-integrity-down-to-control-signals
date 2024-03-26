@@ -22,7 +22,7 @@ module patch_mem
         //for (i=0; i<bytes; i++) begin
         //    mem[i] = '0;
         //end
-	    $readmemh({program_path,"_c_patches.hex"}, mem);
+	    $readmemh({program_path,"_encrypted_patches.hex"}, mem);
     end
 
 
