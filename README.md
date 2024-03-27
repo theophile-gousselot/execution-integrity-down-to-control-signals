@@ -31,7 +31,13 @@ source ./launch_all_program_encrypted_verif.sh
     - `OBJ/PROGRAMS/<program_name>/SIM/LOG/<program_name>_verif.log`
     - `OBJ/PROGRAMS/<program_name>/SIM/LOG/<program_name>_encrypted_verif.log`
 
-7. Every time a simulation is performed, a line is added in `OBJ/LOG/overview.log`, after `source ./launch_all_program_encrypted_verif.sh` execution, `overview.log` looks like this:
+7. Explicit target names can be generated.
+``` bash
+python3 ./configure.py
+make -f explicit_target_names.mk <tab>
+```
+
+8. Every time a simulation is performed, a line is added in `OBJ/LOG/overview.log`, after `source ./launch_all_program_encrypted_verif.sh` execution, `overview.log` looks like this:
 
 |   PROGRAM_NAME   | ENCRYPT |   MODE   |    TEST   | REASON END. |  SIM_TIME  | FIRST ERR. |       TIMESTAMP
 |:----------------:|:-------:|:--------:|:---------:|:-----------:|:----------:|:----------:|:----------------------:|

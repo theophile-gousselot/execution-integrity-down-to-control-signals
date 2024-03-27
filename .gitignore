@@ -1,2 +1,4 @@
 OBJ/
 SRC/RTL/iea_cv32e40p_fpga_dev
+explicit_target_names.mk
+*.swp
