@@ -6,6 +6,8 @@
 #include <vector>
 #include <sstream>
 #include <ctime>
+#include <sys/stat.h>
+
 
 // #include <cstdlib>
 #include <verilated.h>
@@ -132,6 +134,10 @@ void log_end_simu(ofstream& log_file, bool verif_mode, bool trace_signals_mode, 
 
 
 void log_start_overview(bool verif_mode, bool trace_signals_mode, string program_name) {
+    struct stat sb;
+    if (stat("OBJ", &sb) != 0) {mkdir("OBJ", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);}
+    if (stat("OBJ/LOG", &sb) != 0) {mkdir("OBJ/LOG", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);}
+
     ifstream overview_log_infile("OBJ/LOG/overview.log");
     bool insert_log_header = !overview_log_infile.good();
     overview_log_infile.close();
