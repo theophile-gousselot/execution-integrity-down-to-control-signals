@@ -54,6 +54,28 @@ OBJ_TOOLS_DIR           := $(OBJ_DIR)/PROGRAM_TOOLS
 OBJ_BSP_DIR             := $(OBJ_TOOLS_DIR)/BSP
 
 
+
+
+###################################################
+##  _____                 _   _                  ##
+## |  ___|   _ _ __   ___| |_(_) ___  _ __  ___  ##
+## | |_ | | | | '_ \ / __| __| |/ _ \| '_ \/ __| ##
+## |  _|| |_| | | | | (__| |_| | (_) | | | \__ \ ##
+## |_|   \__,_|_| |_|\___|\__|_|\___/|_| |_|___/ ##
+##                                               ##
+###################################################
+
+cf_val = $(shell echo "$(1)" | sed 's=^.*_cf\([0-9]\).*$$=\1=')
+cf = $(shell echo "$(1)" |  grep -q "_cf[0-9]" && echo "$(1)" | sed 's=^.*_cf\([0-9]\).*$$=_cf\1=' || true)
+vcd = $(shell echo "$(1)" | grep -q "_vcd" && echo "_vcd" || true)
+vcd_flags = $(shell echo "$(1)" | grep -q "vcd" && echo "--trace --trace-depth 5 -CFLAGS '-D VCD'" || true)
+encrypted = $(shell echo "$(1)" | grep -q "_encrypted" && echo "_encrypted" || true)
+encrypted_flags = $(shell echo "$(1)" | grep -q "_encrypted" && echo "+define+ENCRYPT -CFLAGS '-D ENCRYPT' -GHW_PERMUTATION_N=$(shell expr 6 / $(call cf_val,$@) ) -CFLAGS '-D CLK_FACTOR=$(call cf_val,$@)'" || true)
+
+
+
+
+
 ########################################
 ##  _____                    _        ##
 ## |_   _|_ _ _ __ __ _  ___| |_ ___  ##
@@ -62,17 +84,6 @@ OBJ_BSP_DIR             := $(OBJ_TOOLS_DIR)/BSP
 ##   |_|\__,_|_|  \__, |\___|\__|___/ ##
 ##                |___/               ##
 ########################################
-
-#$(info MAX_SIM_TIME   = $(MAX_SIM_TIME))
-
-.PHONY: dummy
-dummy:
-ifeq (,$(wildcard OBJ/LOG/overview.log))
-	mkdir -p OBJ/LOG
-	@echo "|   PROGRAM_NAME   | ENCRYPT |   MODE   |    TEST   | REASON END. |  SIM_TIME  | FIRST ERR. |       TIMESTAMP         " > OBJ/LOG/overview.log
-endif
-
--include dummy
 
 ##                 _ _       _                                           _
 ## __   _____ _ __(_| | __ _| |_ ___  _ __ _     _____  _____  ___ _   _| |_ ___
@@ -91,21 +102,23 @@ OBJ/PROGRAMS/%/SIM/VCD/program.vcd : \
 	mkdir -p $(dir $@)
 	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_vcd/V$(TB_CPP_NAME) $* --verif
 
-OBJ/PROGRAMS/%/SIM/VCD/program_encrypted.vcd : \
-		$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd/V$(TB_CPP_NAME) \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf1.vcd \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf2.vcd \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf3.vcd \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf6.vcd : \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.hex \
 		OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
+	make $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd$(call cf,$@)/V$(TB_CPP_NAME)
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
-	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd/V$(TB_CPP_NAME) $* --verif
+	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd$(call cf,$@)/V$(TB_CPP_NAME) $* --verif
 
 
 #==== SAVE REF ====#
 .PRECIOUS: OBJ/PROGRAMS/%/SIM/LOG/program_save_ref.log
 OBJ/PROGRAMS/%/SIM/LOG/program_save_ref.log :
 	make OBJ/PROGRAMS/$*/SIM/REF/ref_decode_pc_instr_patch.csv
-
 
 
 .PRECIOUS: OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
@@ -126,15 +139,18 @@ OBJ/PROGRAMS/%/SIM/LOG/program_verif.log :  \
 	mkdir -p $(dir $@)
 	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) $* --verif
 
-OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_verif.log :  \
-		$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted/V$(TB_CPP_NAME) \
+
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf1_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf2_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf3_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf6_verif.log : \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.hex \
 		OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
+	make $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted$(call cf,$@)/V$(TB_CPP_NAME)
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
-	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted/V$(TB_CPP_NAME) $* --verif
-
+	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted$(call cf,$@)/V$(TB_CPP_NAME) $* --verif
 
 #==== TRACE SIGNALS ====#
 # "$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) \" must be added to the dependency list,
@@ -156,76 +172,32 @@ OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv : \
 ##    \_/ \___|_|  |_|_|\__,_|\__\___/|_|  (_)  |_.__/ \__,_|_|_|\__,_|
 ## 
 
+
 #==== BUILD CPP MODEL with ENCRYPTED PROGRAM and WAVEFORM GENERATION ===#
-$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd/V$(TB_CPP_NAME) : $(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE)
+$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) \
+$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_vcd/V$(TB_CPP_NAME) \
+$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_cf1/V$(TB_CPP_NAME) \
+$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_cf2/V$(TB_CPP_NAME) \
+$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_cf3/V$(TB_CPP_NAME) \
+$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_cf6/V$(TB_CPP_NAME) \
+$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd_cf1/V$(TB_CPP_NAME) \
+$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd_cf2/V$(TB_CPP_NAME) \
+$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd_cf3/V$(TB_CPP_NAME) \
+$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd_cf6/V$(TB_CPP_NAME) : $(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE)
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
 	verilator \
-		--trace --trace-depth 5 -CFLAGS "-D VCD" \
-		+define+ENCRYPT -CFLAGS "-D ENCRYPT" \
+		$(call vcd_flags,$@) \
+		$(call encrypted_flags,$@) \
 		-CFLAGS "-D MAX_SIM_TIME=$(MAX_SIM_TIME)" \
-	   	--Mdir $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd \
+	   	--Mdir $(OBJ_VERI_DIR)/$(TB_CPP_NAME)$(call encrypted,$@)$(call vcd,$@)$(call cf,$@) \
 	   	--cc -sv --exe \
 	   	--top-module $(TB_CPP_NAME) ../../$(SRC_TB_FILE) \
 	   	-f SRC/RTL/rtl_encrypted.flist
 	make \
-		-C $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd \
+		-C $(OBJ_VERI_DIR)/$(TB_CPP_NAME)$(call encrypted,$@)$(call vcd,$@)$(call cf,$@) \
 		-f V$(TB_CPP_NAME).mk \
 		V$(TB_CPP_NAME)
-
-
-#==== BUILD CPP MODEL with ENCRYPTED PROGRAM ===#
-$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted/V$(TB_CPP_NAME) : $(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE)
-	@echo "\n===> $@"
-	mkdir -p $(dir $@)
-	verilator \
-		+define+ENCRYPT -CFLAGS "-D ENCRYPT" \
-		-CFLAGS "-D MAX_SIM_TIME=$(MAX_SIM_TIME)" \
-	   	--Mdir $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted \
-	   	--cc -sv --exe \
-	   	--top-module $(TB_CPP_NAME) ../../$(SRC_TB_FILE) \
-	   	-f SRC/RTL/rtl_encrypted.flist
-	make \
-		-C $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted \
-		-f V$(TB_CPP_NAME).mk \
-		V$(TB_CPP_NAME)
-
-
-#==== BUILD CPP MODEL with WAVEFORM GENERATION ===#
-$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_vcd/V$(TB_CPP_NAME) : $(CV_CORE_PKG) $(SRC_RTL) $(SRC_TB_FILE)
-	@echo "\n===> $@"
-	mkdir -p $(dir $@)
-	verilator \
-		--trace --trace-depth 5 -CFLAGS "-D VCD" \
-		-CFLAGS "-D MAX_SIM_TIME=$(MAX_SIM_TIME)" \
-	   	--Mdir $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_vcd \
-	   	--cc -sv --exe \
-	   	--top-module $(TB_CPP_NAME) \
-		../../$(SRC_TB_FILE) \
-	   	-f SRC/RTL/rtl.flist
-	make \
-		-C $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_vcd \
-		-f V$(TB_CPP_NAME).mk \
-		V$(TB_CPP_NAME)
-
-
-#==== BUILD CPP MODEL ===#
-$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) : $(CV_CORE_PKG) $(SRC_RTL) $(SRC_TB_FILE)
-	@echo "\n===> $@"
-	mkdir -p $(dir $@)
-	verilator \
-		-CFLAGS "-D MAX_SIM_TIME=$(MAX_SIM_TIME)" \
-	   	--Mdir $(OBJ_VERI_DIR)/$(TB_CPP_NAME) \
-	   	--cc -sv --exe \
-	   	--top-module $(TB_CPP_NAME) \
-		../../$(SRC_TB_FILE) \
-	   	-f SRC/RTL/rtl.flist
-	make \
-		-C $(OBJ_VERI_DIR)/$(TB_CPP_NAME) \
-		-f V$(TB_CPP_NAME).mk \
-		V$(TB_CPP_NAME)
-
-
 
 
 ##  _                   _                        
