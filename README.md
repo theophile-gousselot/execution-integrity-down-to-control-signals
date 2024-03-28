@@ -205,7 +205,7 @@ make -f explicit_target_names.mk <tab>
 |      md5sum      | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    2043366 |            | Thu Mar 28 09:52:44 2024
 |      minver      | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    2355186 |            | Thu Mar 28 09:52:46 2024
 |      mont64      | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    1545240 |            | Thu Mar 28 09:52:47 2024
-|       nbody      | ENCRYPT | 3 |   VERIF  |  SUCCESS  |   TIMEOUT   |   10000000 |            | Thu Mar 28 09:52:55 2024
+|       nbody      | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |   13161804 |            | Thu Mar 28 10:07:11 2024
 |    nettle-aes    | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    1620618 |            | Thu Mar 28 09:52:56 2024
 |   nettle-sha256  | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |     833754 |            | Thu Mar 28 09:52:57 2024
 |     nsichneu     | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |     920868 |            | Thu Mar 28 09:52:58 2024
@@ -219,7 +219,7 @@ make -f explicit_target_names.mk <tab>
 |      tarfind     | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    2151894 |            | Thu Mar 28 09:53:07 2024
 |        ud        | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    1765644 |            | Thu Mar 28 09:53:09 2024
 |    verifypin_0   | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |      56772 |            | Thu Mar 28 09:53:09 2024
-|     wikisort     | ENCRYPT | 3 |   VERIF  |  SUCCESS  |   TIMEOUT   |   10000000 |            | Thu Mar 28 09:53:16 2024
+|     wikisort     | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |   10739040 |            | Thu Mar 28 10:08:03 2024
 |       crc32      | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    6894375 |            | Thu Mar 28 09:53:33 2024
 |       cubic      | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    8281587 |            | Thu Mar 28 09:53:36 2024
 |     dhrystone    | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    3669195 |            | Thu Mar 28 09:53:38 2024
@@ -230,7 +230,7 @@ make -f explicit_target_names.mk <tab>
 |      md5sum      | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    4086711 |            | Thu Mar 28 09:53:46 2024
 |      minver      | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    4710351 |            | Thu Mar 28 09:53:49 2024
 |      mont64      | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    3090459 |            | Thu Mar 28 09:53:50 2024
-|       nbody      | ENCRYPT | 6 |   VERIF  |  SUCCESS  |   TIMEOUT   |   10000000 |            | Thu Mar 28 09:53:55 2024
+|       nbody      | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |   26323587 |            | Thu Mar 28 10:07:23 2024
 |    nettle-aes    | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    3241215 |            | Thu Mar 28 09:53:56 2024
 |   nettle-sha256  | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    1667487 |            | Thu Mar 28 09:53:57 2024
 |     nsichneu     | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    1841715 |            | Thu Mar 28 09:53:58 2024
@@ -244,7 +244,7 @@ make -f explicit_target_names.mk <tab>
 |      tarfind     | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    4303767 |            | Thu Mar 28 09:54:09 2024
 |        ud        | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    3531267 |            | Thu Mar 28 09:54:11 2024
 |    verifypin_0   | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |     113523 |            | Thu Mar 28 09:54:11 2024
-|     wikisort     | ENCRYPT | 6 |   VERIF  |  SUCCESS  |   TIMEOUT   |   10000000 |            | Thu Mar 28 09:54:16 2024
+|     wikisort     | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |   21478059 |            | Thu Mar 28 10:08:13 2024
 
 
 
@@ -252,4 +252,3 @@ make -f explicit_target_names.mk <tab>
 ## ToExplain:
 - jalr_successors.csv
 - new cv32e40p branch: adding comments to ignore specifically Verilator Warnings
-
