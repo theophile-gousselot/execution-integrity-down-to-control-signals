@@ -21,9 +21,10 @@
  make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_encrypted_verif.log
 ```
 
-5. Execute previous command for all programs.
+5. Execute previous command for all programs with a for loop.
 ``` bash
-source ./launch_all_program_encrypted_verif.sh
+for program in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename $(program))/SIM/LOG/program_encrypted_verif.log; done
+for cf in 1 2 3 6; do for a in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename $a)/SIM/LOG/program_encrypted_cf${cf}_verif.log; done; done
 ```
 
 6. Every time a simulation is performed, a log file is generated :
@@ -37,7 +38,7 @@ python3 ./configure.py
 make -f explicit_target_names.mk <tab>
 ```
 
-8. Every time a simulation is performed, a line is added in `OBJ/LOG/overview.log`, after `source ./launch_all_program_encrypted_verif.sh` execution, `overview.log` looks like this:
+8. Every time a simulation is performed, a line is added in `OBJ/LOG/overview.log`, after step **5**, `overview.log` looks like this:
 
 |   PROGRAM_NAME   | ENCRYPT |   MODE   |    TEST   | REASON END. |  SIM_TIME  | FIRST ERR. |       TIMESTAMP
 |:----------------:|:-------:|:--------:|:---------:|:-----------:|:----------:|:----------:|:----------------------:|
