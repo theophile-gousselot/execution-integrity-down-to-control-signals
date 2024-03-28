@@ -12,15 +12,15 @@
 // #include <cstdlib>
 #include <verilated.h>
 #include <verilated_vcd_c.h>
-#include "Vcore_v_fpga_top_veri.h"
-#include "Vcore_v_fpga_top_veri_core_v_fpga_top_veri.h"
-#include "Vcore_v_fpga_top_veri_cv32e40p_core__FB1.h"
-#include "Vcore_v_fpga_top_veri_cv32e40p_if_stage__FB1.h"
-#include "Vcore_v_fpga_top_veri_program_mem.h"
+#include "Vcore_v_verif_fpga_top.h"
+#include "Vcore_v_verif_fpga_top_core_v_verif_fpga_top.h"
+#include "Vcore_v_verif_fpga_top_cv32e40p_core__FB1.h"
+#include "Vcore_v_verif_fpga_top_cv32e40p_if_stage__FB1.h"
+#include "Vcore_v_verif_fpga_top_program_mem.h"
 #ifdef ENCRYPT
-#include "Vcore_v_fpga_top_veri_patch_mem.h"
+#include "Vcore_v_verif_fpga_top_patch_mem.h"
 #endif
-// #include "Vcore_v_fpga_top_veri___024unit.h"
+// #include "Vcore_v_verif_fpga_top___024unit.h"
 
 using namespace std;
 using namespace boost;
@@ -196,49 +196,49 @@ void log_end_overview(bool verif_mode, string program_name, vluint64_t sim_time,
 }
 
 
-void write_ref(ostream &os1, Vcore_v_fpga_top_veri *dut) {
-    os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->if_stage_i->pc_id_o << ",";
-    os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->if_stage_i->instr_rdata_id_o << "\n";
+void write_ref(ostream &os1, Vcore_v_verif_fpga_top *dut) {
+    os1 << hex << dut->core_v_verif_fpga_top->cv32e40p_core_i->if_stage_i->pc_id_o << ",";
+    os1 << hex << dut->core_v_verif_fpga_top->cv32e40p_core_i->if_stage_i->instr_rdata_id_o << "\n";
 }
 
 
-void write_trace_signals(ostream &os1, Vcore_v_fpga_top_veri *dut) {
-	os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->instr_addr_o << ",";
-	os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->pc_if << ",";
-	os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->pc_id << ",";
-	os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->instr_rdata_i << ",";
-	os1 << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->instr_rdata_id << ",";
-	if (dut->core_v_fpga_top_veri->cv32e40p_core_i->mhpmevent_jump == 1) {
+void write_trace_signals(ostream &os1, Vcore_v_verif_fpga_top *dut) {
+	os1 << hex << dut->core_v_verif_fpga_top->cv32e40p_core_i->instr_addr_o << ",";
+	os1 << hex << dut->core_v_verif_fpga_top->cv32e40p_core_i->pc_if << ",";
+	os1 << hex << dut->core_v_verif_fpga_top->cv32e40p_core_i->pc_id << ",";
+	os1 << hex << dut->core_v_verif_fpga_top->cv32e40p_core_i->instr_rdata_i << ",";
+	os1 << hex << dut->core_v_verif_fpga_top->cv32e40p_core_i->instr_rdata_id << ",";
+	if (dut->core_v_verif_fpga_top->cv32e40p_core_i->mhpmevent_jump == 1) {
         os1 << "1" << endl;
     } else {
         os1 << "0" << endl;
     }
 }
 
-void compare_ref(ofstream& log_file, int &sample_index, int64_t pc_id, int64_t instr_id, Vcore_v_fpga_top_veri *dut, vluint64_t sim_time, int &first_error_sample_n, int &error_n, bool &stop_sim, string &reason_stop) {
+void compare_ref(ofstream& log_file, int &sample_index, int64_t pc_id, int64_t instr_id, Vcore_v_verif_fpga_top *dut, vluint64_t sim_time, int &first_error_sample_n, int &error_n, bool &stop_sim, string &reason_stop) {
     
     // COMPARE PC_ID
-    if (pc_id != dut->core_v_fpga_top_veri->cv32e40p_core_i->if_stage_i->pc_id_o) {
+    if (pc_id != dut->core_v_verif_fpga_top->cv32e40p_core_i->if_stage_i->pc_id_o) {
         if (first_error_sample_n == -1) {first_error_sample_n = sim_time;}
         stop_sim = true;
         reason_stop = "REF ERROR";
         error_n++;
         ostringstream pc_id_expec_stream, pc_id_receiv_stream;
         pc_id_expec_stream << hex << pc_id;
-        pc_id_receiv_stream << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->if_stage_i->pc_id_o; 
+        pc_id_receiv_stream << hex << dut->core_v_verif_fpga_top->cv32e40p_core_i->if_stage_i->pc_id_o; 
         write_log(cout, log_file, "ERROR(t=" + to_string(sim_time) + ") Expected PC= " + pc_id_expec_stream.str() + " Received= ");
         write_log(cout, log_file, pc_id_receiv_stream.str() + "\n");
     }
 
     // COMPARE INSTRUCTION_IF
-    if (instr_id != dut->core_v_fpga_top_veri->cv32e40p_core_i->if_stage_i->instr_rdata_id_o) {
+    if (instr_id != dut->core_v_verif_fpga_top->cv32e40p_core_i->if_stage_i->instr_rdata_id_o) {
         if (first_error_sample_n == -1) {first_error_sample_n = sim_time;}
         stop_sim = true;
         reason_stop = "REF ERROR";
         error_n++;
         ostringstream instr_id_expec_stream, instr_id_receiv_stream;
         instr_id_expec_stream << hex << instr_id;
-        instr_id_receiv_stream << hex << dut->core_v_fpga_top_veri->cv32e40p_core_i->if_stage_i->instr_rdata_id_o; 
+        instr_id_receiv_stream << hex << dut->core_v_verif_fpga_top->cv32e40p_core_i->if_stage_i->instr_rdata_id_o; 
         write_log(cout, log_file, "ERROR(t=" + to_string(sim_time) + ") Expected Instruction= " + instr_id_expec_stream.str() + " Received= ");
         write_log(cout, log_file, instr_id_receiv_stream.str() + "\n");
     }
@@ -321,7 +321,7 @@ int main(int argc, char** argv, char** env) {
     int clk_ascon_fast_cnt = 0;
 
     // DUT Instanciation
-    Vcore_v_fpga_top_veri *dut = new Vcore_v_fpga_top_veri;
+    Vcore_v_verif_fpga_top *dut = new Vcore_v_verif_fpga_top;
 
     // VCD Generation
 #ifdef VCD
@@ -335,9 +335,9 @@ int main(int argc, char** argv, char** env) {
     dut->rst_i = 1;
     dut->clk_core_slow_i = 0;
     dut->clk_ascon_fast_i = 0;
-    dut->core_v_fpga_top_veri->program_mem_i->program_path = program_path;
+    dut->core_v_verif_fpga_top->program_mem_i->program_path = program_path;
 #ifdef ENCRYPT
-    dut->core_v_fpga_top_veri->patch_mem_i->program_path = program_path;
+    dut->core_v_verif_fpga_top->patch_mem_i->program_path = program_path;
 #endif
     
     // SIMULATION 
@@ -366,7 +366,7 @@ int main(int argc, char** argv, char** env) {
             stop_sim_cnt--;
         }
         if (clk_ascon_fast_cnt == CLK_FACTOR) {
-            if (dut->core_v_fpga_top_veri->exit_valid_mem_s == 1) {
+            if (dut->core_v_verif_fpga_top->exit_valid_mem_s == 1) {
                 reason_stop = "VALID EXEC";
                 stop_sim = true;
             }

@@ -36,9 +36,9 @@ BSP_RESULT_FILES	:= $(patsubst %,$(SRC_BSP_DIR)/%,crt0.o handlers.o syscalls.o v
 
 SRC_RTL				:= $(shell cat ./SRC/RTL/rtl.flist)
 SRC_RTL_ENCRYPTED	:= $(shell cat ./SRC/RTL/rtl_encrypted.flist)
-SRC_TB_FILE			:= $(SV_BENCH_DIR)/core_v_fpga_top_veri_tb.cpp
+SRC_TB_FILE			:= $(SV_BENCH_DIR)/core_v_verif_fpga_top_tb.cpp
 
-TB_CPP_NAME			:= core_v_fpga_top_veri
+TB_CPP_NAME			:= core_v_verif_fpga_top
 
 #==== CV32E40P ====#
 CV_CORE_PKG 		:= $(SV_RTL_DIR)/iea_cv32e40p_fpga_dev

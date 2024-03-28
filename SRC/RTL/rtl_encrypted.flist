@@ -37,4 +37,4 @@
 ./SRC/RTL/ascon/ascon_fsm.sv
 ./SRC/RTL/ascon/ascon_decryption.sv
 ./SRC/RTL/memories/patch_mem.sv
-./SRC/RTL/core_v_fpga_top_veri.sv
+./SRC/RTL/core_v_verif_fpga_top.sv

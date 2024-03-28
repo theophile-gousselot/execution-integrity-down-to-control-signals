@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module core_v_fpga_top_veri_tb ();
+module core_v_verif_fpga_top_tb ();
 	logic              clk_core_slow_s = 1;
 	logic              clk_ascon_fast_s = 1;
 	logic              rst_s;
@@ -33,7 +33,7 @@ module core_v_fpga_top_veri_tb ();
 		end
     end
 
-    core_v_fpga_top_veri core_v_fpga_top_veri_i (
+    core_v_verif_fpga_top core_v_verif_fpga_top_i (
         .clk_core_slow_i(clk_core_slow_s),
         .clk_ascon_fast_i(clk_ascon_fast_s),
         .rst_i(rst_s),

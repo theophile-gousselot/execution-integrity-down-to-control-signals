@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module core_v_fpga_top_veri
+module core_v_verif_fpga_top
 `ifdef ENCRYPT
 # (
     parameter HW_PERMUTATION_N = 6
