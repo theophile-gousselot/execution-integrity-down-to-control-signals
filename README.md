@@ -18,7 +18,7 @@
   
 4. Simulate execution of `fibonacci`, **with encryption**, compare PC/instr in Fetch at every cycle with previously saved reference, generate reference if not exist.
 ``` bash
- make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_encrypted_verif.log
+ make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_encrypted_cf1_verif.log
 ```
 
 5. Execute previous command for all programs with a for loop. You may run `watch -n1 tail -n 40 OBJ/LOG/overview.log` in another terminal to follow campaign execution.
