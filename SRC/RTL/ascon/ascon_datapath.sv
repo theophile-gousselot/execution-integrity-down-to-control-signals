@@ -263,7 +263,7 @@ module ascon_datapath
                 clk_ascon_fast_cnt_reg_s <= 3'b0;
             end else begin
                 if (clk_ascon_fast_cnt_en_i) begin
-                    if (clk_ascon_fast_cnt_reg_s == CLK_FACTOR-1) begin
+                    if (clk_ascon_fast_cnt_reg_s == 3'(CLK_FACTOR-1)) begin
                         clk_ascon_fast_cnt_reg_s <= 3'b0;
                     end else begin
                         clk_ascon_fast_cnt_reg_s <= clk_ascon_fast_cnt_reg_s + 1;
