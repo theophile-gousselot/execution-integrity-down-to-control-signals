@@ -27,6 +27,10 @@ using namespace boost;
 #define MAX_SIM_TIME 5000000
 #endif
 
+#ifndef CLK_FACTOR
+#define CLK_FACTOR 1
+#endif
+
 int exit_error_argv(int argc, char** argv) {
     cout <<  endl << "usage: " << argv[0] << " <program_name> " << "[--verif, --save_ref, --trace_signals]" << endl;
     cout << argv[0] << ": error: unrecognized or invalid arguments";
@@ -39,6 +43,7 @@ int exit_error_argv(int argc, char** argv) {
 void argv_analyze(int argc, char** argv, string &program_name, bool &verif_mode, bool &trace_signals_mode) {
     std::vector<std::string> args(argv, argv+argc);
 
+    if (args.size() <= 1) {exit_error_argv(argc, argv);}
     program_name = args[1];
     for (int j = 2; j < args.size(); j++) {
         if (args[j] == "--verif") {verif_mode = true;}
@@ -82,6 +87,7 @@ void log_start_simu(ofstream& log_file, string program_name, bool verif_mode, bo
     write_log(cout, log_file,  "\n" + string(19, '-') + " VERILATOR SIMULATION " + string(19, '-') + "\n\n");
     write_log(cout, log_file, "VERILATOR:      Simulation launched...\n");
     write_log(cout, log_file, "PROGRAM:        " + program_name + "\n");
+    write_log(cout, log_file, "CLOCK FACTOR:   " + to_string(CLK_FACTOR) + "\n");
     if (verif_mode) {
         write_log(cout, log_file, "MODE:           VERIFICATION of PC/instr\n\n");
     } else {
@@ -126,13 +132,22 @@ void log_end_simu(ofstream& log_file, bool verif_mode, bool trace_signals_mode, 
 
 
 void log_start_overview(bool verif_mode, bool trace_signals_mode, string program_name) {
+    ifstream overview_log_infile("OBJ/LOG/overview.log");
+    bool insert_log_header = !overview_log_infile.good();
+    overview_log_infile.close();
+
     ofstream overview_log_file;
     overview_log_file.open("OBJ/LOG/overview.log", ios_base::app);
+    if (insert_log_header) {
+        overview_log_file << "|   PROGRAM_NAME   | ENCRYPT |C_F|   MODE   |    TEST   | REASON END. |  SIM_TIME  | FIRST ERR. |       TIMESTAMP         \n";
+    }
     overview_log_file << format("|%=18i") % program_name;
 #ifdef ENCRYPT
     overview_log_file << format("|%=9i") % "ENCRYPT";
+    overview_log_file << format("|%=3i") % CLK_FACTOR;
 #else
     overview_log_file << format("|%=9i") % "";
+    overview_log_file << format("|%=3i") % "";
 #endif
     if (verif_mode) {
         overview_log_file << format("|%=10i") % "VERIF";
@@ -239,7 +254,11 @@ int main(int argc, char** argv, char** env) {
     argv_analyze(argc, argv, program_name, verif_mode, trace_signals_mode);
 
 #ifdef ENCRYPT
-    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program_encrypted.vcd";
+    if (CLK_FACTOR != 1) {
+        vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program_encrypted_cf" + to_string(CLK_FACTOR) + ".vcd";
+    } else {
+        vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program_encrypted.vcd";
+    }
 #else
     vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program.vcd";
 #endif
@@ -293,6 +312,7 @@ int main(int argc, char** argv, char** env) {
     int first_error_sample_n = -1;
     int64_t pc_id;
     int64_t instr_id;
+    int clk_ascon_fast_cnt = 0;
 
     // DUT Instanciation
     Vcore_v_fpga_top_veri *dut = new Vcore_v_fpga_top_veri;
@@ -318,12 +338,18 @@ int main(int argc, char** argv, char** env) {
     while (sim_time < MAX_SIM_TIME && stop_sim_cnt != 0) {
 
         // DISABLE RESET
-        if (sim_time > 20) {
+        if (sim_time > 20*CLK_FACTOR) {
             dut->rst_i = 0;
         }
-
+        
         // CLOCK EDGE
-        dut->clk_core_slow_i ^= 1;
+        if (clk_ascon_fast_cnt == 0) {
+            dut->clk_core_slow_i ^= 1;
+        } else if (clk_ascon_fast_cnt == CLK_FACTOR) {
+            dut->clk_core_slow_i ^= 1;
+        }
+
+
         dut->clk_ascon_fast_i ^= 1;
 
         // EVALUATE THE MODEL (as top level IOs change)
@@ -333,7 +359,7 @@ int main(int argc, char** argv, char** env) {
         if (stop_sim) {
             stop_sim_cnt--;
         }
-        if (dut->clk_core_slow_i == 0) {
+        if (clk_ascon_fast_cnt == CLK_FACTOR) {
             if (dut->core_v_fpga_top_veri->exit_valid_mem_s == 1) {
                 reason_stop = "VALID EXEC";
                 stop_sim = true;
@@ -361,6 +387,10 @@ int main(int argc, char** argv, char** env) {
 
         // sim_time_incr
         sim_time++;
+        clk_ascon_fast_cnt++;
+        if (clk_ascon_fast_cnt == 2*CLK_FACTOR) {
+            clk_ascon_fast_cnt = 0;
+        }
     }
     if (sim_time == MAX_SIM_TIME) {
         reason_stop = "TIMEOUT";
