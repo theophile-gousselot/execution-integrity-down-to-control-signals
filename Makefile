@@ -36,9 +36,9 @@ BSP_RESULT_FILES	:= $(patsubst %,$(SRC_BSP_DIR)/%,crt0.o handlers.o syscalls.o v
 
 SRC_RTL				:= $(shell cat ./SRC/RTL/rtl.flist)
 SRC_RTL_ENCRYPTED	:= $(shell cat ./SRC/RTL/rtl_encrypted.flist)
-SRC_TB_FILE			:= $(SV_BENCH_DIR)/core_v_verif_fpga_top_tb.cpp
+SRC_TB_FILE			:= $(SV_BENCH_DIR)/core_v_verif_fpga_tb.cpp
 
-TB_CPP_NAME			:= core_v_verif_fpga_top
+TB_CPP_NAME			:= core_v_verif_fpga
 
 #==== CV32E40P ====#
 CV_CORE_PKG 		:= $(SV_RTL_DIR)/iea_cv32e40p_fpga_dev
@@ -66,9 +66,9 @@ OBJ_BSP_DIR             := $(OBJ_TOOLS_DIR)/BSP
 ###################################################
 
 cf_val = $(shell echo "$(1)" | sed 's=^.*_cf\([0-9]\).*$$=\1=')
-cf = $(shell echo "$(1)" |  grep -q "_cf[0-9]" && echo "$(1)" | sed 's=^.*_cf\([0-9]\).*$$=_cf\1=' || true)
+cf = $(shell echo "$(1)" |  grep -q "[0-9]" && echo "$(1)" | sed 's=^.*_cf\([0-9]\).*$$=_cf\1=' || true)
 vcd = $(shell echo "$(1)" | grep -q "_vcd" && echo "_vcd" || true)
-vcd_flags = $(shell echo "$(1)" | grep -q "vcd" && echo "--trace --trace-depth 5 -CFLAGS '-D VCD'" || true)
+vcd_flags = $(shell echo "$(1)" | grep -q "vcd" && echo "--trace --trace-depth 8 -CFLAGS '-D VCD'" || true)
 encrypted = $(shell echo "$(1)" | grep -q "_encrypted" && echo "_encrypted" || true)
 encrypted_flags = $(shell echo "$(1)" | grep -q "_encrypted" && echo "+define+ENCRYPT -CFLAGS '-D ENCRYPT' -GHW_PERMUTATION_N=$(shell expr 6 / $(call cf_val,$@) ) -CFLAGS '-D CLK_FACTOR=$(call cf_val,$@)'" || true)
 
@@ -199,6 +199,20 @@ $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd_cf6/V$(TB_CPP_NAME) : $(CV_CORE_PKG
 		-f V$(TB_CPP_NAME).mk \
 		V$(TB_CPP_NAME)
 
+
+
+##        _                _
+## __   _(_)_   ____ _  __| | ___
+## \ \ / / \ \ / / _` |/ _` |/ _ \
+##  \ V /| |\ V / (_| | (_| | (_) |
+##   \_/ |_| \_/ \__,_|\__,_|\___/
+##
+
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci :  $(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE) SRC/SCRIPTS/create_projects.tcl
+	vivado -mode batch -source SRC/SCRIPTS/create_projects.tcl -tclargs core_v_verif_fpga_fibonacci
+
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf1 :  $(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE) SRC/SCRIPTS/create_projects.tcl
+	vivado -mode batch -source SRC/SCRIPTS/create_projects.tcl -tclargs core_v_verif_fpga_fibonacci_encrypted_cf1
 
 ##  _                   _                        
 ## | |__   __ _ _ __ __| |_      ____ _ _ __ ___ 
