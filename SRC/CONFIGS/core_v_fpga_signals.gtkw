@@ -11,7 +11,7 @@
 [pos] -1 -1
 *-2.188954 27 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
-[treeopen] TOP.core_v_verif_fpga_top.
+[treeopen] TOP.core_v_verif_fpga.
 [sst_width] 233
 [signals_width] 389
 [sst_expanded] 1
@@ -29,16 +29,16 @@ TOP.rst_i
 -
 -TOP SIGNALS
 @22
-TOP.core_v_verif_fpga_top.instr_addr_s[31:0]
-TOP.core_v_verif_fpga_top.mem_instr_rdata_s[31:0]
+TOP.core_v_verif_fpga.instr_addr_s[31:0]
+TOP.core_v_verif_fpga.mem_instr_rdata_s[31:0]
 @200
 -
 -CV32E40P
 @22
-TOP.core_v_verif_fpga_top.cv32e40p_core_i.pc_if[31:0]
-TOP.core_v_verif_fpga_top.cv32e40p_core_i.pc_id[31:0]
-TOP.core_v_verif_fpga_top.cv32e40p_core_i.pc_ex[31:0]
-TOP.core_v_verif_fpga_top.cv32e40p_core_i.instr_rdata_i[31:0]
-TOP.core_v_verif_fpga_top.cv32e40p_core_i.instr_rdata_id[31:0]
+TOP.core_v_verif_fpga.cv32e40p_core_i.pc_if[31:0]
+TOP.core_v_verif_fpga.cv32e40p_core_i.pc_id[31:0]
+TOP.core_v_verif_fpga.cv32e40p_core_i.pc_ex[31:0]
+TOP.core_v_verif_fpga.cv32e40p_core_i.instr_rdata_i[31:0]
+TOP.core_v_verif_fpga.cv32e40p_core_i.instr_rdata_id[31:0]
 [pattern_trace] 1
 [pattern_trace] 0
