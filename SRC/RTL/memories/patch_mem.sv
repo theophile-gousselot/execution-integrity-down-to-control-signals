@@ -10,7 +10,9 @@ module patch_mem
     output logic [PATCH_WIDTH-1:0]   patch_o
 );
 
+`ifdef VERILATOR
     string program_path/*verilator public*/;
+`endif
 
     integer i;
 
@@ -22,7 +24,11 @@ module patch_mem
         //for (i=0; i<bytes; i++) begin
         //    mem[i] = '0;
         //end
+`ifdef VERILATOR
 	    $readmemh({program_path,"_encrypted_patches.hex"}, mem);
+`else
+	    $readmemh("program_encrypted_patches.hex", mem);
+`endif
     end
 
 

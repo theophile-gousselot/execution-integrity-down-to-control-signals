@@ -31,7 +31,10 @@ module program_mem
     output logic [31:0]     exit_value_o
 );
 
+`ifdef VERILATOR
     string program_path/*verilator public*/;
+`endif
+
 
     integer i;
 
@@ -63,6 +66,7 @@ module program_mem
         end
 
 
+`ifdef VERILATOR
 `ifdef ENCRYPT
 	$readmemh({program_path,"_encrypted_0.mem"}, ram0);
 	$readmemh({program_path,"_encrypted_1.mem"}, ram1);
@@ -73,6 +77,21 @@ module program_mem
 	$readmemh({program_path,"_1.mem"}, ram1);
 	$readmemh({program_path,"_2.mem"}, ram2);
 	$readmemh({program_path,"_3.mem"}, ram3);
+`endif
+
+`else
+
+`ifdef ENCRYPT
+	$readmemh("program_encrypted_0.mem", ram0);
+	$readmemh("program_encrypted_1.mem", ram1);
+	$readmemh("program_encrypted_2.mem", ram2);
+	$readmemh("program_encrypted_3.mem", ram3);
+`else
+	$readmemh("program_0.mem", ram0);
+	$readmemh("program_1.mem", ram1);
+	$readmemh("program_2.mem", ram2);
+	$readmemh("program_3.mem", ram3);
+`endif
 `endif
     end
 

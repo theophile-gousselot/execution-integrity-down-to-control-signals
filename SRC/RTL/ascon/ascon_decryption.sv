@@ -7,7 +7,7 @@ module ascon_decryption
     parameter FIFO_DEPTH = 2,
     parameter FIFO_ADDR_DEPTH = 1,
     parameter PATCH_WIDTH = 320,
-    parameter PATCH_MEM_ADDR_WIDTH,
+    parameter PATCH_MEM_ADDR_WIDTH = 16,
     parameter PB_ROUNDS = 6,
     parameter HW_PERMUTATION_N = 6
 ) (
