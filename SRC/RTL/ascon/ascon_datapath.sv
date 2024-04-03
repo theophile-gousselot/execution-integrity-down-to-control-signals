@@ -249,7 +249,7 @@ module ascon_datapath
     assign state_patch2xor = (apply_patch_i) ? state_patched : state_not_patched;
 
     assign instr_rdata_plain_s = state_patch2xor[0][63:32] ^ instr_rdata_cipher_i;
-    assign instr_rdata_plain_o = (if_valid_i && instr_valid_if_i) ? instr_rdata_plain_s : 32'h0;
+    assign instr_rdata_plain_o = (if_valid_i) ? instr_rdata_plain_s : 32'h0;
     
     assign state_xor2mux_fast[4:1] = state_patch2xor[4:1];
     assign state_xor2mux_fast[0] = {instr_rdata_cipher_i, state_patch2xor[0][31:0]};

@@ -3,7 +3,7 @@
 module core_v_verif_fpga_top
 `ifdef ENCRYPT
     # (
-        parameter HW_PERMUTATION_N = 6
+        parameter HW_PERMUTATION_N = `HW_PERMUTATION_N 
     )
 `endif
     (

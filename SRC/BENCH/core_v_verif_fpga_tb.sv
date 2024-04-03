@@ -4,6 +4,8 @@ module core_v_verif_fpga_tb ();
 	logic              clk_nexys_board_s = 0;
 	logic              rst_sw_s;
 	logic [7:0]        led_s;
+
+	logic              enable_verif_illegal_instr_s;
     
     int unsigned       maxcycles_int = 5000000;
     int unsigned       clk_nexys_board_cyc_cnt_int = 0;
@@ -39,9 +41,11 @@ module core_v_verif_fpga_tb ();
 		end
     end
 
-    // SIMULATION VALID EXEC
+
+    // SIMULATION END
+    assign enable_verif_illegal_instr_s = (core_v_verif_fpga_top_i.core_v_verif_fpga_i.cv32e40p_core_i.pc_id == 32'h80) ? 1'b1 : 1'b0;
     always_ff @(posedge clk_nexys_board_s) begin
-        if (led_s[5]) begin
+        if (led_s[5] && enable_verif_illegal_instr_s) begin
             stop_sim_cnt = stop_sim_cnt - 1;
             if (stop_sim_cnt == 0) begin 
                 $display("%m @ %0t ps / %0d cycles: EXIT ILLEGAL INSN DECODE", $time, clk_nexys_board_cyc_cnt_int);
