@@ -3,7 +3,7 @@
 riscv-elf-generate_patches.py
 
 This script generates patches from a <program>.itb and <program>_c_states_dec.csv files.
-Patches are wroten in <program>_c__patches.hex file.
+Patches are wroten in <program>_encrypted_patches.mem file.
 """
 
 import os
@@ -33,7 +33,7 @@ SRC_PATH = args.src_path
 ITB_PATH = f"{OBJ_PATH}/{PROGRAM}.itb"
 STATES_DEC_CSV_PATH = f"{OBJ_PATH}/{PROGRAM}_encrypted_states_dec.csv"
 EDGES_PATH = f"{OBJ_PATH}/{PROGRAM}_edges.csv"
-PATCHES_HEX_PATH = f"{OBJ_PATH}/{PROGRAM}_encrypted_patches.hex"
+PATCHES_HEX_PATH = f"{OBJ_PATH}/{PROGRAM}_encrypted_patches.mem"
 PATCHES_HEX_CSV_PATH = f"{OBJ_PATH}/{PROGRAM}_patches_hex.csv"
 SUCCESSORS_PATH = f"{OBJ_PATH}/{PROGRAM}.successors"
 JALR_SUCCESSORS_PATH = f"{OBJ_PATH}//{PROGRAM}_jalr_successors.csv"

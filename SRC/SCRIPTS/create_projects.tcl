@@ -54,6 +54,9 @@ if { $ENCRYPT } {
     file mkdir ${PROJECT_PATH}/${PROJECT_NAME}.srcs/sources_1/new
     set macro_file [open ${PROJECT_PATH}/${PROJECT_NAME}.srcs/sources_1/new/define_macro.vh w] 
     puts $macro_file "`define ENCRYPT"
+
+	set HW_PERMUTATION_N [expr { 6 / ${CF}}]
+    puts $macro_file "`define HW_PERMUTATION_N ${HW_PERMUTATION_N}"
     flush $macro_file
     close $macro_file
     add_files ${PROJECT_PATH}/${PROJECT_NAME}.srcs/sources_1/new/define_macro.vh
@@ -72,7 +75,6 @@ if { $ENCRYPT } {
     import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_2.mem
     import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_3.mem
 }
-
 foreach file_path $rtl_files {
     import_files -fileset sources_1 -norecurse ${file_path}
 }
@@ -86,12 +88,15 @@ set_property xsim.view  ./SRC/CONFIGS/core_v_verif_fpga_tb_behav.wcfg [get_files
 
 
 ##### CREATE CLOCK WIZARD
+set freq_clk_core_slow 20
+set freq_clk_ascon_fast [expr {${freq_clk_core_slow} * ${CF}}]
+
 create_ip -name clk_wiz -vendor xilinx.com -library ip -version 6.0 -module_name clk_wiz_0
 set_property -dict [list CONFIG.Component_Name {clk_wiz_0} CONFIG.USE_DYN_RECONFIG {false} CONFIG.PRIM_SOURCE {No_buffer} CONFIG.AXI_DRP {false} CONFIG.PHASE_DUTY_CONFIG {false}] [get_ips clk_wiz_0]
 set_property -dict [list CONFIG.CLK_IN1_BOARD_INTERFACE {sys_clock} CONFIG.PRIMARY_PORT {clk_nexys_board_i}] [get_ips clk_wiz_0]
 set_property -dict [list CONFIG.USE_SAFE_CLOCK_STARTUP {true} CONFIG.LOCKED_PORT {mmcm_clks_locked_o}] [get_ips clk_wiz_0]
-set_property -dict [list CONFIG.CLK_OUT1_PORT {clk_core_slow_o} CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {20.000} ] [get_ips clk_wiz_0]
-set_property -dict [list CONFIG.CLKOUT2_USED {true} CONFIG.CLK_OUT2_PORT {clk_ascon_fast_o} CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {20.000} ] [get_ips clk_wiz_0]
+set_property -dict [list CONFIG.CLK_OUT1_PORT {clk_core_slow_o} CONFIG.CLKOUT1_REQUESTED_OUT_FREQ ${freq_clk_core_slow} ] [get_ips clk_wiz_0]
+set_property -dict [list CONFIG.CLKOUT2_USED {true} CONFIG.CLK_OUT2_PORT {clk_ascon_fast_o} CONFIG.CLKOUT2_REQUESTED_OUT_FREQ ${freq_clk_ascon_fast} ] [get_ips clk_wiz_0]
 set_property -dict [list CONFIG.CLKOUT3_USED {true} CONFIG.CLKOUT4_USED {true} CONFIG.CLKOUT5_USED {true} CONFIG.CLKOUT6_USED {true} CONFIG.CLKOUT7_USED {true} ] [get_ips clk_wiz_0]
 
 generate_target {instantiation_template} [get_files ${PROJECT_PATH}/${PROJECT_NAME}.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0.xci]
@@ -115,6 +120,6 @@ launch_runs clk_wiz_0_synth_1 -jobs 3
 update_compile_order -fileset sources_1
 update_compile_order -fileset sim_1
 
-launch_runs synth_1 -jobs 3
-#launch_runs impl_1 -to_step write_bitstream -jobs 3
+#launch_runs synth_1 -jobs 3
+launch_runs impl_1 -to_step write_bitstream -jobs 3
 
