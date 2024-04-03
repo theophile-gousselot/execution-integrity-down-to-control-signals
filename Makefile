@@ -107,7 +107,7 @@ OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf2.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf3.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf6.vcd : \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp \
-		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.hex \
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.mem \
 		OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
 	make $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd$(call cf,$@)/V$(TB_CPP_NAME)
 	@echo "\n===> $@"
@@ -145,7 +145,7 @@ OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf2_verif.log \
 OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf3_verif.log \
 OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf6_verif.log : \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp \
-		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.hex \
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.mem \
 		OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
 	make $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted$(call cf,$@)/V$(TB_CPP_NAME)
 	@echo "\n===> $@"
@@ -208,11 +208,19 @@ $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd_cf6/V$(TB_CPP_NAME) : $(CV_CORE_PKG
 ##   \_/ |_| \_/ \__,_|\__,_|\___/
 ##
 
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci :  $(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE) SRC/SCRIPTS/create_projects.tcl
-	vivado -mode batch -source SRC/SCRIPTS/create_projects.tcl -tclargs core_v_verif_fpga_fibonacci
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_% : $(CV_CORE_PKG) $(SRC_RTL) $(SRC_TB_FILE) \
+		SRC/SCRIPTS/create_projects.tcl \
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp
+	vivado -mode batch -source SRC/SCRIPTS/create_projects.tcl -tclargs core_v_verif_fpga_$*
 
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf1 :  $(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE) SRC/SCRIPTS/create_projects.tcl
-	vivado -mode batch -source SRC/SCRIPTS/create_projects.tcl -tclargs core_v_verif_fpga_fibonacci_encrypted_cf1
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf1 \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf2 \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf3 \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6 :  $(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE) \
+		SRC/SCRIPTS/create_projects.tcl \
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp \
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.mem
+	vivado -mode batch -source SRC/SCRIPTS/create_projects.tcl -tclargs core_v_verif_fpga_$*_encrypted$(call cf,$@)
 
 ##  _                   _                        
 ## | |__   __ _ _ __ __| |_      ____ _ _ __ ___ 
@@ -260,8 +268,8 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp : \
 	touch $@
 
 #==== GENERATE PATCH MEM FILE ====#
-.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.hex
-OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.hex: \
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.mem
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.mem: \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.itb \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv 
