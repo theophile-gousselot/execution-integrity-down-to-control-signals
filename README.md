@@ -1,6 +1,7 @@
 
 ## Getting Started
 
+### Behavioral simulation only: Verilator
 1. Simulate execution of `fibonacci`, without encryption and save PC/instr in Fetch at every cycle.
 ``` bash
  make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_save_ref.log
@@ -38,7 +39,19 @@ python3 ./configure.py
 make -f explicit_target_names.mk <tab>
 ```
 
-8. Every time a simulation is performed, a line is added in `OBJ/LOG/overview.log`, after step **5**, `overview.log` looks like this:
+8. Every time a simulation is performed, a line is added in `OBJ/LOG/overview.log`, after step **5**, `overview.log` looks like table in [Results](#results)
+
+### FPGA Flow : Vivado/Questa
+
+9. Delay of imulations can be measured with:
+``` bash
+./SRC/SCRIPTS/time_for_sim.sh [Optional <path_to_folders>]
+```
+
+
+
+## Annexe
+### Results
 
 |   PROGRAM_NAME   | ENCRYPT |   MODE   |    TEST   | REASON END. |  SIM_TIME  | FIRST ERR. |       TIMESTAMP
 |:----------------:|:-------:|:--------:|:---------:|:-----------:|:----------:|:----------:|:----------------------:|
