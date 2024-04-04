@@ -4,3 +4,6 @@ explicit_target_names.mk
 SRC/SCRIPTS/__pycache__
 SRC/SCRIPTS/__pycache__/*
 *.swp
+vivado.jou
+vivado.log
+vivado_*.jou
