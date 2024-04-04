@@ -5,7 +5,7 @@ module core_v_verif_fpga_tb ();
 	logic              rst_sw_s;
 	logic [7:0]        led_s;
 
-	logic              enable_verif_illegal_instr_s;
+	//logic              enable_verif_illegal_instr_s;
     
     int unsigned       maxcycles_int = 5000000;
     int unsigned       clk_nexys_board_cyc_cnt_int = 0;
@@ -20,7 +20,7 @@ module core_v_verif_fpga_tb ();
     end
 
     always_ff @(posedge core_v_verif_fpga_top_i.clk_core_slow_s) begin
-        if (!rst_sw_s & core_v_verif_fpga_top_i.mmcm_clks_locked_s) begin //do not use ascon_only_top_i.rst_n_s because it will be flipped after impl
+        if (core_v_verif_fpga_top_i.rst_synch_s == 1'b0) begin
             clk_core_slow_cyc_cnt_int <= clk_core_slow_cyc_cnt_int + 1;
         end else begin
             clk_core_slow_cyc_cnt_int <= 0;
@@ -43,9 +43,9 @@ module core_v_verif_fpga_tb ();
 
 
     // SIMULATION END
-    assign enable_verif_illegal_instr_s = (core_v_verif_fpga_top_i.core_v_verif_fpga_i.cv32e40p_core_i.pc_id == 32'h80) ? 1'b1 : 1'b0;
+    //assign enable_verif_illegal_instr_s = (clk_core_slow_cyc_cnt_int > 6) ? 1'b1 : 1'b0;
     always_ff @(posedge clk_nexys_board_s) begin
-        if (led_s[5] && enable_verif_illegal_instr_s) begin
+        if (led_s[5]) begin
             stop_sim_cnt = stop_sim_cnt - 1;
             if (stop_sim_cnt == 0) begin 
                 $display("%m @ %0t ps / %0d cycles: EXIT ILLEGAL INSN DECODE", $time, clk_nexys_board_cyc_cnt_int);
