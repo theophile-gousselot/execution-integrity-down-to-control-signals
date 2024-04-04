@@ -21,6 +21,8 @@ add wave -noupdate /core_v_verif_fpga_tb/core_v_verif_fpga_top_i/core_v_verif_fp
 add wave -noupdate -divider #####
 add wave -noupdate /core_v_verif_fpga_tb/core_v_verif_fpga_top_i/core_v_verif_fpga_i/ascon_decryption_i/instr_rdata_cipher_i
 add wave -noupdate /core_v_verif_fpga_tb/core_v_verif_fpga_top_i/core_v_verif_fpga_i/ascon_decryption_i/instr_rdata_plain_o
+add wave -noupdate -divider #####
+add wave -noupdate /core_v_verif_fpga_tb/core_v_verif_fpga_top_i/core_v_verif_fpga_i/illegal_insn_dec_s
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {769515 ps} 0}
 quietly wave cursor active 1
