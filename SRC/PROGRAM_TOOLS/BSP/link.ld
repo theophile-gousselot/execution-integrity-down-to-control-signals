@@ -25,7 +25,7 @@ MEMORY
 	ram (rwxai) : ORIGIN = 0x00000000, LENGTH = 0x10000
 */
 
-	ram (rwxai) : ORIGIN = 0x00000000, LENGTH = 0x400000
+	ram (rwxai) : ORIGIN = 0x00000000, LENGTH = 0x10000
 	dbg (rwxai) : ORIGIN = 0x1A110800, LENGTH = 0x1000
 }
 
