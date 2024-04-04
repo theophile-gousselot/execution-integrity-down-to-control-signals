@@ -26,7 +26,12 @@ module core_v_verif_fpga
     localparam PATCH_MEM_ADDR_WIDTH   = 16;
 `endif
 
+
     // RESET
+`ifdef ENCRYPT
+	logic [2:0]   rst_n_cnt_s = 0;
+    logic        is_illegal_insn_from_last_rst_s = 0;
+`endif
     logic         rst_n;
 
     // INSTR READ
@@ -88,10 +93,31 @@ module core_v_verif_fpga
     assign rst_n = !rst_i;
 
     // LEDs
-    assign led_o[4:0] = 5'h0;
 `ifdef ENCRYPT
-    assign led_o[5] = (illegal_insn_dec_s) ? 1'b1 : 1'b0;
+    always_ff @(posedge clk_core_slow_i, negedge rst_n) begin
+        if (rst_n == 1'b0) begin
+			rst_n_cnt_s <= 3'b0;
+			is_illegal_insn_from_last_rst_s  <= 1'b0;
+        end else begin
+            if (rst_n_cnt_s < 3'h7) begin
+				rst_n_cnt_s = rst_n_cnt_s + 1;
+				is_illegal_insn_from_last_rst_s  <= 1'b0;
+			end
+            if (rst_n_cnt_s == 3'h7) begin
+				if (illegal_insn_dec_s == 1'b1) begin
+					is_illegal_insn_from_last_rst_s  <= 1'b1;
+				end
+			end
+        end
+    end
+`endif
+
+`ifdef ENCRYPT
+    assign led_o[3:0] = instr_addr_s[15:12] ^ instr_addr_s[11:8] ^ instr_addr_s[7:4] ^ {instr_addr_s[3:2], 2'b00};
+    assign led_o[4] = 1'h0;
+    assign led_o[5] = (is_illegal_insn_from_last_rst_s) ? 1'b1 : 1'b0;
 `else
+    assign led_o[4:0] = 5'h0;
     assign led_o[5] = 1'b0; 
 `endif
     assign led_o[6] = (exit_valid_s) ?  1'b1 : 1'b0;
