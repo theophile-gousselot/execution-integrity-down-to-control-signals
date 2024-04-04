@@ -45,10 +45,22 @@ make -f explicit_target_names.mk <tab>
 
 9. Delay of imulations can be measured with:
 ``` bash
+make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_verifypin-0_encrypted_cf1/.simulate_log.timestamp 
+```
+9. Delay of imulations can be measured with:
+``` bash
 ./SRC/SCRIPTS/time_for_sim.sh [Optional <path_to_folders>]
 ```
 
-
+9. To save waveforms in any questa folder, type these commands in VSIM terminal.
+``` bash
+restart
+vcd file <vcd_file_name>
+vcd add -r *
+run all
+```
+- TODO: display photo to add vcd
+9.
 
 ## Annexe
 ### Results

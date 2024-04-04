@@ -159,6 +159,7 @@ OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf6_verif.log : \
 .PRECIOUS: OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv
 OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv : \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp
+	make $(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME)
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
 	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) $* --trace_signals --save_ref
@@ -207,6 +208,15 @@ $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd_cf6/V$(TB_CPP_NAME) : $(CV_CORE_PKG
 ##  \ V /| |\ V / (_| | (_| | (_) |
 ##   \_/ |_| \_/ \__,_|\__,_|\___/
 ##
+
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%/.simulate_log.timestamp : OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%
+	vivado -mode batch OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.xpr -source ./SRC/SCRIPTS/set_questa_dir_for_5simulations.tcl
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/behav/questa
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/synth/func/questa
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/synth/timing/questa
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/impl/func/questa
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/impl/timing/questa
+	touch $@
 
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_% : $(CV_CORE_PKG) $(SRC_RTL) $(SRC_TB_FILE) \
 		SRC/SCRIPTS/create_projects.tcl \
@@ -338,7 +348,7 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.elf: OBJ/PROGRAMS/%/PROGRAM_CO
 
 #==== COMPILE PROGRAM ====#
 .PRECIOUS : OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf
-OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf: $(PROGRAM_FILES) $(OBJ_BSP_DIR)/.bsp.timestamp
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf: $(OBJ_BSP_DIR)/.bsp.timestamp
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
 	$(RISCV_EXE_PREFIX)$(RISCV_CC) \
@@ -347,7 +357,6 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf: $(PROGRAM_FILES) $(OBJ_BSP_DIR)/.bs
 		-o $@ \
 		-nostartfiles \
 		$(filter %.c %.S,$(wildcard  SRC/PROGRAMS/$*/*)) \
-		$(PROGRAM_FILES) \
 		-T $(SRC_BSP_DIR)/link.ld \
 		-L $(OBJ_BSP_DIR) \
 		-lcv-verif
