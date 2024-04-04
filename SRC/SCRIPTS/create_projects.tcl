@@ -17,6 +17,8 @@ if { $ENCRYPT } {
         puts "error: The project_name ${PROJECT_NAME} contains _encrypted but not _cf\[0-9\]"
         exit
     }
+} else {
+	set CF 1
 }
 set PROJECT_PATH "OBJ/VIVADO_OBJ_DIR/${PROJECT_NAME}" 
 
