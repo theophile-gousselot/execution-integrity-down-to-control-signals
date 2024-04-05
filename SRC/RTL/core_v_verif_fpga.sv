@@ -100,7 +100,7 @@ module core_v_verif_fpga
 			is_illegal_insn_from_last_rst_s  <= 1'b0;
         end else begin
             if (rst_n_cnt_s < 3'h7) begin
-				rst_n_cnt_s = rst_n_cnt_s + 1;
+				rst_n_cnt_s <= rst_n_cnt_s + 1;
 				is_illegal_insn_from_last_rst_s  <= 1'b0;
 			end
             if (rst_n_cnt_s == 3'h7) begin

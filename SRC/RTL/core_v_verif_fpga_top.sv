@@ -60,7 +60,9 @@ module core_v_verif_fpga_top
 
 
 
-    core_v_verif_fpga core_v_verif_fpga_i (
+    core_v_verif_fpga #(
+        .HW_PERMUTATION_N(HW_PERMUTATION_N)
+	) core_v_verif_fpga_i (
         .clk_core_slow_i(clk_core_slow_s),
         .clk_ascon_fast_i(clk_ascon_fast_s),
         .rst_i(rst_synch_s),
