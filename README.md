@@ -1,6 +1,10 @@
 
 ## Getting Started
 
+The `Makefile` launchs compilation of programs, compilation, elaboration, FPGA synthesis, FPGA implementation of RTL  and simulation.
+You can generate `explicit_target_names.mk` by executing `./configure.py`, which contains every valid target name of `Makefile` (usefull to use `<tab>`).
+In that case tape `make -f explicit_target_names.mk <tab>`.
+
 ### Behavioral simulation only: Verilator
 1. Simulate execution of `fibonacci`, without encryption and save PC/instr in Fetch at every cycle.
 ``` bash
@@ -24,7 +28,7 @@
 
 5. Execute previous command for all programs with a for loop. You may run `watch -n1 tail -n 40 OBJ/LOG/overview.log` in another terminal to follow campaign execution.
 ``` bash
-for program in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename $(program))/SIM/LOG/program_encrypted_verif.log; done
+for program in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename ${program})/SIM/LOG/program_encrypted_verif.log; done
 for cf in 1 2 3 6; do for a in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename $a)/SIM/LOG/program_encrypted_cf${cf}_verif.log; done; done
 ```
 
@@ -43,13 +47,31 @@ make -f explicit_target_names.mk <tab>
 
 ### FPGA Flow : Vivado/Questa
 
-9. Delay of imulations can be measured with:
+
+
+
+9. Create, synthesis and implement vivado project of core_v_verif_fpga , without encryption, with fibonacci program load in memory.
 ``` bash
-make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_verifypin-0_encrypted_cf1/.simulate_log.timestamp 
+make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci/
 ```
-9. Delay of imulations can be measured with:
+
+
+9. Launch behavioral simulation with questa of vivado project of core_v_verif_fpga, without encryption, with fibonacci program load in memory.
+``` bash
+make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci/.simulate_behav_log.timestamp
+```
+
+
+9. Compilation, elaboration and simulation logs are available in this folder:
+``` bash
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf2/core_v_verif_fpga_fibonacci_encrypted_cf1.sim/sim_1/behav/questa/
+```
+
+
+9. Delay of all simulations launched can be measured with:
 ``` bash
 ./SRC/SCRIPTS/time_for_sim.sh [Optional <path_to_folders>]
+./SRC/SCRIPTS/time_for_sim.sh OBJ/VIVADO_OBJ_DIR/ 
 ```
 
 9. To save waveforms in any questa folder, type these commands in VSIM terminal.
@@ -59,8 +81,108 @@ vcd file <vcd_file_name>
 vcd add -r *
 run all
 ```
+
+9. Launch behavioral, functionnal and timing after synthesis, functionnal and timing after implementation simulations with questa of vivado project of core_v_verif_fpga, without encryption, with fibonacci program load in memory.
+``` bash
+make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci/.simulate_log.timestamp
+```
+
+9. You can rerun a previous simulation by running. Add option "-c" to run questa in command line.
+``` bash
+./SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf2/core_v_verif_fpga_fibonacci_encrypted_cf1.sim/sim_1/behav/questa/ -c
+./SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf2/core_v_verif_fpga_fibonacci_encrypted_cf1.sim/sim_1/behav/questa/
+./SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf2/core_v_verif_fpga_fibonacci_encrypted_cf1.sim/sim_1/impl/timing/questa
+```
+
+
+9. Launch behavioral, functionnal and timing after synthesis, functionnal and timing after implementation simulations with questa of vivado project of core_v_verif_fpga, with encryption (CF=1), with fibonacci program load in memory.
+``` bash
+make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf1/.simulate_log.timestamp
+```
+
+9. Launch behavioral, functionnal and timing after synthesis, functionnal and timing after implementation simulations with questa of vivado project of core_v_verif_fpga, with encryption (CF=6), with fibonacci program load in memory.
+``` bash
+make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf6/.simulate_log.timestamp
+```
+
+
+
+9. To collect every bitstream file, (from `core-v-verif-fpga` folder):
+``` bash
+cd core-v-verif-fpga
+mkdir -p OBJ/VIVADO_OBJ_DIR/BIT                                                                             gousselot@vienne 11:38:29 AM
+foreach b in $(find . -name "core_v_verif_fpga_top.bit" | sort); do echo "Copy $b" && cp $b OBJ/VIVADO_OBJ_DIR/BIT/$(echo $b | sed 's!.*core_v_verif_fpga_\(.*\)/core_v_verif_fpga_.*\.runs.*!core_v_verif_fpga_\1.bit!g'); done
+
+```
+10. On FPGA, lmed should be address 0f 00006f +8 (and xor!)
 - TODO: display photo to add vcd
-9.
+
+
+
+
+## Folder organization
+
+The `core-v-verif-fpga` is organized as follow:
+
+```
+core-v-verif-fpga
+|-- configure.py                -- script to generate explicit_target_names.mk (explicit copy of all Makefile targets)
+|-- explicit_target_names.mk
+|-- Makefile
+|-- OBJ                         -- contains every object generated (remove by make clean)
+|-- README.md
+|-- SRC
+|   |-- BENCH                   -- test-bench in .cpp (for verilator) and .sv (for questa/modelsim)
+|   |-- CONFIGS                 -- default signals for simulator waveforms
+|   |-- PROGRAMS                -- program source of .c programs mainly taken from Embench
+|   |-- PROGRAM_TOOLS           -- BSP (Board Support Package) source
+|   |-- RTL                     -- RTL (Register Transfer Level) description of cv32e40p (git clone), top, memories, ascon decryption
+|   |-- SCRIPTS                 -- .py scripts to encrypt instructions and generate patches, .tcl scripts to create, simulate, search freq max of FPGA vivado projects
+|   |-- XDC                     -- constraints for FPGA design
+```
+
+```
+core-v-verif-fpga
+|-- SRC
+|-- OBJ
+    |-- LOG
+    |   |-- overview.log
+    |-- PROGRAMS
+    |   |-- crc32
+    |   |-- cubic
+    |   |-- dhrystone
+    |   |-- edn
+    |   |-- fibonacci
+    |   |--  ...
+    |   |-- wikisort
+    |-- PROGRAM_TOOLS
+    |   |-- BSP
+    |-- VERILATOR_OBJ_DIR
+    |   |-- core_v_verif_fpga
+    |   |-- core_v_verif_fpga_encrypted_cf1
+    |   |-- core_v_verif_fpga_encrypted_cf2
+    |   |-- core_v_verif_fpga_encrypted_cf3
+    |   |-- core_v_verif_fpga_encrypted_cf6
+    |   |-- core_v_verif_fpga_encrypted_vcd_cf1
+    |-- VIVADO_OBJ_DIR
+        |-- BIT
+        |-- core_v_verif_fpga_fibonacci_encrypted_cf1
+        |-- core_v_verif_fpga_fibonacci_encrypted_cf1
+```
+
+## Core_v_verif_fpga design
+### I/O
+#### Leds
+On FPGA, the leds are equal to:
+- led_o[7] **Y13** = reset enable
+- led_o[6] **W15** = exit valid
+
+If the encrypted design is used:
+- led_o[5] **W16** = illegal instruction detected in decode
+- led_o[0:3] **U16/T16/T15/T14** = instr_addr_s[15:12] ^ instr_addr_s[11:8] ^ instr_addr_s[7:4] ^ {instr_addr_s[3:2], 2'b00};
+
+Every program end by executing a *jump to itself* instruction encoded by *0000006f*. The last instr_addr_s is at PC+8 of the *jump to itself* instruction.
+
 
 ## Annexe
 ### Results
@@ -275,5 +397,7 @@ run all
 
 
 ## ToExplain:
+- goals of this project (simulate, verify, implentatio nverilator (fast), questa vivado (on chip simu validation)
 - jalr_successors.csv
 - new cv32e40p branch: adding comments to ignore specifically Verilator Warnings
+- BRAM not reset with rst_sw_i ... need to program again...

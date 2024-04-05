@@ -175,16 +175,16 @@ OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv : \
 
 
 #==== BUILD CPP MODEL with ENCRYPTED PROGRAM and WAVEFORM GENERATION ===#
-$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) \
-$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_vcd/V$(TB_CPP_NAME) \
-$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_cf1/V$(TB_CPP_NAME) \
-$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_cf2/V$(TB_CPP_NAME) \
-$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_cf3/V$(TB_CPP_NAME) \
-$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_cf6/V$(TB_CPP_NAME) \
-$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd_cf1/V$(TB_CPP_NAME) \
-$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd_cf2/V$(TB_CPP_NAME) \
-$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd_cf3/V$(TB_CPP_NAME) \
-$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd_cf6/V$(TB_CPP_NAME) : $(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE)
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_vcd/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf1/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf2/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf3/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf6/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf1/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf2/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf3/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6/Vcore_v_verif_fpga : $(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE)
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
 	verilator \
@@ -209,18 +209,54 @@ $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd_cf6/V$(TB_CPP_NAME) : $(CV_CORE_PKG
 ##   \_/ |_| \_/ \__,_|\__,_|\___/
 ##
 
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%/.simulate_log.timestamp : OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%
+
+
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%/.simulate_behav_log.timestamp : OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%
+	@echo "\n===> $@"
 	vivado -mode batch OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.xpr -source ./SRC/SCRIPTS/set_questa_dir_for_5simulations.tcl
-	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/behav/questa
-	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/synth/func/questa
-	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/synth/timing/questa
-	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/impl/func/questa
-	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/impl/timing/questa
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/behav/questa -c
+	touch $@
+
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%/.simulate_log.timestamp : OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%
+	@echo "\n===> $@"
+	vivado -mode batch OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.xpr -source ./SRC/SCRIPTS/set_questa_dir_for_5simulations.tcl
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/behav/questa -c
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/synth/func/questa -c
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/synth/timing/questa -c
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/impl/func/questa -c
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/impl/timing/questa -c
+	touch $@
+
+
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf1/.simulate_behav_log.timestamp \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf2/.simulate_behav_log.timestamp \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf3/.simulate_behav_log.timestamp \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6/.simulate_behav_log.timestamp :
+	make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)
+	@echo "\n===> $@"
+	vivado -mode batch OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).xpr -source ./SRC/SCRIPTS/set_questa_dir_for_5simulations.tcl
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).sim/sim_1/behav/questa -c
+	touch $@
+
+
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf1/.simulate_log.timestamp \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf2/.simulate_log.timestamp \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf3/.simulate_log.timestamp \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6/.simulate_log.timestamp :
+	make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)
+	@echo "\n===> $@"
+	vivado -mode batch OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).xpr -source ./SRC/SCRIPTS/set_questa_dir_for_5simulations.tcl
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).sim/sim_1/behav/questa -c
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).sim/sim_1/synth/func/questa -c
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).sim/sim_1/synth/timing/questa -c
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).sim/sim_1/impl/func/questa -c
+	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).sim/sim_1/impl/timing/questa -c
 	touch $@
 
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_% : $(CV_CORE_PKG) $(SRC_RTL) $(SRC_TB_FILE) \
 		SRC/SCRIPTS/create_projects.tcl \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp
+	@echo "\n===> $@"
 	vivado -mode batch -source SRC/SCRIPTS/create_projects.tcl -tclargs core_v_verif_fpga_$*
 
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf1 \
@@ -230,6 +266,7 @@ OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6 :  $(CV_CORE_PKG) $(SRC_RTL
 		SRC/SCRIPTS/create_projects.tcl \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.mem
+	@echo "\n===> $@"
 	vivado -mode batch -source SRC/SCRIPTS/create_projects.tcl -tclargs core_v_verif_fpga_$*_encrypted$(call cf,$@)
 
 ##  _                   _                        
@@ -240,7 +277,7 @@ OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6 :  $(CV_CORE_PKG) $(SRC_RTL
 ##                                               
 
 #==== GIT CLONE CV32E40P ====#
-$(CV_CORE_PKG) :
+SRC/RTL/iea_cv32e40p_fpga_dev :
 	@echo "\n===> $@"
 	git clone -b $(CV_CORE_BRANCH) $(CV_CORE_REPO) $(CV_CORE_PKG); \
 	cd $(CV_CORE_PKG); git checkout $(CV_CORE_BRANCH)
@@ -363,7 +400,7 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf: $(OBJ_BSP_DIR)/.bsp.timestamp
 
 
 #==== COMPILE BSP ====#
-$(OBJ_BSP_DIR)/.bsp.timestamp :
+OBJ/PROGRAM_TOOLS/BSP/.bsp.timestamp :
 	@echo "\n===> $@"
 	make -C $(SRC_BSP_DIR) \
 		VPATH=$(SRC_BSP_DIR) \
