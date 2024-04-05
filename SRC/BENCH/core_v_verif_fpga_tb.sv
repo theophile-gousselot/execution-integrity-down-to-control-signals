@@ -7,7 +7,7 @@ module core_v_verif_fpga_tb ();
 
 	//logic              enable_verif_illegal_instr_s;
     
-    int unsigned       maxcycles_int = 5000000;
+    int unsigned       maxcycles_int = 20000000;
     int unsigned       clk_nexys_board_cyc_cnt_int = 0;
     int unsigned       clk_core_slow_cyc_cnt_int = 0;
     int unsigned       stop_sim_cnt = 20;
