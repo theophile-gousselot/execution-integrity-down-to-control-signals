@@ -527,6 +527,8 @@ class Code:
                             for s in self.instrs[addr].successors:
                                 self.add_patch_if_free(s, addr + 4, s)
 
+
+
             # ITERATION OVER REDIRECTIONS
             addr_free = ADDR_ENC_BEGIN
             for addr in self.patches_to_be_redirected:
