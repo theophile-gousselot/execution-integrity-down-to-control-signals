@@ -110,12 +110,16 @@ make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf6/.simulate_log.
 9. To collect every bitstream file, (from `core-v-verif-fpga` folder):
 ``` bash
 cd core-v-verif-fpga
-mkdir -p OBJ/VIVADO_OBJ_DIR/BIT                                                                             gousselot@vienne 11:38:29 AM
+mkdir -p OBJ/VIVADO_OBJ_DIR/BIT
 foreach b in $(find . -name "core_v_verif_fpga_top.bit" | sort); do echo "Copy $b" && cp $b OBJ/VIVADO_OBJ_DIR/BIT/$(echo $b | sed 's!.*core_v_verif_fpga_\(.*\)/core_v_verif_fpga_.*\.runs.*!core_v_verif_fpga_\1.bit!g'); done
 
 ```
-10. On FPGA, lmed should be address 0f 00006f +8 (and xor!)
-- TODO: display photo to add vcd
+10. On FPGA, led should
+
+
+
+
+
 
 
 
@@ -181,8 +185,37 @@ If the encrypted design is used:
 - led_o[5] **W16** = illegal instruction detected in decode
 - led_o[0:3] **U16/T16/T15/T14** = instr_addr_s[15:12] ^ instr_addr_s[11:8] ^ instr_addr_s[7:4] ^ {instr_addr_s[3:2], 2'b00};
 
-Every program end by executing a *jump to itself* instruction encoded by *0000006f*. The last instr_addr_s is at PC+8 of the *jump to itself* instruction.
+Every program end by executing a *jump to itself* instruction (last instruction of `<_exit>`) encoded by *0000006f*. The last instr_addr_s is at PC+8 of the *jump to itself* instruction.
 
+
+#### Example of successfull program encryption execution: Wikisort
+<p align="center">
+    <img src="SRC/DOC/picture_fpga_cfi_wikisort_rst.jpg" alt="drawing" width="500" class="center"/> 
+</p>
+<p style="text-align: center; font-style: italic;">Execution of wikisort reset enable.</p>
+
+
+<p align="center">
+    <img src="SRC/DOC/picture_fpga_cfi_wikisort_run.jpg" alt="drawing" width="500" class="center"/>
+</p>
+<p style="text-align: center; font-style: italic;">Execution of wikisort reset disable.</p>
+
+As the *jump to itself* instruction is at address 0x1ef0, led[3:0] = 1 ^ e ^ f ^ 8 = 0x8 = 0b1000.
+
+#### Example of unsuccessfull program encryption execution: Qrduino
+
+The qrduino program contains JALR which has more than 11 successors, some of these successors are JAL or BRANCH. Thus, redirection has to be set-up, however the solution is not compatible with redirection with more than 11 successors.
+<p align="center">
+    <img src="SRC/DOC/picture_fpga_cfi_qrduino_rst.jpg" alt="drawing" width="500" class="center"/>
+</p>
+<p style="text-align: center; font-style: italic;">Execution of qrduino reset enable.</p>
+
+<p align="center">
+    <img src="SRC/DOC/picture_fpga_cfi_qrduino_run.jpg" alt="drawing" width="500" class="center"/>
+</p>
+<p style="text-align: center; font-style: italic;">Execution of qrduino reset disable.</p>
+
+Led[5] indicates that an invalid instruction was in the decode. As the `instr_addrs_s` always fluctuates the led[3:0] are high.
 
 ## Annexe
 ### Results
@@ -267,7 +300,7 @@ Every program end by executing a *jump to itself* instruction encoded by *000000
 
 
 |   PROGRAM_NAME   | ENCRYPT |C_F|   MODE   |    TEST   | REASON END. |  SIM_TIME  | FIRST ERR. |       TIMESTAMP         
-|:----------------:|:-------:|:--------:|:---------:|:-----------:|:----------:|:----------:|:----------------------:|
+|:----------------:|:-------:|:-:|:--------:|:---------:|:-----------:|:----------:|:----------:|:----------------------:|
 |       crc32      |         |   |SAVE/TRACE|           |  VALID EXEC |    1149080 |            | Thu Mar 28 09:41:03 2024
 |       crc32      | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    1149080 |            | Thu Mar 28 09:44:59 2024
 |       cubic      |         |   |SAVE/TRACE|           |  VALID EXEC |    1380282 |            | Thu Mar 28 09:45:02 2024
