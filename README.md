@@ -31,6 +31,11 @@ In that case tape `make -f explicit_target_names.mk <tab>`.
 for program in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename ${program})/SIM/LOG/program_encrypted_verif.log; done
 for cf in 1 2 3 6; do for a in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename $a)/SIM/LOG/program_encrypted_cf${cf}_verif.log; done; done
 ```
+or
+``` bash
+PROGRAMS_REDUCED=("cubic" "dhrystone" "sglib-combined" "slre" "st" "statemate" "tarfind" "ud" "wikisort")
+for program in ${PROGRAM_REDUCED} ; do make OBJ/PROGRAMS/$(basename ${program})/SIM/LOG/program_encrypted_verif.log; done
+```
 
 6. Every time a simulation is performed, a log file is generated :
     - `OBJ/PROGRAMS/<program_name>/SIM/LOG/<program_name>_save_ref.log`
@@ -47,7 +52,7 @@ make -f explicit_target_names.mk <tab>
 
 ### FPGA Flow : Vivado/Questa
 
-
+#### Synthesis, Implementation, Write Bitstream and Simulation
 
 
 9. Create, synthesis and implement vivado project of core_v_verif_fpga , without encryption, with fibonacci program load in memory.
@@ -81,6 +86,10 @@ vcd file <vcd_file_name>
 vcd add -r *
 run all
 ```
+<p align="center">
+    <img src="SRC/DOC/readme_export_vcd_from_questa_sim.png" alt="drawing" width="400" class="center"/> 
+</p>
+<p style="text-align: center; font-style: italic;">Example of vcd generation in questa.</p>
 
 9. Launch behavioral, functionnal and timing after synthesis, functionnal and timing after implementation simulations with questa of vivado project of core_v_verif_fpga, without encryption, with fibonacci program load in memory.
 ``` bash
@@ -105,7 +114,29 @@ make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf1/.simulate_log.
 make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf6/.simulate_log.timestamp
 ```
 
+9. Find maximal frequency of a design. All checkpoints, reports for specific frequency are saved in `OBJ/VIVADO_OBJ_DIR/<project_name>/<project_name>i.try_freq/try_freq__<YYYY-MM-DD>__<hh-mm-ss>`. The procedure `proc TryFreq {fmin fmax step nb_hw_perm}` is in `./SRC/SCRIPTS/try_frequencies_2clks.tcl`. 
+``` bash
+vivado -mode tcl
+open_project <path_to_xpr>
+source ./SRC/SCRIPTS/try_frequencies_2clks.tcl
+TryFreq 10 60 1 1
+```
+For each tested frequency, bitstream, checkpoint and reports are generated in : 
+``` bash
+try_freq__<YYYY-MM-DD>__<hh-mm-ss>
+└─ freq_<Fcore>_<Fascon>
+    ├── <project_name>_freq_<Fcore>_<Fascon>.bit
+    ├── <project_name>_freq_<Fcore>_<Fascon>_checkpoint.dcp
+    ├── <project_name>_freq_<Fcore>_<Fascon>_design-analysis.rpt
+    ├── <project_name>_freq_<Fcore>_<Fascon>_report_utilization_hierarchical.rpt
+    ├── <project_name>_freq_<Fcore>_<Fascon>_report_utilization.rpt
+    └── <project_name>_freq_<Fcore>_<Fascon>_timing.rpt
+```
 
+
+10. Display graph
+
+#### Bitstream download
 
 9. To collect every bitstream file, (from `core-v-verif-fpga` folder):
 ``` bash
@@ -114,7 +145,17 @@ mkdir -p OBJ/VIVADO_OBJ_DIR/BIT
 foreach b in $(find . -name "core_v_verif_fpga_top.bit" | sort); do echo "Copy $b" && cp $b OBJ/VIVADO_OBJ_DIR/BIT/$(echo $b | sed 's!.*core_v_verif_fpga_\(.*\)/core_v_verif_fpga_.*\.runs.*!core_v_verif_fpga_\1.bit!g'); done
 
 ```
-10. On FPGA, led should
+
+10. To load bitstreams into FPGA: (depending on the board/FPGA used adapt tcl scripts)
+``` bash
+vivado -mode tcl
+set argv "OBJ/VIVADO_OBJ_DIR/BIT/core_v_verif_fpga_verifypin-0_encrypted_cf1.bit"
+source SRC/SCRIPTS/program_bitstream.tcl 
+set argv "OBJ/VIVADO_OBJ_DIR/BIT/core_v_verif_fpga_verifypin-0_encrypted_cf6.bit"
+source SRC/SCRIPTS/only_program_bitstream.tcl 
+```
+
+10. On FPGA, led should be like described in [leds](leds)
 
 
 
