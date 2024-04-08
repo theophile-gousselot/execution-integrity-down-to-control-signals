@@ -434,4 +434,5 @@ clean_large_vcd :
 
 .PHONY : clean
 clean :
+	rm explicit_target_names.mk
 	rm -rf $(OBJ_DIR)
