@@ -61,7 +61,9 @@ module core_v_verif_fpga_top
 
 
     core_v_verif_fpga #(
+`ifdef ENCRYPT
         .HW_PERMUTATION_N(HW_PERMUTATION_N)
+`endif
 	) core_v_verif_fpga_i (
         .clk_core_slow_i(clk_core_slow_s),
         .clk_ascon_fast_i(clk_ascon_fast_s),
