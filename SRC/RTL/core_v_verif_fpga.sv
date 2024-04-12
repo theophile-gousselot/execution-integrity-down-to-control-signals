@@ -19,6 +19,9 @@ module core_v_verif_fpga
     localparam FIFO_DEPTH             = 2; //must be greater or equal to 2 
     localparam int unsigned FIFO_ADDR_DEPTH = (FIFO_DEPTH > 1) ? $clog2(FIFO_DEPTH) : 1;
 
+`ifdef CS 
+    localparam CS_LEN = 8;
+`endif
 
 `ifdef ENCRYPT
     localparam PB_ROUNDS              = 6;
@@ -88,6 +91,9 @@ module core_v_verif_fpga
     logic [PATCH_WIDTH-1:0]          patch_s;
 `endif
 
+`ifdef CS
+    logic [CS_LEN-1:0] cs_vector_s;
+`endif
 
     // RESET
     assign rst_n = !rst_i;
@@ -149,6 +155,9 @@ module core_v_verif_fpga
     ////////////////////////////////
 
     cv32e40p_core #(
+`ifdef CS
+        .CS_LEN                 (CS_LEN),
+`endif
         .FIFO_DEPTH       (FIFO_DEPTH),
         .FIFO_ADDR_DEPTH  (FIFO_ADDR_DEPTH),
         .PULP_XPULP       (0),
@@ -181,6 +190,10 @@ module core_v_verif_fpga
 
 	    .prefetch_instr_rdata_cipher_o(prefetch_instr_rdata_cipher_s),
 	    .ascon_instr_rdata_plain_i(ascon_instr_rdata_plain_s),
+`endif
+
+`ifdef CS
+        .cs_vector_o                (cs_vector_s),
 `endif
 
         .pulp_clock_en_i            ('1),
@@ -233,6 +246,9 @@ module core_v_verif_fpga
 
 `ifdef ENCRYPT
     ascon_decryption #(
+`ifdef CS
+        .CS_LEN                 (CS_LEN),
+`endif
         .FIFO_DEPTH             (FIFO_DEPTH),
         .FIFO_ADDR_DEPTH        (FIFO_ADDR_DEPTH),
         .PATCH_WIDTH            (PATCH_WIDTH),
@@ -243,6 +259,10 @@ module core_v_verif_fpga
         .clk_core_slow_i            (clk_core_slow_i),
         .clk_ascon_fast_i           (clk_ascon_fast_i),
         .rst_ni                     (rst_n),
+
+`ifdef CS
+        .cs_vector_i                (cs_vector_s),
+`endif
 
         .fifo_push_i                (fifo_push_s),
         .fifo_pop_i                 (fifo_pop_s),

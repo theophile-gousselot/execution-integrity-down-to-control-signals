@@ -68,10 +68,17 @@ module program_mem
 
 `ifdef VERILATOR
 `ifdef ENCRYPT
+`ifdef CS
+	$readmemh({program_path,"_encrypted_cs_0.mem"}, ram0);
+	$readmemh({program_path,"_encrypted_cs_1.mem"}, ram1);
+	$readmemh({program_path,"_encrypted_cs_2.mem"}, ram2);
+	$readmemh({program_path,"_encrypted_cs_3.mem"}, ram3);
+`else
 	$readmemh({program_path,"_encrypted_0.mem"}, ram0);
 	$readmemh({program_path,"_encrypted_1.mem"}, ram1);
 	$readmemh({program_path,"_encrypted_2.mem"}, ram2);
 	$readmemh({program_path,"_encrypted_3.mem"}, ram3);
+`endif
 `else
 	$readmemh({program_path,"_0.mem"}, ram0);
 	$readmemh({program_path,"_1.mem"}, ram1);

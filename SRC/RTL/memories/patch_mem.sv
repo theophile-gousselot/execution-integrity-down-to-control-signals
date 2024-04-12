@@ -25,7 +25,11 @@ module patch_mem
         //    mem[i] = '0;
         //end
 `ifdef VERILATOR
+`ifdef CS
+	    $readmemh({program_path,"_encrypted_cs_patches.mem"}, mem);
+`else
 	    $readmemh({program_path,"_encrypted_patches.mem"}, mem);
+`endif
 `else
 	    $readmemh("program_encrypted_patches.mem", mem);
 `endif

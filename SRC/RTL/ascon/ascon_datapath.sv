@@ -4,6 +4,9 @@ module ascon_datapath
     import cv32e40p_pkg::*;
     import ascon_pack::*;      
 #(
+`ifdef CS
+    parameter CS_LEN,
+`endif
     parameter FIFO_DEPTH = 2,
     parameter FIFO_ADDR_DEPTH = 1,
     parameter PATCH_WIDTH = 320,
@@ -14,6 +17,10 @@ module ascon_datapath
     input logic                             clk_core_slow_i,
     input logic                             clk_ascon_fast_i,
     input logic                             rst_ni,
+
+`ifdef CS
+    input logic [CS_LEN-1:0]                cs_vector_i,
+`endif
 
     input logic                             fifo_push_i,
     input logic                             fifo_pop_i,
@@ -81,7 +88,10 @@ module ascon_datapath
     state_t state_not_patched;
     state_t state_patched;
     state_t state_patch2xor;
-    state_t state_xor2mux_fast;
+    state_t state_xor_cipher;
+`ifdef CS
+    state_t state_cs2mux_fast;
+`endif
     state_t state_mux_fast2perm;
     state_t state_perm2reg;
     state_t state_reg2mux_state_init;
@@ -251,8 +261,13 @@ module ascon_datapath
     assign instr_rdata_plain_s = state_patch2xor[0][63:32] ^ instr_rdata_cipher_i;
     assign instr_rdata_plain_o = (if_valid_i) ? instr_rdata_plain_s : 32'h0;
     
-    assign state_xor2mux_fast[4:1] = state_patch2xor[4:1];
-    assign state_xor2mux_fast[0] = {instr_rdata_cipher_i, state_patch2xor[0][31:0]};
+    assign state_xor_cipher[4:1] = state_patch2xor[4:1];
+    assign state_xor_cipher[0] = {instr_rdata_cipher_i, state_patch2xor[0][31:0]};
+
+`ifdef CS
+    assign state_cs2mux_fast[4:1] = state_xor_cipher[4:1];
+    assign state_cs2mux_fast[0] = {state_xor_cipher[0][63:CS_LEN], state_xor_cipher[0][CS_LEN-1:0] ^ cs_vector_i} ;
+`endif
 
 
     always_ff @(posedge clk_ascon_fast_i, negedge rst_ni) begin : clk_ascon_fast_cnt_reg
@@ -274,7 +289,11 @@ module ascon_datapath
     end : clk_ascon_fast_cnt_reg
 
     assign sel_state_reg_fast_s = (clk_ascon_fast_cnt_reg_s == '0) ? 1'b0 : 1'b1;
-    assign state_mux_fast2perm = (sel_state_reg_fast_s) ? state_reg_fast2mux_fast : state_xor2mux_fast;
+`ifdef CS
+    assign state_mux_fast2perm = (sel_state_reg_fast_s) ? state_reg_fast2mux_fast : state_cs2mux_fast;
+`else
+    assign state_mux_fast2perm = (sel_state_reg_fast_s) ? state_reg_fast2mux_fast : state_xor_cipher;
+`endif
     
 
     permutation_n
