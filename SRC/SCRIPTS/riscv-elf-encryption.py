@@ -8,7 +8,7 @@ This script encrypts sections of an elf file (fct: encrypt_elf()). The algorithm
 
 import subprocess
 import argparse
-from ascon_fct import ascon_initialize, ascon_process_one_encryption, bytes_to_int, reverse_bytes
+from ascon_fct import ascon_initialize, ascon_process_one_encryption, bytes_to_int, reverse_bytes, instr2fct3_7_opcode
 
 ###### Arguments ######
 parser = argparse.ArgumentParser(description="Encrypt an elf file.")
@@ -30,10 +30,16 @@ parser.add_argument(
     help="Rounds for pb",
     type=int,
     default=6)
+parser.add_argument(
+    "-c",
+    "--control_signals",
+    help="XOR control_signal to patch",
+    action="store_true")
 args = parser.parse_args()
 
 ###### Paths ######
 ELF_PATH = args.elf_path
+CS_PATH = f"SRC/PROGRAM_TOOLS/CONTROL_SIGNALS/control_signals.csv"
 STATES_DEC_CSV_PATH = f"{ELF_PATH[:-4]}_states_dec.csv"
 STATES_HEX_CSV_PATH = f"{ELF_PATH[:-4]}_states_hex.csv"
 
@@ -128,6 +134,20 @@ def encrypt_elf():
     with open(ELF_PATH, 'rb') as file:
         plain_elf = file.read()
 
+    # READ CONTROL SIGNALS
+    if args.control_signals:
+        with open(CS_PATH, "r") as file:
+            cs_file = file.read()
+        cs_file_list = list(filter(('').__ne__, list(cs_file.split('\n'))))
+
+        cs_list = []
+        for fct3_7_opcode in range(len(cs_file_list)):
+            cs_file_line = list(cs_file_list[fct3_7_opcode].split(','))
+            if int(cs_file_line[1], 16) != fct3_7_opcode:
+                raise ValueError(f'Error, {CS_PATH} is bad-formated.')
+            cs_list.append(int(cs_file_line[2], 16))
+
+
     # S, k, rate, a, b, key, nonce are global variables
     ascon_initialize(S, k, rate, a, 6, key, nonce) # todo replace 6 per b
 
@@ -139,17 +159,29 @@ def encrypt_elf():
 
     ascon_states_hex = ""
     ascon_states_dec = ""
-    for i in range(address_start_encrypt, address_stop_encrypt, 4):
-        pc_pc_instr = f"{hex(i-4096)[2:]},{i-4096},{hex(bytes_to_int((plain_elf[i:i+4])))[2:].zfill(8)}"
-        # PC(hex), PC(dec), instr(hex), state(dec)
-        ascon_states_dec += f"{pc_pc_instr},{','.join(map(str, S))}\n"
+    control_signals = 0 # default in case there is no "--control_signals" option
+    prev_instr = 0x7
 
-        # PC(hex), PC(dec), instr(hex), state(hex)
-        ascon_states_hex += f"{pc_pc_instr},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
+    for i in range(address_start_encrypt, address_stop_encrypt, 4):
+        instr = int(reverse_bytes(plain_elf[i:i + 4]).hex(), 16)
+        pc_pc_instr = f"{hex(i-4096)[2:]},{i-4096},{hex(bytes_to_int((plain_elf[i:i+4])))[2:].zfill(8)}"
+        # PC(hex), PC(dec), instr(hex), cs(dec), state(dec)
+        ascon_states_dec += f"{pc_pc_instr},{cs_list[instr2fct3_7_opcode(instr)]},{','.join(map(str, S))}\n"
+
+        # PC(hex), PC(dec), instr(hex), cs(hex), state(hex)
+        ascon_states_hex += f"{pc_pc_instr},{hex(cs_list[instr2fct3_7_opcode(instr)])[2:]},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
+
+        if args.control_signals:
+            #with open('tmp.txt', 'a+') as f:
+            #    f.write(f"instr:{hex(int(reverse_bytes(plain_elf[i:i + 4]).hex(), 16))} prev:{hex(prev_instr)}\n")
+            control_signals = cs_list[instr2fct3_7_opcode(prev_instr)]
+            with open('tmp.txt', 'a+') as f:
+                f.write(f"{hex(control_signals)}\n")
+            prev_instr = instr
 
         # Iterate the encryption of one instruction
         cipher_elf += reverse_bytes(ascon_process_one_encryption(S,
-                                    b, rate, reverse_bytes(plain_elf[i:i + 4])))
+                                    b, rate, reverse_bytes(plain_elf[i:i + 4]), control_signals))
 
     # After the area of encryption the elf is not encrypted (just copy/paste)
     cipher_elf += plain_elf[address_stop_encrypt:]
