@@ -175,8 +175,8 @@ def encrypt_elf():
             #with open('tmp.txt', 'a+') as f:
             #    f.write(f"instr:{hex(int(reverse_bytes(plain_elf[i:i + 4]).hex(), 16))} prev:{hex(prev_instr)}\n")
             control_signals = cs_list[instr2fct3_7_opcode(prev_instr)]
-            with open('tmp.txt', 'a+') as f:
-                f.write(f"{hex(control_signals)}\n")
+            #with open('tmp.txt', 'a+') as f:
+            #    f.write(f"{hex(control_signals)}\n")
             prev_instr = instr
 
         # Iterate the encryption of one instruction

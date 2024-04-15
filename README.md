@@ -26,6 +26,11 @@ In that case tape `make -f explicit_target_names.mk <tab>`.
  make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_encrypted_cf1_verif.log
 ```
 
+4. Simulate execution of `fibonacci`, **with encryption and association of control signals**, compare PC/instr in Fetch at every cycle with previously saved reference, generate reference if not exist.
+``` bash
+ make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_encrypted_cf1_cs_verif.log
+```
+
 5. Execute previous command for all programs with a for loop. You may run `watch -n1 tail -n 40 OBJ/LOG/overview.log` in another terminal to follow campaign execution.
 ``` bash
 for program in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename ${program})/SIM/LOG/program_encrypted_verif.log; done
@@ -49,6 +54,7 @@ make -f explicit_target_names.mk <tab>
 ```
 
 8. Every time a simulation is performed, a line is added in `OBJ/LOG/overview.log`, after step **5**, `overview.log` looks like table in [Results](#results)
+
 
 ### FPGA Flow : Vivado/Questa
 
@@ -216,6 +222,11 @@ core-v-verif-fpga
 ```
 
 ## Core_v_verif_fpga design
+### ASCON decryption
+
+#### Control signals
+- todo:explanation
+
 ### I/O
 #### Leds
 On FPGA, the leds are equal to:
