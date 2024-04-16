@@ -169,25 +169,30 @@ def encrypt_elf():
     for i in range(address_start_encrypt, address_stop_encrypt, 4):
         instr = int(reverse_bytes(plain_elf[i:i + 4]).hex(), 16)
 
-
         if args.control_signals:
+            prev_control_signals = control_signals
             control_signals = cs_list[instr2fct3_7_opcode(prev_instr)]['cs_vector']
             # deassert_we is null when first instr is decoded
             if i == address_start_encrypt or cs_list[instr2fct3_7_opcode(prev_instr)]['is_multicycle'] == 1:
                 control_signals &= 0b01111111
+
             prev_instr = instr
+            if (control_signals >> 32) != 0:
+                raise ValueError(f"Error, control_signals should fit on 32 bits")
+
+            S[0] ^= control_signals # XOR CONTROL_SIGNALS WITH STATE
 
         pc_pc_instr = f"{hex(i-4096)[2:]},{i-4096},{reverse_bytes(plain_elf[i:i + 4]).hex()}"
         # PC(hex), PC(dec), instr(hex), cs(dec), state(dec)
-        ascon_states_dec += f"{pc_pc_instr},{control_signals},{','.join(map(str, S))}\n"
+        ascon_states_dec += f"{pc_pc_instr},{prev_control_signals},{','.join(map(str, S))}\n"
 
         # PC(hex), PC(dec), instr(hex), cs(hex), state(hex)
-        ascon_states_hex += f"{pc_pc_instr},{hex(control_signals)[2:]},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
+        ascon_states_hex += f"{pc_pc_instr},{hex(prev_control_signals)[2:]},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
 
 
-        # Iterate the encryption of one instruction
-        cipher_elf += reverse_bytes(ascon_process_one_encryption(S,
-                                    b, rate, reverse_bytes(plain_elf[i:i + 4]), control_signals))
+        # Iterate the encryption of one instruction (xor plain and process a permutation)
+        cipher_elf += reverse_bytes(ascon_process_one_encryption(S, b, rate, reverse_bytes(plain_elf[i:i + 4])))
+
 
     # After the area of encryption the elf is not encrypted (just copy/paste)
     cipher_elf += plain_elf[address_stop_encrypt:]

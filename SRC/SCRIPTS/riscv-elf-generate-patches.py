@@ -429,7 +429,7 @@ class Code:
                     self.instrs[int(addr_dec)].state = list(
                         map(int, list(state.split(",", 4))))
 
-    def add_patch_if_free(self, addr_patch, addr_src, addr_dest, addr_cs_src=-1, addr_cs_dest=-1):
+    def add_patch_if_free(self, addr_patch, addr_src, addr_dest):
         '''
         If an addr_patch is free in hex_patches, a new patch, to reach addr_dest from addr_src is added.
 
@@ -449,11 +449,6 @@ class Code:
             for i in range(5):
                 state1, state2 = self.instrs[addr_src].state[i], self.instrs[addr_dest].state[i]
                 sub_state_patch = state1 ^ state2
-
-                if i == 0 and args.control_signals and addr_cs_src != -1 and addr_cs_dest != -1:
-                    cs_vector1, cs_vector2 = self.instrs[addr_cs_src].cs_vector, self.instrs[addr_cs_dest].cs_vector
-                    sub_state_patch ^= (cs_vector1 ^ cs_vector2)
-
                 patch += hex(sub_state_patch)[2:].zfill(16)
 
             self.hex_patches_free[addr_patch >> 2] = False
@@ -512,10 +507,10 @@ class Code:
                             # branch taken need 3 cycles so two instructions are loaded from
                             # memory after a branch (thus addr + 12)
                             if self.instrs[addr].type == 'B':
-                                self.add_patch_if_free(addr, addr + 8, s, addr+4, s-4)
+                                self.add_patch_if_free(addr, addr + 8, s)
 
                             elif self.instrs[addr].inst == 'jal':
-                                self.add_patch_if_free(addr, addr + 4, s, addr, s-4)
+                                self.add_patch_if_free(addr, addr + 4, s)
 
             # SECOND ITERATION (Generate patches for jalr)
             for addr in self.instrs:
@@ -540,7 +535,7 @@ class Code:
 
                         else:
                             for s in self.instrs[addr].successors:
-                                self.add_patch_if_free(s, addr + 4, s, addr, s-4)
+                                self.add_patch_if_free(s, addr + 4, s)
 
 
 
@@ -554,7 +549,7 @@ class Code:
                     while True:
                         if self.hex_patches_free[addr_free >> 2]:
                             addr_redirected[i] = addr_free
-                            self.add_patch_if_free(addr_free, addr + 4, s, addr, s-4)
+                            self.add_patch_if_free(addr_free, addr + 4, s)
                             break
 
                         if addr_free == list(self.instrs.keys())[-1]:
