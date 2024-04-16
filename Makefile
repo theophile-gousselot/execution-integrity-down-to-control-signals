@@ -329,8 +329,6 @@ SRC/RTL/iea_cv32e40p_fpga_dev :
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp 
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp 
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs.timestamp 
-.PHONY: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp 
-.PHONY: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs.timestamp 
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs.timestamp : \
