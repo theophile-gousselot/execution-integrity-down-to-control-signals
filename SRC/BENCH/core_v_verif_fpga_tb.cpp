@@ -19,10 +19,6 @@
 #include "Vcore_v_verif_fpga_cv32e40p_id_stage__C8_P0.h"
 #include "Vcore_v_verif_fpga_cv32e40p_id_stage__C8_P0.h"
 #include "Vcore_v_verif_fpga_cv32e40p_decoder__C8_P0.h"
-#ifdef VCD
-#include "Vcore_v_verif_fpga_cv32e40p_core__C20_FB1.h"
-#include "Vcore_v_verif_fpga_cv32e40p_decoder__C20_P0.h"
-#endif
 #else
 #include "Vcore_v_verif_fpga_cv32e40p_core__FB1.h"
 #include "Vcore_v_verif_fpga_cv32e40p_id_stage__P0.h"
