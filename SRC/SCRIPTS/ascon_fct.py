@@ -5,6 +5,9 @@ debug_medium = False
 debug_one_line = True
 debugpermutation = False
 
+#DEBUG_CS = True
+#DEBUG_LOG = "debug.log"
+
 DESCRIPTION_LENGTH = 26
 
 
@@ -60,12 +63,15 @@ def ascon_process_one_encryption(S, b, rate, instr_plain, control_signals=0):
     if (control_signals >> 32) != 0:
         raise ValueError(f"Error, control_signals should fit on 32 bits")
 
-    #with open('tmp.txt', 'a+') as f:
-    #    f.write(f"{hex(S[0])} a  {hex(control_signals)}\n")
+#    if DEBUG_CS:
+#        with open(DEBUG_LOG, 'a+') as f:
+#            f.write(f"{hex(S[0])} a  {hex(control_signals)}\n")
 
     S[0] ^= control_signals
-    #with open('tmp.txt', 'a+') as f:
-    #    f.write(f"{hex(S[0])} b\n")
+
+#    if DEBUG_CS:
+#        with open(DEBUG_LOG, 'a+') as f:
+#            f.write(f"{hex(S[0])} b\n")
 
     ascon_permutation(S, b)
     if debug_medium:

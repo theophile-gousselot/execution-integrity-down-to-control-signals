@@ -64,6 +64,9 @@ READ_ELF_CMD = "/opt/corev/bin/riscv32-corev-elf-readelf -S "
 FIRST_SECTION = ".init"
 LAST_SECTION = ".text"
 
+#DEBUG_CS = True
+#DEBUG_LOG = "debug.log"
+
 
 ###### Usefull functions #####
 
@@ -145,7 +148,7 @@ def encrypt_elf():
             cs_file_line = list(cs_file_list[fct3_7_opcode].split(','))
             if int(cs_file_line[1], 16) != fct3_7_opcode:
                 raise ValueError(f'Error, {CS_PATH} is bad-formated.')
-            cs_list.append(int(cs_file_line[2], 16))
+            cs_list.append({'cs_vector': int(cs_file_line[2], 16), 'is_multicycle': int(cs_file_line[3])})
 
 
     # S, k, rate, a, b, key, nonce are global variables
@@ -162,22 +165,25 @@ def encrypt_elf():
     control_signals = 0 # default in case there is no "--control_signals" option
     prev_instr = 0x7
 
+
     for i in range(address_start_encrypt, address_stop_encrypt, 4):
         instr = int(reverse_bytes(plain_elf[i:i + 4]).hex(), 16)
-        pc_pc_instr = f"{hex(i-4096)[2:]},{i-4096},{hex(bytes_to_int((plain_elf[i:i+4])))[2:].zfill(8)}"
-        # PC(hex), PC(dec), instr(hex), cs(dec), state(dec)
-        ascon_states_dec += f"{pc_pc_instr},{cs_list[instr2fct3_7_opcode(instr)]},{','.join(map(str, S))}\n"
 
-        # PC(hex), PC(dec), instr(hex), cs(hex), state(hex)
-        ascon_states_hex += f"{pc_pc_instr},{hex(cs_list[instr2fct3_7_opcode(instr)])[2:]},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
 
         if args.control_signals:
-            #with open('tmp.txt', 'a+') as f:
-            #    f.write(f"instr:{hex(int(reverse_bytes(plain_elf[i:i + 4]).hex(), 16))} prev:{hex(prev_instr)}\n")
-            control_signals = cs_list[instr2fct3_7_opcode(prev_instr)]
-            #with open('tmp.txt', 'a+') as f:
-            #    f.write(f"{hex(control_signals)}\n")
+            control_signals = cs_list[instr2fct3_7_opcode(prev_instr)]['cs_vector']
+            # deassert_we is null when first instr is decoded
+            if i == address_start_encrypt or cs_list[instr2fct3_7_opcode(prev_instr)]['is_multicycle'] == 1:
+                control_signals &= 0b01111111
             prev_instr = instr
+
+        pc_pc_instr = f"{hex(i-4096)[2:]},{i-4096},{reverse_bytes(plain_elf[i:i + 4]).hex()}"
+        # PC(hex), PC(dec), instr(hex), cs(dec), state(dec)
+        ascon_states_dec += f"{pc_pc_instr},{control_signals},{','.join(map(str, S))}\n"
+
+        # PC(hex), PC(dec), instr(hex), cs(hex), state(hex)
+        ascon_states_hex += f"{pc_pc_instr},{hex(control_signals)[2:]},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
+
 
         # Iterate the encryption of one instruction
         cipher_elf += reverse_bytes(ascon_process_one_encryption(S,
