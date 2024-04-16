@@ -43,7 +43,7 @@ def ascon_initialize(S, k, rate, a, b, key, nonce):
         printstate(S, "end of initialization:")
 
 
-def ascon_process_one_encryption(S, b, rate, instr_plain, control_signals=0):
+def ascon_process_one_encryption(S, b, rate, instr_plain):
     """
     Ascon plaintext processing phase (during encryption) - internal helper function.
     S: Ascon state, a list of 5 64-bit integers
@@ -56,16 +56,6 @@ def ascon_process_one_encryption(S, b, rate, instr_plain, control_signals=0):
     # rate = 4
     S[0] ^= bytes_to_int(instr_plain) << 32
     instr_cipher = int_to_bytes(S[0] >> 32, 4)
-
-    if (control_signals >> 32) != 0:
-        raise ValueError(f"Error, control_signals should fit on 32 bits")
-
-    #with open('tmp.txt', 'a+') as f:
-    #    f.write(f"{hex(S[0])} a  {hex(control_signals)}\n")
-
-    S[0] ^= control_signals
-    #with open('tmp.txt', 'a+') as f:
-    #    f.write(f"{hex(S[0])} b\n")
 
     ascon_permutation(S, b)
     if debug_medium:

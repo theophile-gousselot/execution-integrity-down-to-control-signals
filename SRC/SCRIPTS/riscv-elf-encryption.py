@@ -164,24 +164,27 @@ def encrypt_elf():
 
     for i in range(address_start_encrypt, address_stop_encrypt, 4):
         instr = int(reverse_bytes(plain_elf[i:i + 4]).hex(), 16)
-        pc_pc_instr = f"{hex(i-4096)[2:]},{i-4096},{hex(bytes_to_int((plain_elf[i:i+4])))[2:].zfill(8)}"
-        # PC(hex), PC(dec), instr(hex), cs(dec), state(dec)
-        ascon_states_dec += f"{pc_pc_instr},{cs_list[instr2fct3_7_opcode(instr)]},{','.join(map(str, S))}\n"
-
-        # PC(hex), PC(dec), instr(hex), cs(hex), state(hex)
-        ascon_states_hex += f"{pc_pc_instr},{hex(cs_list[instr2fct3_7_opcode(instr)])[2:]},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
 
         if args.control_signals:
-            #with open('tmp.txt', 'a+') as f:
-            #    f.write(f"instr:{hex(int(reverse_bytes(plain_elf[i:i + 4]).hex(), 16))} prev:{hex(prev_instr)}\n")
+            prev_control_signals = control_signals
             control_signals = cs_list[instr2fct3_7_opcode(prev_instr)]
-            #with open('tmp.txt', 'a+') as f:
-            #    f.write(f"{hex(control_signals)}\n")
             prev_instr = instr
+            if (control_signals >> 32) != 0:
+                raise ValueError(f"Error, control_signals should fit on 32 bits")
 
-        # Iterate the encryption of one instruction
-        cipher_elf += reverse_bytes(ascon_process_one_encryption(S,
-                                    b, rate, reverse_bytes(plain_elf[i:i + 4]), control_signals))
+            S[0] ^= control_signals # XOR CONTROL_SIGNALS WITH STATE
+
+
+        pc_pc_instr = f"{hex(i-4096)[2:]},{i-4096},{hex(bytes_to_int((plain_elf[i:i+4])))[2:].zfill(8)}"
+
+        # PC(hex), PC(dec), instr(hex), cs(dec), state(dec)
+        ascon_states_dec += f"{pc_pc_instr},{prev_control_signals},{','.join(map(str, S))}\n"
+
+        # PC(hex), PC(dec), instr(hex), cs(hex), state(hex)
+        ascon_states_hex += f"{pc_pc_instr},{hex(prev_control_signals)[2:]},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
+
+        # XOR PLAIN INSTR, GENERATES CIPHER, PROCESS A STATE PERMUTATION
+        cipher_elf += reverse_bytes(ascon_process_one_encryption(S, b, rate, reverse_bytes(plain_elf[i:i + 4])))
 
     # After the area of encryption the elf is not encrypted (just copy/paste)
     cipher_elf += plain_elf[address_stop_encrypt:]
