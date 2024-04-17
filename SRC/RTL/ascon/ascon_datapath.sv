@@ -87,11 +87,13 @@ module ascon_datapath
 
     state_t state_not_patched;
     state_t state_patched;
-    state_t state_patch2xor;
-    state_t state_xor_cipher;
 `ifdef CS
-    state_t state_cs2mux_fast;
+    state_t state_patch2cs;
+    state_t state_cs2cipher;
+`else
+    state_t state_patch2cipher;
 `endif
+    state_t state_cipher2mux_fast;
     state_t state_mux_fast2perm;
     state_t state_perm2reg;
     state_t state_reg2mux_state_init;
@@ -256,18 +258,27 @@ module ascon_datapath
     assign state_patched[3] = state_not_patched[3] ^ patch_to_ascon_s[127:64];
     assign state_patched[4] = state_not_patched[4] ^ patch_to_ascon_s[63:0];
 
-    assign state_patch2xor = (apply_patch_i) ? state_patched : state_not_patched;
+`ifdef CS
+    assign state_patch2cs = (apply_patch_i) ? state_patched : state_not_patched;
 
-    assign instr_rdata_plain_s = state_patch2xor[0][63:32] ^ instr_rdata_cipher_i;
+    assign state_cs2cipher[4:1] = state_patch2cs[4:1];
+    assign state_cs2cipher[0] = {state_patch2cs[0][63:CS_LEN], state_patch2cs[0][CS_LEN-1:0] ^ cs_vector_i} ;
+
+    assign instr_rdata_plain_s = state_cs2cipher[0][63:32] ^ instr_rdata_cipher_i;
     assign instr_rdata_plain_o = (if_valid_i) ? instr_rdata_plain_s : 32'h0;
     
-    assign state_xor_cipher[4:1] = state_patch2xor[4:1];
-    assign state_xor_cipher[0] = {instr_rdata_cipher_i, state_patch2xor[0][31:0]};
+    assign state_cipher2mux_fast[4:1] = state_cs2cipher[4:1];
+    assign state_cipher2mux_fast[0] = {instr_rdata_cipher_i, state_cs2cipher[0][31:0]};
+`else
+    assign state_patch2cipher = (apply_patch_i) ? state_patched : state_not_patched;
 
-`ifdef CS
-    assign state_cs2mux_fast[4:1] = state_xor_cipher[4:1];
-    assign state_cs2mux_fast[0] = {state_xor_cipher[0][63:CS_LEN], state_xor_cipher[0][CS_LEN-1:0] ^ cs_vector_i} ;
+    assign instr_rdata_plain_s = state_patch2cipher[0][63:32] ^ instr_rdata_cipher_i;
+    assign instr_rdata_plain_o = (if_valid_i) ? instr_rdata_plain_s : 32'h0;
+    
+    assign state_cipher2mux_fast[4:1] = state_patch2cipher[4:1];
+    assign state_cipher2mux_fast[0] = {instr_rdata_cipher_i, state_patch2cipher[0][31:0]};
 `endif
+
 
 
     always_ff @(posedge clk_ascon_fast_i, negedge rst_ni) begin : clk_ascon_fast_cnt_reg
@@ -289,11 +300,7 @@ module ascon_datapath
     end : clk_ascon_fast_cnt_reg
 
     assign sel_state_reg_fast_s = (clk_ascon_fast_cnt_reg_s == '0) ? 1'b0 : 1'b1;
-`ifdef CS
-    assign state_mux_fast2perm = (sel_state_reg_fast_s) ? state_reg_fast2mux_fast : state_cs2mux_fast;
-`else
-    assign state_mux_fast2perm = (sel_state_reg_fast_s) ? state_reg_fast2mux_fast : state_xor_cipher;
-`endif
+    assign state_mux_fast2perm = (sel_state_reg_fast_s) ? state_reg_fast2mux_fast : state_cipher2mux_fast;
     
 
     permutation_n

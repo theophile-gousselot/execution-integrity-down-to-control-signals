@@ -8,7 +8,7 @@ This script encrypts sections of an elf file (fct: encrypt_elf()). The algorithm
 
 import subprocess
 import argparse
-from ascon_fct import ascon_initialize, ascon_process_one_encryption, bytes_to_int, reverse_bytes, instr2fct3_7_opcode
+from ascon_fct import ascon_initialize, ascon_process_one_encryption, ascon_permutation, bytes_to_int, reverse_bytes, int_to_bytes, instr2fct3_7_opcode
 
 ###### Arguments ######
 parser = argparse.ArgumentParser(description="Encrypt an elf file.")
@@ -42,6 +42,9 @@ ELF_PATH = args.elf_path
 CS_PATH = f"SRC/PROGRAM_TOOLS/CONTROL_SIGNALS/control_signals.csv"
 STATES_DEC_CSV_PATH = f"{ELF_PATH[:-4]}_states_dec.csv"
 STATES_HEX_CSV_PATH = f"{ELF_PATH[:-4]}_states_hex.csv"
+STATES_HEX_DBG_CSV_PATH = f"{ELF_PATH[:-4]}_states_hex_debug.csv"
+
+DEBUG = True
 
 
 ###### Parameters ######
@@ -63,9 +66,6 @@ rate = 4
 READ_ELF_CMD = "/opt/corev/bin/riscv32-corev-elf-readelf -S "
 FIRST_SECTION = ".init"
 LAST_SECTION = ".text"
-
-#DEBUG_CS = True
-#DEBUG_LOG = "debug.log"
 
 
 ###### Usefull functions #####
@@ -162,37 +162,50 @@ def encrypt_elf():
 
     ascon_states_hex = ""
     ascon_states_dec = ""
+    ascon_states_hex_dbg = ""
     control_signals = 0 # default in case there is no "--control_signals" option
     prev_instr = 0x7
 
 
     for i in range(address_start_encrypt, address_stop_encrypt, 4):
         instr = int(reverse_bytes(plain_elf[i:i + 4]).hex(), 16)
+        pc_pc_instr = f"{hex(i-4096)[2:]},{i-4096},{reverse_bytes(plain_elf[i:i + 4]).hex()}"
+        ascon_states_hex_dbg += f"{'state_not_patched':<24}:{pc_pc_instr},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
 
         if args.control_signals:
             prev_control_signals = control_signals
             control_signals = cs_list[instr2fct3_7_opcode(prev_instr)]['cs_vector']
             # deassert_we is null when first instr is decoded
-            if i == address_start_encrypt or cs_list[instr2fct3_7_opcode(prev_instr)]['is_multicycle'] == 1:
-                control_signals &= 0b01111111
+            #if i == address_start_encrypt or cs_list[instr2fct3_7_opcode(prev_instr)]['is_multicycle'] == 1:
+            #    control_signals &= 0b01111111
 
             prev_instr = instr
             if (control_signals >> 32) != 0:
                 raise ValueError(f"Error, control_signals should fit on 32 bits")
 
             S[0] ^= control_signals # XOR CONTROL_SIGNALS WITH STATE
+            ascon_states_hex_dbg += f"{'state_cs2cipher':<24}:{pc_pc_instr},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])},{hex(control_signals)[2:]},{cs_list[instr2fct3_7_opcode(prev_instr)]['is_multicycle']}\n"
 
-        pc_pc_instr = f"{hex(i-4096)[2:]},{i-4096},{reverse_bytes(plain_elf[i:i + 4]).hex()}"
         # PC(hex), PC(dec), instr(hex), cs(dec), state(dec)
-        ascon_states_dec += f"{pc_pc_instr},{prev_control_signals},{','.join(map(str, S))}\n"
+        ascon_states_dec += f"{pc_pc_instr},{control_signals},{cs_list[instr2fct3_7_opcode(prev_instr)]['is_multicycle']},{','.join(map(str, S))}\n"
 
         # PC(hex), PC(dec), instr(hex), cs(hex), state(hex)
-        ascon_states_hex += f"{pc_pc_instr},{hex(prev_control_signals)[2:]},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
+        ascon_states_hex += f"{pc_pc_instr},{hex(control_signals)[2:]},{cs_list[instr2fct3_7_opcode(prev_instr)]['is_multicycle']},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
 
 
-        # Iterate the encryption of one instruction (xor plain and process a permutation)
-        cipher_elf += reverse_bytes(ascon_process_one_encryption(S, b, rate, reverse_bytes(plain_elf[i:i + 4])))
+        # Iterate the encryption of one instruction (xor plain) rate = 4
+        S[0] ^= bytes_to_int(reverse_bytes(plain_elf[i:i + 4])) << 32
+        instr_cipher = int_to_bytes(S[0] >> 32, 4)
+        cipher_elf += reverse_bytes(instr_cipher)
 
+        ascon_states_hex_dbg += f"{'state_cipher2mux_fast':<24}:{pc_pc_instr},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])},{instr_cipher.hex()}\n"
+
+        # process a permutation)
+        ascon_permutation(S, b)
+
+        ascon_states_hex_dbg += f"{'state_perm2reg':<24}:{pc_pc_instr},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
+
+        ascon_states_hex_dbg += f"{'='*123}\n"
 
     # After the area of encryption the elf is not encrypted (just copy/paste)
     cipher_elf += plain_elf[address_stop_encrypt:]
@@ -205,6 +218,10 @@ def encrypt_elf():
 
     with open(STATES_HEX_CSV_PATH, 'w', encoding="utf-8") as file:
         file.write(ascon_states_hex)
+
+    if DEBUG:
+        with open(STATES_HEX_DBG_CSV_PATH, 'w', encoding="utf-8") as file:
+            file.write(ascon_states_hex_dbg)
 
 
 if __name__ == "__main__":
