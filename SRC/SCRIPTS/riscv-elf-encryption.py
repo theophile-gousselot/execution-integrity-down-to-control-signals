@@ -8,7 +8,7 @@ This script encrypts sections of an elf file (fct: encrypt_elf()). The algorithm
 
 import subprocess
 import argparse
-from ascon_fct import ascon_initialize, ascon_process_one_encryption, ascon_permutation, bytes_to_int, reverse_bytes, int_to_bytes, instr2fct3_7_opcode
+from ascon_fct import ascon_initialize, ascon_process_one_encryption, ascon_permutation, bytes_to_int, reverse_bytes, int_to_bytes, state2str, instr2fct3_7_opcode
 
 ###### Arguments ######
 parser = argparse.ArgumentParser(description="Encrypt an elf file.")
@@ -163,34 +163,47 @@ def encrypt_elf():
     ascon_states_hex = ""
     ascon_states_dec = ""
     ascon_states_hex_dbg = ""
-    control_signals = 0 # default in case there is no "--control_signals" option
+    cs_vector = 0 # default in case there is no "--control_signals" option
     prev_instr = 0x7
 
 
     for i in range(address_start_encrypt, address_stop_encrypt, 4):
         instr = int(reverse_bytes(plain_elf[i:i + 4]).hex(), 16)
         pc_pc_instr = f"{hex(i-4096)[2:]},{i-4096},{reverse_bytes(plain_elf[i:i + 4]).hex()}"
-        ascon_states_hex_dbg += f"{'state_not_patched':<24}:{pc_pc_instr},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
+        other_lines_dbg = f"{'state_not_patched':<24}:{pc_pc_instr},{state2str(S)}\n"
 
         if args.control_signals:
-            prev_control_signals = control_signals
-            control_signals = cs_list[instr2fct3_7_opcode(prev_instr)]['cs_vector']
-            # deassert_we is null when first instr is decoded
-            #if i == address_start_encrypt or cs_list[instr2fct3_7_opcode(prev_instr)]['is_multicycle'] == 1:
-            #    control_signals &= 0b01111111
+            cs_vector = cs_list[instr2fct3_7_opcode(prev_instr)]['cs_vector']
+            is_prev_instr_multicycle = cs_list[instr2fct3_7_opcode(prev_instr)]['is_multicycle']
+            is_instr_multicycle = cs_list[instr2fct3_7_opcode(instr)]['is_multicycle']
+
+            if is_prev_instr_multicycle == 1 or i == address_start_encrypt:
+                # A multicycle instruction generates a deassert_we = 1, from its second cycle of execution, 
+                # the following instruction will be decrypted using control signals masked by deassert_we, 
+                # thus, encryption must apply the mask. Deassert_we is null when first instr is decoded
+                cs_vector_mask = cs_vector & 0b01111111
+            else:
+                cs_vector_mask = cs_vector
 
             prev_instr = instr
-            if (control_signals >> 32) != 0:
-                raise ValueError(f"Error, control_signals should fit on 32 bits")
+            if (cs_vector_mask >> 32) != 0:
+                raise ValueError(f"Error, cs_vector should fit on 32 bits")
 
-            S[0] ^= control_signals # XOR CONTROL_SIGNALS WITH STATE
-            ascon_states_hex_dbg += f"{'state_cs2cipher':<24}:{pc_pc_instr},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])},{hex(control_signals)[2:]},{cs_list[instr2fct3_7_opcode(prev_instr)]['is_multicycle']}\n"
 
-        # PC(hex), PC(dec), instr(hex), cs(dec), state(dec)
-        ascon_states_dec += f"{pc_pc_instr},{control_signals},{cs_list[instr2fct3_7_opcode(prev_instr)]['is_multicycle']},{','.join(map(str, S))}\n"
+            # XOR CONTROL_SIGNALS WITH STATE
+            S[0] ^= cs_vector_mask
 
-        # PC(hex), PC(dec), instr(hex), cs(hex), state(hex)
-        ascon_states_hex += f"{pc_pc_instr},{hex(control_signals)[2:]},{cs_list[instr2fct3_7_opcode(prev_instr)]['is_multicycle']},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
+            other_lines_dbg += f"{'state_cs2cipher':<24}:{pc_pc_instr},{state2str(S)},"
+            other_lines_dbg += f"{hex(cs_vector_mask)[2:]},{is_instr_multicycle}\n"
+
+            # PC(hex), PC(dec), instr, cs_vector, is_instr_multicycle, state
+            ascon_states_dec +=f"{pc_pc_instr},{cs_vector_mask},{is_instr_multicycle},{','.join(map(str, S))}\n"
+            ascon_states_hex +=f"{pc_pc_instr},{hex(cs_vector_mask)[2:]},{is_instr_multicycle},{state2str(S)}\n"
+        else:
+            # PC(hex), PC(dec), instr, state
+            ascon_states_dec +=f"{pc_pc_instr},{','.join(map(str, S))}\n"
+            ascon_states_hex +=f"{pc_pc_instr},{state2str(S)}\n"
+
 
 
         # Iterate the encryption of one instruction (xor plain) rate = 4
@@ -198,14 +211,23 @@ def encrypt_elf():
         instr_cipher = int_to_bytes(S[0] >> 32, 4)
         cipher_elf += reverse_bytes(instr_cipher)
 
-        ascon_states_hex_dbg += f"{'state_cipher2mux_fast':<24}:{pc_pc_instr},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])},{instr_cipher.hex()}\n"
+        other_lines_dbg += f"{'state_cipher2mux_fast':<24}:{pc_pc_instr},{state2str(S)},{instr_cipher.hex()}\n"
 
-        # process a permutation)
+
+        # Process a permutation)
         ascon_permutation(S, b)
 
-        ascon_states_hex_dbg += f"{'state_perm2reg':<24}:{pc_pc_instr},{''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)])}\n"
 
-        ascon_states_hex_dbg += f"{'='*123}\n"
+        other_lines_dbg += f"{'state_perm2reg':<24}:{pc_pc_instr},{state2str(S)}\n"
+
+        if args.control_signals:
+            first_line_dbg = f"{'='*125}{reverse_bytes(plain_elf[i:i + 4]).hex()}==="
+            first_line_dbg += f"CS:{hex(cs_list[instr2fct3_7_opcode(instr)]['cs_vector'])[2:]}"
+            first_line_dbg += f"===Mul:{is_instr_multicycle == 1}\n"
+        else:
+            first_line_dbg = f"{'='*125}{reverse_bytes(plain_elf[i:i + 4]).hex()}\n"
+        ascon_states_hex_dbg += first_line_dbg + other_lines_dbg
+
 
     # After the area of encryption the elf is not encrypted (just copy/paste)
     cipher_elf += plain_elf[address_stop_encrypt:]

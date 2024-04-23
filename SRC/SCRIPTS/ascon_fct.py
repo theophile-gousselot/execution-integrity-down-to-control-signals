@@ -123,6 +123,9 @@ def zero_bytes(n):
 
 
 # === Convert
+def state2str(S):
+    return(''.join([hex(S[j])[2:].zfill(16) for j in range(4, -1, -1)]))
+
 def to_bytes(l):  # where l is a list or bytearray or bytes
     return bytes(bytearray(l))
 

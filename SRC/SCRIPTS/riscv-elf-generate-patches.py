@@ -106,7 +106,7 @@ NODE0 = 200
 
 def zfint(i):
     """ Convert a int into a str filled with 0 to reach 5 caracters. """
-    return str(i).zfill(5)
+    return hex(i)[2:].zfill(5)
 
 
 class Instruction:
@@ -420,15 +420,15 @@ class Code:
         for state_l in states_list:
             if len(state_l) > 0:
                 if args.control_signals:
-                    addr_hex, addr_dec, instr, cs_vector, is_multicycle, state = list(state_l.split(",", 5))
+                    addr_hex, addr_dec, instr, cs_vector_prev_instr, is_multicycle, state = list(state_l.split(",", 5))
                     self.instrs[int(addr_dec)].state = list(
                         map(int, list(state.split(",", 4))))
                     self.instrs[int(addr_dec)].is_multicycle = is_multicycle == "1"
-                    #print(f"{hex(int(addr_dec))}:  {self.instrs[int(addr_dec)].is_multicycle}") 
+                    # cs_vector used to encrypt instr at PC is instr at PC-4
+                    self.instrs[int(addr_dec)-4].cs_vector = int(cs_vector_prev_instr)
                 else:
                     addr_hex, addr_dec, instr, state = list(state_l.split(",", 3))
-                    self.instrs[int(addr_dec)].state = list(
-                        map(int, list(state.split(",", 4))))
+                    self.instrs[int(addr_dec)].state = list(map(int, list(state.split(",", 4))))
 
     def add_patch_if_free(self, addr_patch, addr_src, addr_dest):
         '''
@@ -450,9 +450,14 @@ class Code:
             for i in range(5):
                 state1, state2 = self.instrs[addr_src].state[i], self.instrs[addr_dest].state[i]
                 sub_state_patch = state1 ^ state2
-                #if args.control_signals and i == 0 and (not self.instrs[addr_dest - 4].is_multicycle or self.instrs[addr_dest - 4].type == 'B'):
-                    #print(f"{hex(addr_patch)},{hex(addr_dest)},{hex(addr_dest-4)},{self.instrs[addr_dest - 4].is_multicycle},{self.instrs[addr_dest - 4].type}")
-                    #sub_state_patch ^= 0x80 #&= 0xffffffffffffff7f #int(f"{'f'*78}7f",16) # mask 0xfff...fff7f
+
+                # When a branch is in EXECUTE, even if instr in DECODE is not a multicycle instruction, 
+                # the signal we_deassert will be raised! Therefore, if the instr in DECODE was multicycle
+                # CS was already masked: nothing to do. However, if not, as mask is applied by xoring 
+                # cs_vector bits to mask to itself (as it is already in the patch through cs2cipher.
+                if args.control_signals and i == 0 and (self.instrs[addr_patch].type == 'B'):
+                        sub_state_patch ^= (self.instrs[addr_patch+4].cs_vector & 0x80)
+
                 patch += hex(sub_state_patch)[2:].zfill(16)
 
             self.hex_patches_free[addr_patch >> 2] = False
