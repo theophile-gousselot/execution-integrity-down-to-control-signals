@@ -479,6 +479,92 @@ Led[5] indicates that an invalid instruction was in the decode. As the `instr_ad
 |     wikisort     | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |   21478059 |            | Thu Mar 28 10:08:13 2024
 
 
+##### ASCON with CS association
+
+|   PROGRAM_NAME   | ENCRYPT |C_F|   MODE   |    TEST   | REASON END. |  SIM_TIME  | FIRST ERR. |       TIMESTAMP         
+|:----------------:|:-------:|:-:|:--------:|:---------:|:-----------:|:----------:|:----------:|:----------------------:|
+|       crc32      |         |   | SAVE_REF |           |  VALID EXEC |    1149080 |            | Mon Apr 22 17:58:24 2024
+|       crc32      |         |   |SAVE/TRACE|           |  VALID EXEC |    1149080 |            | Mon Apr 22 17:58:26 2024
+|       crc32      | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    1149080 |            | Mon Apr 22 17:58:45 2024
+|       cubic      |         |   | SAVE_REF |           |  VALID EXEC |    1380282 |            | Mon Apr 22 17:58:46 2024
+|       cubic      |         |   |SAVE/TRACE|           |  VALID EXEC |    1380282 |            | Mon Apr 22 17:58:49 2024
+|       cubic      | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    1380282 |            | Mon Apr 22 17:59:14 2024
+|     dhrystone    |         |   | SAVE_REF |           |  VALID EXEC |     611550 |            | Mon Apr 22 17:59:15 2024
+|     dhrystone    |         |   |SAVE/TRACE|           |  VALID EXEC |     611550 |            | Mon Apr 22 17:59:16 2024
+|     dhrystone    | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     611550 |            | Mon Apr 22 17:59:27 2024
+|        edn       |         |   | SAVE_REF |           |  VALID EXEC |     642402 |            | Mon Apr 22 17:59:28 2024
+|        edn       |         |   |SAVE/TRACE|           |  VALID EXEC |     642402 |            | Mon Apr 22 17:59:29 2024
+|        edn       | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     642402 |            | Mon Apr 22 17:59:41 2024
+|     fibonacci    |         |   | SAVE_REF |           |  VALID EXEC |     187694 |            | Mon Apr 22 17:59:41 2024
+|     fibonacci    |         |   |SAVE/TRACE|           |  VALID EXEC |     187694 |            | Mon Apr 22 17:59:42 2024
+|     fibonacci    | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     187694 |            | Mon Apr 22 17:59:46 2024
+|     huffbench    |         |   | SAVE_REF |           |  VALID EXEC |     904196 |            | Mon Apr 22 17:59:47 2024
+|     huffbench    |         |   |SAVE/TRACE|           |  VALID EXEC |     904196 |            | Mon Apr 22 17:59:49 2024
+|     huffbench    | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     904196 |            | Mon Apr 22 18:00:05 2024
+|    matmult-int   |         |   | SAVE_REF |           |  VALID EXEC |     839262 |            | Mon Apr 22 18:00:06 2024
+|    matmult-int   |         |   |SAVE/TRACE|           |  VALID EXEC |     839262 |            | Mon Apr 22 18:00:07 2024
+|    matmult-int   | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     839262 |            | Mon Apr 22 18:00:22 2024
+|      md5sum      |         |   | SAVE_REF |           |  VALID EXEC |     681136 |            | Mon Apr 22 18:00:23 2024
+|      md5sum      |         |   |SAVE/TRACE|           |  VALID EXEC |     681136 |            | Mon Apr 22 18:00:24 2024
+|      md5sum      | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     681136 |            | Mon Apr 22 18:00:37 2024
+|      minver      |         |   | SAVE_REF |           |  VALID EXEC |     785076 |            | Mon Apr 22 18:00:37 2024
+|      minver      |         |   |SAVE/TRACE|           |  VALID EXEC |     785076 |            | Mon Apr 22 18:00:39 2024
+|      minver      | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     785076 |            | Mon Apr 22 18:00:53 2024
+|      mont64      |         |   | SAVE_REF |           |  VALID EXEC |     515094 |            | Mon Apr 22 18:00:54 2024
+|      mont64      |         |   |SAVE/TRACE|           |  VALID EXEC |     515094 |            | Mon Apr 22 18:00:55 2024
+|      mont64      | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     515094 |            | Mon Apr 22 18:01:04 2024
+|       nbody      |         |   | SAVE_REF |           |  VALID EXEC |    4387282 |            | Mon Apr 22 18:01:07 2024
+|       nbody      |         |   |SAVE/TRACE|           |  VALID EXEC |    4387282 |            | Mon Apr 22 18:01:13 2024
+|       nbody      | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    4387282 |            | Mon Apr 22 18:02:28 2024
+|    nettle-aes    |         |   | SAVE_REF |           |  VALID EXEC |     540220 |            | Mon Apr 22 18:02:29 2024
+|    nettle-aes    |         |   |SAVE/TRACE|           |  VALID EXEC |     540220 |            | Mon Apr 22 18:02:30 2024
+|    nettle-aes    | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     540220 |            | Mon Apr 22 18:02:40 2024
+|   nettle-sha256  |         |   | SAVE_REF |           |  VALID EXEC |     277932 |            | Mon Apr 22 18:02:41 2024
+|   nettle-sha256  |         |   |SAVE/TRACE|           |  VALID EXEC |     277932 |            | Mon Apr 22 18:02:42 2024
+|   nettle-sha256  | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     277932 |            | Mon Apr 22 18:02:48 2024
+|     nsichneu     |         |   | SAVE_REF |           |  VALID EXEC |     306970 |            | Mon Apr 22 18:02:49 2024
+|     nsichneu     |         |   |SAVE/TRACE|           |  VALID EXEC |     306970 |            | Mon Apr 22 18:02:50 2024
+|     nsichneu     | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     306970 |            | Mon Apr 22 18:02:57 2024
+|     picojpeg     |         |   | SAVE_REF |           |  VALID EXEC |    1927668 |            | Mon Apr 22 18:02:59 2024
+|     picojpeg     |         |   |SAVE/TRACE|           |  VALID EXEC |    1927668 |            | Mon Apr 22 18:03:02 2024
+|     picojpeg     | instr+cs| 1 |   VERIF  |  FAILURE  |  REF ERROR  |      75190 |      75169 | Mon Apr 22 18:03:31 2024
+|    primecount    |         |   | SAVE_REF |           |  VALID EXEC |     896720 |            | Mon Apr 22 18:03:32 2024
+|    primecount    |         |   |SAVE/TRACE|           |  VALID EXEC |     896720 |            | Mon Apr 22 18:03:33 2024
+|    primecount    | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     896720 |            | Mon Apr 22 18:03:50 2024
+|      qrduino     |         |   | SAVE_REF |           |  VALID EXEC |    1672566 |            | Mon Apr 22 18:03:52 2024
+|      qrduino     |         |   |SAVE/TRACE|           |  VALID EXEC |    1672566 |            | Mon Apr 22 18:03:54 2024
+|      qrduino     | instr+cs| 1 |   VERIF  |  FAILURE  |  REF ERROR  |     109746 |     109725 | Mon Apr 22 18:04:20 2024
+|  sglib-combined  |         |   | SAVE_REF |           |  VALID EXEC |     688540 |            | Mon Apr 22 18:04:21 2024
+|  sglib-combined  |         |   |SAVE/TRACE|           |  VALID EXEC |     688540 |            | Mon Apr 22 18:04:22 2024
+|  sglib-combined  | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     688540 |            | Mon Apr 22 18:04:35 2024
+|       slre       |         |   | SAVE_REF |           |  VALID EXEC |     306600 |            | Mon Apr 22 18:04:36 2024
+|       slre       |         |   |SAVE/TRACE|           |  VALID EXEC |     306600 |            | Mon Apr 22 18:04:37 2024
+|       slre       | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     306600 |            | Mon Apr 22 18:04:43 2024
+|        st        |         |   | SAVE_REF |           |  VALID EXEC |    1126622 |            | Mon Apr 22 18:04:44 2024
+|        st        |         |   |SAVE/TRACE|           |  VALID EXEC |    1126622 |            | Mon Apr 22 18:04:46 2024
+|        st        | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    1126622 |            | Mon Apr 22 18:05:05 2024
+|     statemate    |         |   | SAVE_REF |           |  VALID EXEC |     240826 |            | Mon Apr 22 18:05:06 2024
+|     statemate    |         |   |SAVE/TRACE|           |  VALID EXEC |     240826 |            | Mon Apr 22 18:05:07 2024
+|     statemate    | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     240826 |            | Mon Apr 22 18:05:12 2024
+|      tarfind     |         |   | SAVE_REF |           |  VALID EXEC |     717312 |            | Mon Apr 22 18:05:13 2024
+|      tarfind     |         |   |SAVE/TRACE|           |  VALID EXEC |     717312 |            | Mon Apr 22 18:05:14 2024
+|      tarfind     | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     717312 |            | Mon Apr 22 18:05:27 2024
+|        ud        |         |   | SAVE_REF |           |  VALID EXEC |     588562 |            | Mon Apr 22 18:05:27 2024
+|        ud        |         |   |SAVE/TRACE|           |  VALID EXEC |     588562 |            | Mon Apr 22 18:05:28 2024
+|        ud        | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     588562 |            | Mon Apr 22 18:05:39 2024
+|    verifypin-0   |         |   | SAVE_REF |           |  VALID EXEC |      18938 |            | Mon Apr 22 18:05:39 2024
+|    verifypin-0   |         |   |SAVE/TRACE|           |  VALID EXEC |      18938 |            | Mon Apr 22 18:05:39 2024
+|    verifypin-0   | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |      18938 |            | Mon Apr 22 18:05:41 2024
+|     wikisort     |         |   | SAVE_REF |           |  VALID EXEC |    3579694 |            | Mon Apr 22 18:05:44 2024
+|     wikisort     |         |   |SAVE/TRACE|           |  VALID EXEC |    3579694 |            | Mon Apr 22 18:05:49 2024
+|     wikisort     | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    3579694 |            | Mon Apr 22 18:06:51 2024
+|    verifypin-0   |         |   | SAVE_REF |           |  VALID EXEC |      18938 |            | Tue Apr 23 17:26:38 2024
+|    verifypin-0   |         |   |SAVE/TRACE|           |  VALID EXEC |      18938 |            | Tue Apr 23 17:26:39 2024
+|    verifypin-0   |  instr  | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |     113523 |            | Tue Apr 23 17:26:48 2024
+|      md5sum      |         |   | SAVE_REF |           |  VALID EXEC |     681136 |            | Tue Apr 23 17:26:58 2024
+|      md5sum      |         |   |SAVE/TRACE|           |  VALID EXEC |     681136 |            | Tue Apr 23 17:27:01 2024
+|      md5sum      |  instr  | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    4086711 |            | Tue Apr 23 17:27:15 2024
+
 
 
 ## ToExplain:
