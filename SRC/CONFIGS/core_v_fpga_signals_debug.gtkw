@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Tue Mar 19 10:40:18 2024
+[*] Wed Apr 24 15:27:23 2024
 [*]
-[dumpfile] "/home/theophile/these/gitlab_emse/integrity/core-v-fpga-verilator/OBJ/PROGRAMS/cubic/SIM/VCD/cubic_c.vcd"
-[dumpfile_mtime] "Tue Mar 19 10:37:09 2024"
-[dumpfile_size] 918977219
-[savefile] "/home/theophile/these/gitlab_emse/integrity/core-v-fpga-verilator/SRC/core_v_fpga_signals_debug.gtkw"
-[timestart] 95614
-[size] 1858 1016
-[pos] -1 -1
-*-2.861887 95625 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[dumpfile] "/home/theophile/these/gitlab_emse/integrity/core-v-verif-fpga_extra-clone/core-v-verif-fpga/OBJ/PROGRAMS/verifypin-0/SIM/VCD/program_encrypted_cf1_cs-id.vcd"
+[dumpfile_mtime] "Wed Apr 24 15:24:19 2024"
+[dumpfile_size] 192787887
+[savefile] "/home/theophile/these/gitlab_emse/integrity/core-v-verif-fpga_extra-clone/core-v-verif-fpga/SRC/CONFIGS/core_v_fpga_signals_debug.gtkw"
+[timestart] 4273
+[size] 1080 1883
+[pos] 2999 -1
+*-2.861887 4251 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.core_v_verif_fpga.
 [treeopen] TOP.core_v_verif_fpga.ascon_decryption_i.
@@ -18,7 +18,7 @@
 [sst_width] 233
 [signals_width] 545
 [sst_expanded] 1
-[sst_vpaned_height] 426
+[sst_vpaned_height] 872
 @200
 -TOP I/O
 @28
@@ -31,6 +31,9 @@ TOP.rst_i
 @200
 -
 -TOP SIGNALS
+@22
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.cs_vector_i[7:0]
+@200
 -
 -CV32E40P
 @22
@@ -62,17 +65,21 @@ TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.register_file_i.mem[1023:0]
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_fsm_i.branch_decision_i
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_fsm_i.branch_in_ex_i
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_fsm_i.ctrl_transfer_insn_in_id_i[1:0]
-@29
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_fsm_i.pc_set_i
-@28
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_fsm_i.state_s[2:0]
 @200
 -
 -ASCON
 @22
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.state_not_patched[319:0]
+@23
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.state_patched[319:0]
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.state_patch2xor[319:0]
+@22
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.state_patch2cs[319:0]
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.state_cs2cipher[319:0]
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.state_cipher2mux_fast[319:0]
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.state_mux_fast2perm[319:0]
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.state_perm2reg[319:0]
 @200
 -
 -PATCHES
