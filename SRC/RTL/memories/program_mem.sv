@@ -68,16 +68,30 @@ module program_mem
 
 `ifdef VERILATOR
 `ifdef ENCRYPT
-`ifdef CS
-	$readmemh({program_path,"_encrypted_cs_0.mem"}, ram0);
-	$readmemh({program_path,"_encrypted_cs_1.mem"}, ram1);
-	$readmemh({program_path,"_encrypted_cs_2.mem"}, ram2);
-	$readmemh({program_path,"_encrypted_cs_3.mem"}, ram3);
+`ifdef CS_ID
+`ifdef CS_EX
+	$readmemh({program_path,"_encrypted_cs-id-ex_0.mem"}, ram0);
+	$readmemh({program_path,"_encrypted_cs-id-ex_1.mem"}, ram1);
+	$readmemh({program_path,"_encrypted_cs-id-ex_2.mem"}, ram2);
+	$readmemh({program_path,"_encrypted_cs-id-ex_3.mem"}, ram3);
+`else
+	$readmemh({program_path,"_encrypted_cs-id_0.mem"}, ram0);
+	$readmemh({program_path,"_encrypted_cs-id_1.mem"}, ram1);
+	$readmemh({program_path,"_encrypted_cs-id_2.mem"}, ram2);
+	$readmemh({program_path,"_encrypted_cs-id_3.mem"}, ram3);
+`endif
+`else
+`ifdef CS_EX
+	$readmemh({program_path,"_encrypted_cs-ex_0.mem"}, ram0);
+	$readmemh({program_path,"_encrypted_cs-ex_1.mem"}, ram1);
+	$readmemh({program_path,"_encrypted_cs-ex_2.mem"}, ram2);
+	$readmemh({program_path,"_encrypted_cs-ex_3.mem"}, ram3);
 `else
 	$readmemh({program_path,"_encrypted_0.mem"}, ram0);
 	$readmemh({program_path,"_encrypted_1.mem"}, ram1);
 	$readmemh({program_path,"_encrypted_2.mem"}, ram2);
 	$readmemh({program_path,"_encrypted_3.mem"}, ram3);
+`endif
 `endif
 `else
 	$readmemh({program_path,"_0.mem"}, ram0);
