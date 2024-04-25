@@ -1,5 +1,12 @@
 `timescale 1ns / 1ps
 
+`ifdef CS_ID 
+`define CS
+`endif
+`ifdef CS_EX
+`define CS
+`endif
+
 module core_v_verif_fpga
 `ifdef ENCRYPT
 # (
@@ -19,8 +26,16 @@ module core_v_verif_fpga
     localparam FIFO_DEPTH             = 2; //must be greater or equal to 2 
     localparam int unsigned FIFO_ADDR_DEPTH = (FIFO_DEPTH > 1) ? $clog2(FIFO_DEPTH) : 1;
 
-`ifdef CS 
+`ifdef CS_ID
+`ifdef CS_EX
+    localparam CS_LEN = 16;
+`else
     localparam CS_LEN = 8;
+`endif
+`else
+`ifdef CS_EX
+    localparam CS_LEN = 8;
+`endif
 `endif
 
 `ifdef ENCRYPT
