@@ -65,14 +65,18 @@ OBJ_BSP_DIR             := $(OBJ_TOOLS_DIR)/BSP
 ##                                               ##
 ###################################################
 
-cf_val = $(shell echo "$(1)" | sed 's=^.*_cf\([0-9]\).*$$=\1=')
-cf = $(shell echo "$(1)" |  grep -q "[0-9]" && echo "$(1)" | sed 's=^.*_cf\([0-9]\).*$$=_cf\1=' || true)
+cf_val = $(shell echo "$(1)" | sed 's=^.*_cf\([0-9]\).*$$=\1=' || true)
+cf = $(shell echo "$(1)" | sed -n 's=^.*_cf\([0-9]\).*$$=_cf\1=p' || true)
 
-cs = $(shell echo "$(1)" | grep -q "_cs" && echo "_cs" || true)
-cs_flags_hw = $(shell echo "$(1)" | grep -q "_cs" && echo "+define+CS -CFLAGS '-D CS'" || true)
-cs_flags_sw = $(shell echo "$(1)" | grep -q "_cs" && echo "--control_signals" || true)
+cs_val = $(shell echo "$(1)" | sed -E -n 's=^.*_cs(([a-z]|-)*).*$$=_cs\1=p' || true)
+#cs = $(shell echo "$(1)" | grep -q "_cs" && echo "_cs" || true)
+cs_id_hw = $(shell echo "$(1)" | sed -E -n 's=^.*_cs.*-(id).*$$=+define+CS_\U\1 -CFLAGS  '\''-D CS_\U\1'\''=p')
+cs_ex_hw = $(shell echo "$(1)" | sed -E -n 's=^.*_cs.*-(ex).*$$=+define+CS_\U\1 -CFLAGS  '\''-D CS_\U\1'\''=p')
+cs_flags_hw = $(shell echo "$(1)" | grep -q "_cs" && echo "$(call cs_id_hw,$(1)) $(call cs_ex_hw,$(1))" || true)
+cs_sw = $(shell echo "$(1)" | sed -E -n 's=^.*_cs(-id|)(-ex|).*$$=cs\1\2=p')
+cs_flags_sw = $(shell echo "$(1)" | grep -q "_cs" && echo "--control_signals=$(call cs_sw,$(1))" || true)
 
-vcd = $(shell echo "$(1)" | grep -q "_vcd" && echo "_vcd" || true)
+vcd = $(shell echo "$(1)" | grep -q "_vcd\|\.vcd" && echo "_vcd" || true)
 vcd_flags = $(shell echo "$(1)" | grep -q "_vcd" && echo "--trace --trace-depth 8 -CFLAGS '-D VCD'" || true)
 
 encrypted = $(shell echo "$(1)" | grep -q "_encrypted" && echo "_encrypted" || true)
@@ -108,21 +112,37 @@ OBJ/PROGRAMS/%/SIM/VCD/program.vcd : \
 	mkdir -p $(dir $@)
 	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_vcd/V$(TB_CPP_NAME) $* --verif
 
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf1_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf2_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf3_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf6_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf1_cs-id_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf2_cs-id_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf3_cs-id_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf6_cs-id_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf1_cs-id-ex_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf2_cs-id-ex_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf3_cs-id-ex_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf6_cs-id-ex_verif.log \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf1.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf2.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf3.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf6.vcd \
-OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf1_cs.vcd \
-OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf2_cs.vcd \
-OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf3_cs.vcd \
-OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf6_cs.vcd : \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf1_cs-id.vcd \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf2_cs-id.vcd \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf3_cs-id.vcd \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf6_cs-id.vcd \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf1_cs-id-ex.vcd \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf2_cs-id-ex.vcd \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf3_cs-id-ex.vcd \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf6_cs-id-ex.vcd : \
 		OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
-	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/.mem_encrypted$(call cs,$@).timestamp
-	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program_encrypted$(call cs,$@)_patches.mem
-	make $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd$(call cf,$@)$(call cs,$@)/V$(TB_CPP_NAME)
+	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/.mem_encrypted$(call cs_val,$@).timestamp
+	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program_encrypted$(call cs_val,$@)_patches.mem
+	make $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted$(call vcd,$@)$(call cf,$@)$(call cs_val,$@)/V$(TB_CPP_NAME)
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
-	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted_vcd$(call cf,$@)$(call cs,$@)/V$(TB_CPP_NAME) $* --verif
+	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted$(call vcd,$@)$(call cf,$@)$(call cs_val,$@)/V$(TB_CPP_NAME) $* --verif
 
 
 #==== SAVE REF ====#
@@ -159,21 +179,6 @@ OBJ/PROGRAMS/%/SIM/LOG/program_verif.log :  \
 	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) $* --verif
 
 
-OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf1_verif.log \
-OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf2_verif.log \
-OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf3_verif.log \
-OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf6_verif.log \
-OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf1_cs_verif.log \
-OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf2_cs_verif.log \
-OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf3_cs_verif.log \
-OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf6_cs_verif.log : \
-		OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
-	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/.mem_encrypted$(call cs,$@).timestamp
-	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program_encrypted$(call cs,$@)_patches.mem
-	make $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted$(call cf,$@)$(call cs,$@)/V$(TB_CPP_NAME)
-	@echo "\n===> $@"
-	mkdir -p $(dir $@)
-	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted$(call cf,$@)$(call cs,$@)/V$(TB_CPP_NAME) $* --verif
 
 #==== TRACE SIGNALS ====#
 # "$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) \" must be added to the dependency list,
@@ -204,18 +209,26 @@ OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf1/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf2/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf3/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf6/Vcore_v_verif_fpga \
-OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf1_cs/Vcore_v_verif_fpga \
-OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf2_cs/Vcore_v_verif_fpga \
-OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf3_cs/Vcore_v_verif_fpga \
-OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf6_cs/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf1_cs-id/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf2_cs-id/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf3_cs-id/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf6_cs-id/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf1_cs-id-ex/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf2_cs-id-ex/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf3_cs-id-ex/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf6_cs-id-ex/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf1/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf2/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf3/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6/Vcore_v_verif_fpga \
-OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf1_cs/Vcore_v_verif_fpga \
-OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf2_cs/Vcore_v_verif_fpga \
-OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf3_cs/Vcore_v_verif_fpga \
-OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6_cs/Vcore_v_verif_fpga : \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf1_cs-id/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf2_cs-id/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf3_cs-id/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6_cs-id/Vcore_v_verif_fpga  \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf1_cs-id-ex/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf2_cs-id-ex/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf3_cs-id-ex/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6_cs-id-ex/Vcore_v_verif_fpga : \
 		$(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE)
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
@@ -224,12 +237,12 @@ OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6_cs/Vcore_v_verif_fpga 
 		$(call encrypted_flags,$@) \
 		$(call cs_flags_hw,$@) \
 		-CFLAGS "-D MAX_SIM_TIME=$(MAX_SIM_TIME)" \
-	   	--Mdir $(OBJ_VERI_DIR)/$(TB_CPP_NAME)$(call encrypted,$@)$(call vcd,$@)$(call cf,$@)$(call cs,$@) \
+	   	--Mdir $(OBJ_VERI_DIR)/$(TB_CPP_NAME)$(call encrypted,$@)$(call vcd,$@)$(call cf,$@)$(call cs_val,$@) \
 	   	--cc -sv --exe \
 	   	--top-module $(TB_CPP_NAME) ../../$(SRC_TB_FILE) \
 	   	-f SRC/RTL/rtl_encrypted.flist
 	make \
-		-C $(OBJ_VERI_DIR)/$(TB_CPP_NAME)$(call encrypted,$@)$(call vcd,$@)$(call cf,$@)$(call cs,$@) \
+		-C $(OBJ_VERI_DIR)/$(TB_CPP_NAME)$(call encrypted,$@)$(call vcd,$@)$(call cf,$@)$(call cs_val,$@) \
 		-f V$(TB_CPP_NAME).mk \
 		V$(TB_CPP_NAME)
 
@@ -328,17 +341,19 @@ SRC/RTL/iea_cv32e40p_fpga_dev :
 #==== CONVERT HEX ENCRYPTED ====#
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp 
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp 
-.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs.timestamp 
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id.timestamp 
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id-ex.timestamp 
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp \
-OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs.timestamp : \
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id.timestamp \
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id-ex.timestamp : \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.itb \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.readelf \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.objdump \
 		$(SCRIPT_DIR)/hex2mem.py
-	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs,$@).hex 
+	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs_val,$@).hex 
 	@echo "\n===> $@"
-	$(SCRIPT_DIR)/hex2mem.py OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs,$@).hex 
+	$(SCRIPT_DIR)/hex2mem.py OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs_val,$@).hex 
 	touch $@
 
 
@@ -346,11 +361,12 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs.timestamp : \
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.mem
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs_patches.mem
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.mem \
-OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs_patches.mem: \
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id_patches.mem \
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex_patches.mem: \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.itb \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv \
 		$(SCRIPT_DIR)/riscv-elf-generate-patches.py
-	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/.mem_encrypted$(call cs,$@).timestamp
+	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/.mem_encrypted$(call cs_val,$@).timestamp
 	@echo "\n===> $@"
 	$(SCRIPT_DIR)/riscv-elf-generate-patches.py OBJ/PROGRAMS/$*/SIM/REF OBJ/PROGRAMS/$*/PROGRAM_COMPILED $(call cs_flags_sw,$@)
 
@@ -362,12 +378,13 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs_patches.mem: \
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs.hex
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.hex \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.hex \
-OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs.hex : \
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id.hex \
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.hex : \
 		$(SCRIPT_DIR)/riscv-elf-encryption.py \
 		$(SCRIPT_DIR)/ascon_fct.py
-	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs,$@).elf
+	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs_val,$@).elf
 	@echo "\n===> $@"
-	$(RISCV_EXE_PREFIX)objcopy -O verilog OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs,$@).elf $@
+	$(RISCV_EXE_PREFIX)objcopy -O verilog OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs_val,$@).elf $@
 	
 
 
@@ -375,7 +392,8 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs.hex : \
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.elf
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs.elf
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.elf \
-OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs.elf: \
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id.elf\
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.elf: \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf \
 		$(SCRIPT_DIR)/riscv-elf-encryption.py \
 		$(SCRIPT_DIR)/ascon_fct.py
