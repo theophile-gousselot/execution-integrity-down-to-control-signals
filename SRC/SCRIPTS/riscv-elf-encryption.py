@@ -34,8 +34,15 @@ parser.add_argument(
     "-c",
     "--control_signals",
     help="XOR control_signal to patch",
-    action="store_true")
+    type=str, nargs='?', const="", default="")
 args = parser.parse_args()
+
+if args.control_signals != '':
+    CS_MODE = True
+    cs_id_mode = "id" in args.control_signals
+    cs_ex_mode = "ex" in args.control_signals
+else:
+    CS_MODE = False
 
 ###### Paths ######
 ELF_PATH = args.elf_path
@@ -148,7 +155,12 @@ def encrypt_elf():
             cs_file_line = list(cs_file_list[fct3_7_opcode].split(','))
             if int(cs_file_line[1], 16) != fct3_7_opcode:
                 raise ValueError(f'Error, {CS_PATH} is bad-formated.')
-            cs_list.append({'cs_vector': int(cs_file_line[2], 16), 'is_multicycle': int(cs_file_line[3])})
+            cs_list.append({'cs_vector': int(cs_file_line[2], 16), 'is_multicycle': int(cs_file_line[3]), 'ctrl_transfer': int(cs_file_line[4])})
+            # control_transfer(BRANCH_NONE) = 2'b00
+            # control_transfer(BRANCH_JAL) = 2'b01
+            # control_transfer(BRANCH_JALR) = 2'b10
+            # control_transfer(BRANCH_COND) = 2'b11
+
 
 
     # S, k, rate, a, b, key, nonce are global variables
@@ -164,6 +176,7 @@ def encrypt_elf():
     ascon_states_dec = ""
     ascon_states_hex_dbg = ""
     cs_vector = 0 # default in case there is no "--control_signals" option
+    prev_prev_instr = 0x7
     prev_instr = 0x7
 
 
@@ -172,19 +185,48 @@ def encrypt_elf():
         pc_pc_instr = f"{hex(i-4096)[2:]},{i-4096},{reverse_bytes(plain_elf[i:i + 4]).hex()}"
         other_lines_dbg = f"{'state_not_patched':<24}:{pc_pc_instr},{state2str(S)}\n"
 
-        if args.control_signals:
-            cs_vector = cs_list[instr2fct3_7_opcode(prev_instr)]['cs_vector']
+        if CS_MODE:
+            cs_vector_prev_instr = cs_list[instr2fct3_7_opcode(prev_instr)]['cs_vector']
+            cs_vector_prev_prev_instr = cs_list[instr2fct3_7_opcode(prev_prev_instr)]['cs_vector']
+
+            is_prev_prev_instr_multicycle = cs_list[instr2fct3_7_opcode(prev_prev_instr)]['is_multicycle']
             is_prev_instr_multicycle = cs_list[instr2fct3_7_opcode(prev_instr)]['is_multicycle']
             is_instr_multicycle = cs_list[instr2fct3_7_opcode(instr)]['is_multicycle']
+
+            is_prev_instr_disc = cs_list[instr2fct3_7_opcode(prev_instr)]['ctrl_transfer'] in [1, 2, 3]
+            #print(f"{hex(i-4096)},{is_prev_instr_disc}")
+
 
             if is_prev_instr_multicycle == 1 or i == address_start_encrypt:
                 # A multicycle instruction generates a deassert_we = 1, from its second cycle of execution, 
                 # the following instruction will be decrypted using control signals masked by deassert_we, 
                 # thus, encryption must apply the mask. Deassert_we is null when first instr is decoded
-                cs_vector_mask = cs_vector & 0b01111111
+                cs_vector_prev_instr_mask = cs_vector_prev_instr & 0b01111111
+                cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr
             else:
-                cs_vector_mask = cs_vector
+                cs_vector_prev_instr_mask = cs_vector_prev_instr
 
+
+            if is_prev_instr_multicycle == 1 and not is_prev_instr_disc:
+                # In case of a multicycle, the instruction is still in the decode but with deassert (->mask)
+                # and the instruction is in execute, withtout deassert, thus ex=CS_decode (withtou mask)
+                cs_vector_prev_prev_instr_mask = cs_vector_prev_instr
+            elif is_prev_prev_instr_multicycle == 1 or i <= address_start_encrypt+4:
+                cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr & 0b01111111
+                #HERE cs_vector = cs_vector_prev_mask , cs_vector_prev_not_mask
+            else:
+                cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr
+
+
+            if cs_id_mode and cs_ex_mode:
+                cs_vector_mask = (cs_vector_prev_prev_instr_mask << 8) | cs_vector_prev_instr_mask
+            elif cs_id_mode:
+                cs_vector_mask = cs_vector_prev_instr_mask
+            elif cs_ex_mode:
+                cs_vector_mask = cs_vector_prev_prev_instr_mask
+
+
+            prev_prev_instr = prev_instr
             prev_instr = instr
             if (cs_vector_mask >> 32) != 0:
                 raise ValueError(f"Error, cs_vector should fit on 32 bits")
@@ -220,7 +262,7 @@ def encrypt_elf():
 
         other_lines_dbg += f"{'state_perm2reg':<24}:{pc_pc_instr},{state2str(S)}\n"
 
-        if args.control_signals:
+        if CS_MODE:
             first_line_dbg = f"{'='*125}{reverse_bytes(plain_elf[i:i + 4]).hex()}==="
             first_line_dbg += f"CS:{hex(cs_list[instr2fct3_7_opcode(instr)]['cs_vector'])[2:]}"
             first_line_dbg += f"===Mul:{is_instr_multicycle == 1}\n"

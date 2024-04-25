@@ -22,17 +22,24 @@ parser.add_argument("src_path", help="specify the source path",
                     type=str, nargs='?', const="", default="")
 parser.add_argument("obj_path", help="specify the object path",
                     type=str, nargs='?', const="", default="")
-parser.add_argument("-c", "--control_signals", help="use control signal in encryption?",
-                    action="store_true")
+parser.add_argument("-c", "--control_signals", help="use control signal in encryption",
+                    type=str, nargs='?', const="", default="")
 parser.add_argument("-v", "--verbose",
                     help="increase output verbosity", action="store_true")
 args = parser.parse_args()
+
+if args.control_signals != '':
+    CS_MODE = True
+    cs_id_mode = "id" in args.control_signals
+    cs_ex_mode = "ex" in args.control_signals
+else:
+    CS_MODE = False
 
 ###### Paths ######
 PROGRAM = "program"
 OBJ_PATH = args.obj_path
 SRC_PATH = args.src_path
-CS_FLAG = "_cs" if args.control_signals else ""
+CS_FLAG = f"_{args.control_signals}" if CS_MODE else ""
 ITB_PATH = f"{OBJ_PATH}/{PROGRAM}.itb"
 STATES_DEC_CSV_PATH = f"{OBJ_PATH}/{PROGRAM}_encrypted{CS_FLAG}_states_dec.csv"
 EDGES_PATH = f"{OBJ_PATH}/{PROGRAM}_edges.csv"
@@ -41,6 +48,7 @@ PATCHES_HEX_CSV_PATH = f"{OBJ_PATH}/{PROGRAM}_encrypted{CS_FLAG}_patches_hex.csv
 SUCCESSORS_PATH = f"{OBJ_PATH}/{PROGRAM}.successors"
 JALR_SUCCESSORS_PATH = f"{OBJ_PATH}//{PROGRAM}_jalr_successors.csv"
 FILE_GET_JALR_SUCC_PATH = "a script"
+
 
 ##### RISC-V Dict #####
 PATCH_POLICIES = ['NL']  # Patch when No Linear
@@ -419,7 +427,7 @@ class Code:
 
         for state_l in states_list:
             if len(state_l) > 0:
-                if args.control_signals:
+                if CS_MODE:
                     addr_hex, addr_dec, instr, cs_vector_prev_instr, is_multicycle, state = list(state_l.split(",", 5))
                     self.instrs[int(addr_dec)].state = list(
                         map(int, list(state.split(",", 4))))
@@ -447,6 +455,7 @@ class Code:
 
         else:
             patch = ''
+            correction_str = ''
             for i in range(5):
                 state1, state2 = self.instrs[addr_src].state[i], self.instrs[addr_dest].state[i]
                 sub_state_patch = state1 ^ state2
@@ -455,15 +464,18 @@ class Code:
                 # the signal we_deassert will be raised! Therefore, if the instr in DECODE was multicycle
                 # CS was already masked: nothing to do. However, if not, as mask is applied by xoring 
                 # cs_vector bits to mask to itself (as it is already in the patch through cs2cipher.
-                if args.control_signals and i == 0 and (self.instrs[addr_patch].type == 'B'):
-                        sub_state_patch ^= (self.instrs[addr_patch+4].cs_vector & 0x80)
+                if CS_MODE and i == 0 and (self.instrs[addr_patch].type == 'B'):
+                        brplus4_mask = (self.instrs[addr_patch+4].cs_vector & 0x8080)
+                        sub_state_patch ^= brplus4_mask
+                        correction_str = f",{hex(brplus4_mask)[2:]}"
+
 
                 patch += hex(sub_state_patch)[2:].zfill(16)
 
             self.hex_patches_free[addr_patch >> 2] = False
             self.hex_patches[addr_patch >> 2] = patch
 
-            patch_csv = f"{zfint(addr_patch)},{zfint(addr_src)},{zfint(addr_dest)},{patch}"
+            patch_csv = f"{zfint(addr_patch)},{zfint(addr_src)},{zfint(addr_dest)},{patch}{correction_str}"
             self.hex_patches_csv[addr_patch >> 2] = patch_csv
 
     def get_patches(self, patch_policy):
@@ -575,7 +587,7 @@ class Code:
                     redirection_field += bin(self.patches_to_be_redirected[addr][s])[2:-2].zfill(WIDTH_ADDR)
                     redirection_field += bin(addr_redirected[s])[2:-2].zfill(WIDTH_ADDR)
                 self.hex_patches[addr >> 2] = hex(int(REDIRECTION_TAG + redirection_field, 2))[2:]
-                self.hex_patches_csv[addr >> 2] = f"{zfint(addr)},REDIRECTION,{REDIRECTION_TAG}{redirection_field}"
+                self.hex_patches_csv[addr >> 2] = f"{zfint(addr)},REDIRECTION,{self.hex_patches[addr >> 2]}"
                 self.hex_patches_free[addr >> 2] = False
 
             with open(EDGES_PATH, 'w', encoding="utf-8") as file:
