@@ -8,13 +8,15 @@
 #include <ctime>
 #include <sys/stat.h>
 
-
 // #include <cstdlib>
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 #include "Vcore_v_verif_fpga.h"
 #include "Vcore_v_verif_fpga_core_v_verif_fpga.h"
-#ifdef CS
+#if defined(CS_EX)
+#include "Vcore_v_verif_fpga_cv32e40p_core__C10_FB1.h"
+#endif
+#if defined(CS_ID) || defined(CS_EX)
 #include "Vcore_v_verif_fpga_cv32e40p_core__C8_FB1.h"
 #include "Vcore_v_verif_fpga_cv32e40p_id_stage__C8_P0.h"
 #include "Vcore_v_verif_fpga_cv32e40p_id_stage__C8_P0.h"
@@ -103,8 +105,12 @@ void log_start_simu(ofstream& log_file, string program_name, bool verif_mode, bo
     write_log(cout, log_file, "VERILATOR:      Simulation launched...\n");
     write_log(cout, log_file, "PROGRAM:        " + program_name + "\n");
     write_log(cout, log_file, "CLOCK FACTOR:   " + to_string(CLK_FACTOR) + "\n");
-#ifdef CS
-    write_log(cout, log_file, "CONTROL SIGNALS ARE ASSOCIATED TO ENCRYPTION\n");
+#if defined(CS_ID) && defined(CS_EX)
+    write_log(cout, log_file, "CONTROL SIGNALS FROM ID and EX ARE ASSOCIATED TO ENCRYPTION\n");
+#elif CS_ID
+    write_log(cout, log_file, "CONTROL SIGNALS FROM ID ARE ASSOCIATED TO ENCRYPTION\n");
+#elif CS_EX
+    write_log(cout, log_file, "CONTROL SIGNALS FROM EX ARE ASSOCIATED TO ENCRYPTION\n");
 #endif
     if (verif_mode) {
         write_log(cout, log_file, "MODE:           VERIFICATION of PC/instr\n\n");
@@ -167,18 +173,22 @@ void log_start_overview(bool verif_mode, bool trace_signals_mode, string program
     ofstream overview_log_file;
     overview_log_file.open("OBJ/LOG/overview.log", ios_base::app);
     if (insert_log_header) {
-        overview_log_file << "|   PROGRAM_NAME   | ENCRYPT | CF|   MODE   |    TEST   | REASON END. |  SIM_TIME  | FIRST ERR. |       TIMESTAMP         \n";
+        overview_log_file << "|   PROGRAM_NAME   |    ENCRYPT    | CF|   MODE   |    TEST   | REASON END. |  SIM_TIME  | FIRST ERR. |       TIMESTAMP         \n";
     }
     overview_log_file << format("|%=18i") % program_name;
 #ifdef ENCRYPT
-#ifdef CS
-    overview_log_file << format("|%=9i") % "instr+cs";
+#if defined(CS_ID) && defined(CS_EX)
+    overview_log_file << format("|%=15i") % "instr+cs-id-ex";
+#elif CS_ID
+    overview_log_file << format("|%=15i") % "instr+cs-id";
+#elif CS_EX
+    overview_log_file << format("|%=15i") % "instr+cs-ex";
 #else
-    overview_log_file << format("|%=9i") % "instr";
+    overview_log_file << format("|%=15i") % "instr";
 #endif
     overview_log_file << format("|%=3i") % CLK_FACTOR;
 #else
-    overview_log_file << format("|%=9i") % "";
+    overview_log_file << format("|%=15i") % "";
     overview_log_file << format("|%=3i") % "";
 #endif
     if (verif_mode) {
@@ -303,8 +313,12 @@ int main(int argc, char** argv, char** env) {
     argv_analyze(argc, argv, program_name, verif_mode, trace_signals_mode, cs_ref_mode);
 
 #ifdef ENCRYPT
-#ifdef CS
-    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs.vcd";
+#if defined(CS_ID) && defined(CS_EX)
+    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs-id-ex.vcd";
+#elif CS_ID
+    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs-id.vcd";
+#elif CS_EX
+    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs-ex.vcd";
 #else
     vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program_encrypted_cf" + to_string(CLK_FACTOR) + ".vcd";
 #endif
