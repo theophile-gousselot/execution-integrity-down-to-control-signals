@@ -1,6 +1,20 @@
 
 ## Getting Started
 
+
+### Prerequisites
+#### RISC-V Toolchain
+1. Download a RISC-V toolchain. The one used in the paper is available: TODO link with access to the toolchain
+
+2. It is recommended to extract the toolchain in `/opt/corev`. However, if you intend to extract in another location the toolchain, you can create a symbolic link.
+``` bash
+ln -s <path/to/corev> /opt/corev
+```
+
+#### Verilator simulator
+4. Install Verilator by following the [Git Quick Install](https://veripool.org/guide/latest/install.html#git-quick-install). **Be carefull to select the tag v4.220** by running `git checkout v2.220` before running `autoconf`.
+
+
 The `Makefile` launchs compilation of programs, compilation, elaboration, FPGA synthesis, FPGA implementation of RTL  and simulation.
 You can generate `explicit_target_names.mk` by executing `./configure.py`, which contains every valid target name of `Makefile` (usefull to use `<tab>`).
 In that case tape `make -f explicit_target_names.mk <tab>`.
