@@ -12,7 +12,7 @@ MAX_SIM_TIME		:= 30000000
 
 
 #==== RISCV ====#
-RISCV				:= /opt/corev
+RISCV			:= /opt/corev
 RISCV_PREFIX      	:= riscv32-corev-elf-
 RISCV_EXE_PREFIX  	:= $(RISCV)/bin/$(RISCV_PREFIX)
 RISCV_CC          	:= gcc
