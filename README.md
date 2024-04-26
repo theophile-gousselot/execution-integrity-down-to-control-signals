@@ -6,13 +6,20 @@
 #### RISC-V Toolchain
 1. Download a RISC-V toolchain. The one used in the paper is available: TODO link with access to the toolchain
 
-2. It is recommended to extract the toolchain in `/opt/corev`. However, if you intend to extract in another location the toolchain, you can create a symbolic link.
+2. It is recommended to extract the toolchain in `/opt/corev`. However, if you intend to extract in another location the toolchain, you can create a symbolic link. If you install corev somewhere else, you should edit the `RISCV` variable in `Makefile` or add `RISCV=<path/to/corev>` everytime you execute the `make` command. 
 ``` bash
 ln -s <path/to/corev> /opt/corev
 ```
 
-#### Verilator simulator
+#### Verilator: simulator
 4. Install Verilator by following the [Git Quick Install](https://veripool.org/guide/latest/install.html#git-quick-install). **Be carefull to select the tag v4.220** by running `git checkout v2.220` before running `autoconf`.
+
+#### GTKwave: wave viewer
+4. Verilator simulation can generated waveform (.vcd format). It is recommended to use GTKwave to view waveform.
+``` bash
+sudo apt install gtkwave
+```
+
 
 
 The `Makefile` launchs compilation of programs, compilation, elaboration, FPGA synthesis, FPGA implementation of RTL  and simulation.
@@ -22,27 +29,28 @@ In that case tape `make -f explicit_target_names.mk <tab>`.
 ### Behavioral simulation only: Verilator
 1. Simulate execution of `fibonacci`, without encryption and save PC/instr in Fetch at every cycle.
 ``` bash
- make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_save_ref.log
+make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_save_ref.log
 ```
 
 2. Simulate execution of `fibonacci`, without encryption, **compare PC/instr in Fetch at every cycle with previously saved reference**, generate reference if not exist.
 ``` bash
- make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_verif.log
+make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_verif.log
 ```
 
 3. Simulate execution of `fibonacci`, without encryption, **compare PC/instr in Fetch at every cycle with previously saved reference** and generate waveform.
 ``` bash
- make OBJ/PROGRAMS/fibonacci/SIM/VCD/program.vcd
+make OBJ/PROGRAMS/fibonacci/SIM/VCD/program.vcd
+gtkwave OBJ/PROGRAMS/fibonacci/SIM/VCD/program.vcd SRC/CONFIGS/core_v_fpga_signals_debug.gtkw &
 ```
   
 4. Simulate execution of `fibonacci`, **with encryption**, compare PC/instr in Fetch at every cycle with previously saved reference, generate reference if not exist.
 ``` bash
- make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_encrypted_cf1_verif.log
+make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_encrypted_cf1_verif.log
 ```
 
 4. Simulate execution of `fibonacci`, **with encryption and association of control signals**, compare PC/instr in Fetch at every cycle with previously saved reference, generate reference if not exist.
 ``` bash
- make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_encrypted_cf1_cs_verif.log
+make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_encrypted_cf1_cs_verif.log
 ```
 
 5. Execute previous command for all programs with a for loop. You may run `watch -n1 tail -n 40 OBJ/LOG/overview.log` in another terminal to follow campaign execution.

@@ -40,7 +40,11 @@ module core_v_verif_fpga
 
 `ifdef ENCRYPT
     localparam PB_ROUNDS              = 6;
+`ifdef CS_EX
+    localparam PATCH_WIDTH            = 328;
+`else
     localparam PATCH_WIDTH            = 320;
+`endif
     localparam PATCH_MEM_ADDR_WIDTH   = 16;
 `endif
 

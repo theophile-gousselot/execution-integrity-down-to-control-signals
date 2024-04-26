@@ -55,7 +55,9 @@ module ascon_decryption
     logic        clk_ascon_fast_cnt_init_s;
     logic        clk_ascon_fast_cnt_en_s;
     logic        apply_patch_s;
-
+`ifdef CS_EX
+    logic        apply_patch_cs_s;
+`endif
 
     ascon_fsm #(
     ) ascon_fsm_i (
@@ -73,6 +75,9 @@ module ascon_decryption
         .sel_previous_instr_addr_en_o (sel_previous_instr_addr_en_s),
         .clk_ascon_fast_cnt_init_o  (clk_ascon_fast_cnt_init_s),
         .clk_ascon_fast_cnt_en_o    (clk_ascon_fast_cnt_en_s),
+`ifdef CS_EX
+        .apply_patch_cs_o           (apply_patch_cs_s),
+`endif
         .apply_patch_o              (apply_patch_s)
     );
 
@@ -105,7 +110,7 @@ module ascon_decryption
         .id_valid_i                (id_valid_i),
         .lsu_data_misaligned_i     (lsu_data_misaligned_i),
         .mult_multicycle_i         (mult_multicycle_i),
-	    .aligner_update_state_i    (aligner_update_state_i),
+        .aligner_update_state_i    (aligner_update_state_i),
 
         .sel_state_init_i          (sel_state_init_s),
         .sel_patch_i               (sel_patch_s),
@@ -113,6 +118,9 @@ module ascon_decryption
         .sel_previous_instr_addr_en_i (sel_previous_instr_addr_en_s),
         .clk_ascon_fast_cnt_init_i (clk_ascon_fast_cnt_init_s),
         .clk_ascon_fast_cnt_en_i   (clk_ascon_fast_cnt_en_s),
+`ifdef CS_EX
+        .apply_patch_cs_i          (apply_patch_cs_s),
+`endif
         .apply_patch_i             (apply_patch_s),
 
         .patch_i                   (patch_i),

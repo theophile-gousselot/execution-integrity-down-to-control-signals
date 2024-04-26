@@ -39,6 +39,9 @@ module ascon_datapath
     input logic                             sel_previous_instr_addr_en_i,
     input logic                             clk_ascon_fast_cnt_init_i,
     input logic                             clk_ascon_fast_cnt_en_i,
+`ifdef CS_EX
+    input logic                             apply_patch_cs_i,
+`endif
     input logic                             apply_patch_i,
 
     input logic [PATCH_WIDTH-1:0]           patch_i,
@@ -58,7 +61,13 @@ module ascon_datapath
     logic [PATCH_WIDTH-1:0]          patch_of_instr_in_id_reg_s = '0;
     logic [PATCH_WIDTH-1:0]          patch_of_instr_in_ex_reg_s = '0;
 
+`ifdef CS_EX
+    logic [PATCH_WIDTH-9:0]          patch_to_ascon_s;
+    logic [7:0]                      patch_cs_to_ascon_reg;
+    logic [7:0]                      patch_cs_to_ascon_s;
+`else
     logic [PATCH_WIDTH-1:0]          patch_to_ascon_s;
+`endif
 
     logic [31:0]                     instr_rdata_plain_s;
 
@@ -244,22 +253,43 @@ module ascon_datapath
     always_comb begin : patch_to_ascon_generation
         case (sel_patch_i)
             PATCH_NULL: patch_to_ascon_s = '0;
+`ifdef CS_EX
+            PATCH_IF: patch_to_ascon_s = patch_of_instr_in_if_reg_s[327:8];
+            PATCH_ID: patch_to_ascon_s = patch_of_instr_in_id_reg_s[327:8];
+            PATCH_EX: patch_to_ascon_s = patch_of_instr_in_ex_reg_s[327:8];
+`else
             PATCH_IF: patch_to_ascon_s = patch_of_instr_in_if_reg_s;
             PATCH_ID: patch_to_ascon_s = patch_of_instr_in_id_reg_s;
             PATCH_EX: patch_to_ascon_s = patch_of_instr_in_ex_reg_s;
+`endif
         endcase
     end : patch_to_ascon_generation
+
+
+
+`ifdef CS_EX
+    always_ff @(posedge clk_ascon_fast_i, negedge rst_ni) begin : patch_cs
+        if (!rst_ni) begin
+            patch_cs_to_ascon_reg <= '0;
+        end else begin
+            patch_cs_to_ascon_reg <= patch_of_instr_in_ex_reg_s[7:0];
+        end
+    end : patch_cs
     
     assign state_not_patched = (sel_state_init_i) ? state_init : state_reg2mux_state_init;
 
+    assign patch_cs_to_ascon_s = (apply_patch_cs_i) ? patch_cs_to_ascon_reg : '0;
+    assign state_patched[0] = state_not_patched[0] ^ patch_to_ascon_s[319:256] ^ {48'h0, patch_cs_to_ascon_s, 8'h0};
+`else
     assign state_patched[0] = state_not_patched[0] ^ patch_to_ascon_s[319:256];
+`endif
     assign state_patched[1] = state_not_patched[1] ^ patch_to_ascon_s[255:192];
     assign state_patched[2] = state_not_patched[2] ^ patch_to_ascon_s[191:128];
     assign state_patched[3] = state_not_patched[3] ^ patch_to_ascon_s[127:64];
     assign state_patched[4] = state_not_patched[4] ^ patch_to_ascon_s[63:0];
 
 `ifdef CS
-    assign state_patch2cs = (apply_patch_i) ? state_patched : state_not_patched;
+    assign state_patch2cs = (apply_patch_i || apply_patch_cs_i) ? state_patched : state_not_patched;
 
     assign state_cs2cipher[4:1] = state_patch2cs[4:1];
     assign state_cs2cipher[0] = {state_patch2cs[0][63:CS_LEN], state_patch2cs[0][CS_LEN-1:0] ^ cs_vector_i} ;

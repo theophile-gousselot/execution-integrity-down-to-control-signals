@@ -428,9 +428,8 @@ class Code:
         for state_l in states_list:
             if len(state_l) > 0:
                 if CS_MODE:
-                    addr_hex, addr_dec, instr, cs_vector_prev_instr, is_multicycle, state = list(state_l.split(",", 5))
-                    self.instrs[int(addr_dec)].state = list(
-                        map(int, list(state.split(",", 4))))
+                    addr_hex, addr_dec, instr, cs_vector_prev_instr, is_multicycle, state = list(state_l.split(",", 5)) 
+                    self.instrs[int(addr_dec)].state = list( map(int, list(state.split(",", 4))))
                     self.instrs[int(addr_dec)].is_multicycle = is_multicycle == "1"
                     # cs_vector used to encrypt instr at PC is instr at PC-4
                     self.instrs[int(addr_dec)-4].cs_vector = int(cs_vector_prev_instr)
@@ -472,6 +471,16 @@ class Code:
 
                 patch += hex(sub_state_patch)[2:].zfill(16)
 
+            #print(f"{hex(addr_patch)}({hex(self.instrs[addr_patch].cs_vector & 0x7f)}): {hex(addr_dest-4)}({hex(self.instrs[addr_dest-4].cs_vector & 0xff)}  {hex(((self.instrs[addr_patch].cs_vector & 0x7f) ^ self.instrs[addr_dest-4].cs_vector) & 0xff)[2:].zfill(2)}")
+
+            if cs_ex_mode:
+                if self.instrs[addr_patch].type == 'B':
+                    patch += hex(((self.instrs[addr_patch].cs_vector & 0x7f) ^ self.instrs[addr_dest-4].cs_vector) & 0xff)[2:].zfill(2)
+                else:
+                    patch += hex(0)[2:].zfill(2)
+
+        
+
             self.hex_patches_free[addr_patch >> 2] = False
             self.hex_patches[addr_patch >> 2] = patch
 
@@ -511,8 +520,9 @@ class Code:
             # dict of jalr when patches are in conflicts
             self.patches_to_be_redirected = {}
 
-            self.hex_patches = ['0' * 80] * len(self.instrs.keys())
-            self.hex_patches_csv = ['00000,00000,00000,' + '0' * 80] * len(self.instrs.keys())
+            PATCH_WIDTH = 82 if cs_ex_mode else 80
+            self.hex_patches = ['0' * PATCH_WIDTH] * len(self.instrs.keys())
+            self.hex_patches_csv = ['00000,00000,00000,' + '0' * PATCH_WIDTH] * len(self.instrs.keys())
             self.hex_patches_free = [True] * len(self.instrs.keys())
 
             # FIRST ITERATION (Generate patches for all branch and jal)
@@ -586,6 +596,8 @@ class Code:
                     # Remove '0b' and the two least significant bits
                     redirection_field += bin(self.patches_to_be_redirected[addr][s])[2:-2].zfill(WIDTH_ADDR)
                     redirection_field += bin(addr_redirected[s])[2:-2].zfill(WIDTH_ADDR)
+                if cs_ex_mode:
+                    redirection_field += "0" * 8
                 self.hex_patches[addr >> 2] = hex(int(REDIRECTION_TAG + redirection_field, 2))[2:]
                 self.hex_patches_csv[addr >> 2] = f"{zfint(addr)},REDIRECTION,{self.hex_patches[addr >> 2]}"
                 self.hex_patches_free[addr >> 2] = False

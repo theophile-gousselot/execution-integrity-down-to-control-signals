@@ -11,7 +11,7 @@ module ascon_fsm
     input logic         branch_in_ex_i,
     input logic         branch_decision_i,
     input logic         pc_set_i,
-	input logic         redirection_in_id_i,
+    input logic         redirection_in_id_i,
 
     output logic        sel_state_init_o,
     output logic  [1:0] sel_patch_o,
@@ -19,6 +19,9 @@ module ascon_fsm
     output logic        sel_previous_instr_addr_en_o,
     output logic        clk_ascon_fast_cnt_init_o,
     output logic        clk_ascon_fast_cnt_en_o,
+`ifdef CS_EX
+    output logic        apply_patch_cs_o,
+`endif
     output logic        apply_patch_o
 );
 
@@ -35,6 +38,10 @@ module ascon_fsm
 
 
     ascon_fsm_states state_s, next_state_s;
+
+`ifdef CS_EX
+    logic apply_patch_cs_s;
+`endif
 
 
     always_ff @(posedge clk_core_slow_i or negedge rst_ni) begin : state_s_update
@@ -166,6 +173,9 @@ module ascon_fsm
         clk_ascon_fast_cnt_init_o = 1'b0;
         clk_ascon_fast_cnt_en_o   = 1'b1;
         apply_patch_o             = 1'b0;
+`ifdef CS_EX
+        apply_patch_cs_s          = 1'b0;
+`endif
 
         case (state_s)
             RESET: begin
@@ -193,6 +203,9 @@ module ascon_fsm
             BRANCH_TAKEN: begin
                 sel_patch_o               = PATCH_EX;
                 apply_patch_o             = 1'b1;
+`ifdef CS_EX
+                apply_patch_cs_s          = 1'b1;
+`endif
             end
 
             default:;
@@ -201,4 +214,14 @@ module ascon_fsm
             sel_addr_redirected_o     = 1'b1;
         end
     end : fsm_ouputs_generation
+
+`ifdef CS_EX
+    always_ff @(posedge clk_core_slow_i or negedge rst_ni) begin : apply_cs_patch_delay_one_cycle
+        if (!rst_ni)
+            apply_patch_cs_o <= 1'b0;
+        else 
+            apply_patch_cs_o <= apply_patch_cs_s;
+    end : apply_cs_patch_delay_one_cycle
+
+`endif
 endmodule

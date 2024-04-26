@@ -67,10 +67,9 @@ def ascon_process_one_encryption(S, b, rate, instr_plain):
 
     return instr_cipher
 
-
 # === Ascon permutation ===
 
-def ascon_permutation(S, rounds=1):
+def ascon_permutation(S, rounds=1, debugperm=False):
     """
     Ascon core permutation for the sponge construction - internal helper function.
     S: Ascon state, a list of 5 64-bit integers
@@ -78,6 +77,7 @@ def ascon_permutation(S, rounds=1):
     returns nothing, updates S
     """
     assert(rounds <= 12)
+    debugpermutation=debugperm
     if debugpermutation:
         printwords(S, "permutation input:")
     for r in range(12 - rounds, 12):
@@ -106,6 +106,49 @@ def ascon_permutation(S, rounds=1):
         S[4] ^= rotr(S[4], 7) ^ rotr(S[4], 41)
         if debugpermutation:
             printwords(S, "linear diffusion layer:")
+
+
+# === Ascon permutation inv ===
+
+def ascon_permutation_inv(S, rounds=1, debugperm=False):
+    """
+    Ascon core permutation for the sponge construction - internal helper function.
+    S: Ascon state, a list of 5 64-bit integers
+    rounds: number of rounds to perform
+    returns nothing, updates S
+    """
+    assert(rounds <= 12)
+    debugpermutation=debugperm
+    if debugpermutation:
+        printwords(S, "permutation input:")
+    for r in range(12 - rounds, 12):
+
+        # --- linear diffusion layer ---
+        S[0] ^= rotl(S[0], 19) ^ rotl(S[0], 28)
+        S[1] ^= rotl(S[1], 61) ^ rotl(S[1], 39)
+        S[2] ^= rotl(S[2], 1) ^ rotl(S[2], 6)
+        S[3] ^= rotl(S[3], 10) ^ rotl(S[3], 17)
+        S[4] ^= rotl(S[4], 7) ^ rotl(S[4], 41)
+        if debugpermutation:
+            printwords(S, "linear diffusion layer:")
+
+        # --- add round constants ---
+        S[2] ^= (0xf0 - r * 0x10 + r * 0x1)
+        if debugpermutation:
+            printwords(S, "round constant addition:")
+        # --- substitution layer ---
+        S[0] ^= S[4]
+        S[4] ^= S[3]
+        S[2] ^= S[1]
+        T = [(S[i] ^ 0xFFFFFFFFFFFFFFFF) & S[(i + 1) % 5] for i in range(5)]
+        for i in range(5):
+            S[i] ^= T[(i + 1) % 5]
+        S[1] ^= S[0]
+        S[0] ^= S[4]
+        S[3] ^= S[2]
+        S[2] ^= 0XFFFFFFFFFFFFFFFF
+        if debugpermutation:
+            printwords(S, "substitution layer:")
 
 
 # === helper functions ===
@@ -156,6 +199,10 @@ def bytes_to_hex(b, length=8):
 # === Transform
 def rotr(val, r):
     return (val >> r) | ((val & (1 << r) - 1) << (64 - r))
+
+def rotl(val, r):
+    return(((val << r) & ((1 << 64) -1)) | (val & (((1 << r) - 1) << (64-r))) >> (64-r))
+
 
 
 def reverse_int(instr):
