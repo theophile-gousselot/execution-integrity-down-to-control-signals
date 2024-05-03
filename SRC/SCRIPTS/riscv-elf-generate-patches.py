@@ -28,10 +28,10 @@ parser.add_argument("-v", "--verbose",
                     help="increase output verbosity", action="store_true")
 args = parser.parse_args()
 
+cs_id_mode = "id" in args.control_signals
+cs_ex_mode = "ex" in args.control_signals
 if args.control_signals != '':
     CS_MODE = True
-    cs_id_mode = "id" in args.control_signals
-    cs_ex_mode = "ex" in args.control_signals
 else:
     CS_MODE = False
 
@@ -428,16 +428,17 @@ class Code:
         for state_l in states_list:
             if len(state_l) > 0:
                 if CS_MODE:
-                    addr_hex, addr_dec, instr, cs_vector_prev_instr, is_multicycle, state = list(state_l.split(",", 5)) 
+                    addr_hex, addr_dec, instr, cs_vector, cs_vector_xored, is_multicycle, state = list(state_l.split(",", 6)) 
                     self.instrs[int(addr_dec)].state = list( map(int, list(state.split(",", 4))))
                     self.instrs[int(addr_dec)].is_multicycle = is_multicycle == "1"
-                    # cs_vector used to encrypt instr at PC is instr at PC-4
-                    self.instrs[int(addr_dec)-4].cs_vector = int(cs_vector_prev_instr)
+                    # cs_vector_xored used to encrypt instr at PC is instr at PC-4
+                    self.instrs[int(addr_dec)].cs_vector = int(cs_vector)
+                    self.instrs[int(addr_dec)-4].cs_vector_xored = int(cs_vector_xored)
                 else:
                     addr_hex, addr_dec, instr, state = list(state_l.split(",", 3))
                     self.instrs[int(addr_dec)].state = list(map(int, list(state.split(",", 4))))
 
-    def add_patch_if_free(self, addr_patch, addr_src, addr_dest):
+    def add_patch_if_free(self, addr_patch, addr_src, addr_dest, disc_type='none'):
         '''
         If an addr_patch is free in hex_patches, a new patch, to reach addr_dest from addr_src is added.
 
@@ -463,10 +464,20 @@ class Code:
                 # the signal we_deassert will be raised! Therefore, if the instr in DECODE was multicycle
                 # CS was already masked: nothing to do. However, if not, as mask is applied by xoring 
                 # cs_vector bits to mask to itself (as it is already in the patch through cs2cipher.
-                if CS_MODE and i == 0 and (self.instrs[addr_patch].type == 'B'):
-                        brplus4_mask = (self.instrs[addr_patch+4].cs_vector & 0x8080)
-                        sub_state_patch ^= brplus4_mask
-                        correction_str = f",{hex(brplus4_mask)[2:]}"
+                if CS_MODE and i == 0 and disc_type == 'b': #addr_patch -> addr_src-8
+                    brplus4_mask = (self.instrs[addr_patch+4].cs_vector_xored & 0x8080)
+                    sub_state_patch ^= brplus4_mask
+                    correction_str = f",{hex(brplus4_mask)[2:]}"
+
+                # When a jump is executed, the pipeline is stall, thus, the jal is in the execute AND in the
+                # decode. Therefore, the JAL cs_vector must replace in the patch the cvs_vector of the
+                # instruction before the jal
+                if cs_ex_mode and i == 0 and disc_type in ['jal', 'jalr']:
+                    jal_ex_correction = (self.instrs[addr_src-4].cs_vector ^ self.instrs[addr_src-8].cs_vector) << 8
+                    sub_state_patch ^= jal_ex_correction
+                    correction_str = f",{hex(jal_ex_correction)[2:]}"
+
+
 
 
                 patch += hex(sub_state_patch)[2:].zfill(16)
@@ -475,11 +486,10 @@ class Code:
 
             if cs_ex_mode:
                 if self.instrs[addr_patch].type == 'B':
-                    patch += hex(((self.instrs[addr_patch].cs_vector & 0x7f) ^ self.instrs[addr_dest-4].cs_vector) & 0xff)[2:].zfill(2)
+                    patch += hex(((self.instrs[addr_patch].cs_vector_xored & 0x7f) ^ self.instrs[addr_dest-4].cs_vector_xored) & 0xff)[2:].zfill(2)
                 else:
                     patch += hex(0)[2:].zfill(2)
 
-        
 
             self.hex_patches_free[addr_patch >> 2] = False
             self.hex_patches[addr_patch >> 2] = patch
@@ -535,13 +545,13 @@ class Code:
 
                         # Non-linear policy (patch generated every time a successor is not at PC+4)
                         if s != addr + 4:
-                            # branch taken need 3 cycles so two instructions are loaded from
-                            # memory after a branch (thus addr + 12)
+                            # branch taken need 3 cycles so one instruction is loaded and decrypted from
+                            # memory after a branch (thus addr + 8) 
                             if self.instrs[addr].type == 'B':
-                                self.add_patch_if_free(addr, addr + 8, s)
+                                self.add_patch_if_free(addr, addr + 8, s, disc_type='b')
 
                             elif self.instrs[addr].inst == 'jal':
-                                self.add_patch_if_free(addr, addr + 4, s)
+                                self.add_patch_if_free(addr, addr + 4, s, disc_type='jal')
 
             # SECOND ITERATION (Generate patches for jalr)
             for addr in self.instrs:
@@ -566,7 +576,7 @@ class Code:
 
                         else:
                             for s in self.instrs[addr].successors:
-                                self.add_patch_if_free(s, addr + 4, s)
+                                self.add_patch_if_free(s, addr + 4, s, disc_type='jalr')
 
 
 
@@ -580,7 +590,7 @@ class Code:
                     while True:
                         if self.hex_patches_free[addr_free >> 2]:
                             addr_redirected[i] = addr_free
-                            self.add_patch_if_free(addr_free, addr + 4, s)
+                            self.add_patch_if_free(addr_free, addr + 4, s, disc_type='jalr')
                             break
 
                         if addr_free == list(self.instrs.keys())[-1]:

@@ -37,10 +37,10 @@ parser.add_argument(
     type=str, nargs='?', const="", default="")
 args = parser.parse_args()
 
+cs_id_mode = "id" in args.control_signals
+cs_ex_mode = "ex" in args.control_signals
 if args.control_signals != '':
     CS_MODE = True
-    cs_id_mode = "id" in args.control_signals
-    cs_ex_mode = "ex" in args.control_signals
 else:
     CS_MODE = False
 
@@ -186,6 +186,7 @@ def encrypt_elf():
         other_lines_dbg = f"{'state_not_patched':<24}:{pc_pc_instr},{state2str(S)}\n"
 
         if CS_MODE:
+            cs_vector_instr = cs_list[instr2fct3_7_opcode(instr)]['cs_vector']
             cs_vector_prev_instr = cs_list[instr2fct3_7_opcode(prev_instr)]['cs_vector']
             cs_vector_prev_prev_instr = cs_list[instr2fct3_7_opcode(prev_prev_instr)]['cs_vector']
 
@@ -219,28 +220,28 @@ def encrypt_elf():
 
 
             if cs_id_mode and cs_ex_mode:
-                cs_vector_mask = (cs_vector_prev_prev_instr_mask << 8) | cs_vector_prev_instr_mask
+                cs_vector_xored = (cs_vector_prev_prev_instr_mask << 8) | cs_vector_prev_instr_mask
             elif cs_id_mode:
-                cs_vector_mask = cs_vector_prev_instr_mask
+                cs_vector_xored = cs_vector_prev_instr_mask
             elif cs_ex_mode:
-                cs_vector_mask = cs_vector_prev_prev_instr_mask
+                cs_vector_xored = cs_vector_prev_prev_instr_mask
 
 
             prev_prev_instr = prev_instr
             prev_instr = instr
-            if (cs_vector_mask >> 32) != 0:
+            if (cs_vector_xored >> 32) != 0:
                 raise ValueError(f"Error, cs_vector should fit on 32 bits")
 
 
             # XOR CONTROL_SIGNALS WITH STATE
-            S[0] ^= cs_vector_mask
+            S[0] ^= cs_vector_xored
 
             other_lines_dbg += f"{'state_cs2cipher':<24}:{pc_pc_instr},{state2str(S)},"
-            other_lines_dbg += f"{hex(cs_vector_mask)[2:]},{is_instr_multicycle}\n"
+            other_lines_dbg += f"{hex(cs_vector_xored)[2:]},{is_instr_multicycle}\n"
 
-            # PC(hex), PC(dec), instr, cs_vector, is_instr_multicycle, state
-            ascon_states_dec +=f"{pc_pc_instr},{cs_vector_mask},{is_instr_multicycle},{','.join(map(str, S))}\n"
-            ascon_states_hex +=f"{pc_pc_instr},{hex(cs_vector_mask)[2:]},{is_instr_multicycle},{state2str(S)}\n"
+            # PC(hex), PC(dec), instr, instr_cs_vector, cs_vector_used, is_instr_multicycle, state
+            ascon_states_dec +=f"{pc_pc_instr},{cs_vector_instr},{cs_vector_xored},{is_instr_multicycle},{','.join(map(str, S))}\n"
+            ascon_states_hex +=f"{pc_pc_instr},{hex(cs_vector_instr)[2:]},{hex(cs_vector_xored)[2:]},{is_instr_multicycle},{state2str(S)}\n"
         else:
             # PC(hex), PC(dec), instr, state
             ascon_states_dec +=f"{pc_pc_instr},{','.join(map(str, S))}\n"
