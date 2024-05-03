@@ -266,6 +266,7 @@ module ascon_datapath
     end : patch_to_ascon_generation
 
 
+    assign state_not_patched = (sel_state_init_i) ? state_init : state_reg2mux_state_init;
 
 `ifdef CS_EX
     always_ff @(posedge clk_ascon_fast_i, negedge rst_ni) begin : patch_cs
@@ -275,8 +276,6 @@ module ascon_datapath
             patch_cs_to_ascon_reg <= patch_of_instr_in_ex_reg_s[7:0];
         end
     end : patch_cs
-    
-    assign state_not_patched = (sel_state_init_i) ? state_init : state_reg2mux_state_init;
 
     assign patch_cs_to_ascon_s = (apply_patch_cs_i) ? patch_cs_to_ascon_reg : '0;
     assign state_patched[0] = state_not_patched[0] ^ patch_to_ascon_s[319:256] ^ {48'h0, patch_cs_to_ascon_s, 8'h0};
@@ -288,9 +287,14 @@ module ascon_datapath
     assign state_patched[3] = state_not_patched[3] ^ patch_to_ascon_s[127:64];
     assign state_patched[4] = state_not_patched[4] ^ patch_to_ascon_s[63:0];
 
-`ifdef CS
-    assign state_patch2cs = (apply_patch_i || apply_patch_cs_i) ? state_patched : state_not_patched;
 
+
+`ifdef CS
+`ifdef CS_EX
+    assign state_patch2cs = (apply_patch_i || apply_patch_cs_i) ? state_patched : state_not_patched;
+`else
+    assign state_patch2cs = (apply_patch_i) ? state_patched : state_not_patched;
+`endif
     assign state_cs2cipher[4:1] = state_patch2cs[4:1];
     assign state_cs2cipher[0] = {state_patch2cs[0][63:CS_LEN], state_patch2cs[0][CS_LEN-1:0] ^ cs_vector_i} ;
 

@@ -17,8 +17,10 @@
 #include "Vcore_v_verif_fpga_cv32e40p_core__C10_FB1.h"
 #include "Vcore_v_verif_fpga_patch_mem__P148.h"
 #endif
+#if defined(CS_ID)
+#include "Vcore_v_verif_fpga_cv32e40p_core__C8_FB1.h"
+#endif
 #if defined(CS_ID) || defined(CS_EX)
-//#include "Vcore_v_verif_fpga_cv32e40p_core__C8_FB1.h"
 #include "Vcore_v_verif_fpga_cv32e40p_id_stage__C8_P0.h"
 #include "Vcore_v_verif_fpga_cv32e40p_id_stage__C8_P0.h"
 #include "Vcore_v_verif_fpga_cv32e40p_decoder__C8_P0.h"
