@@ -6,9 +6,13 @@ riscv-elf-encryption.py
 This script encrypts sections of an elf file (fct: encrypt_elf()). The algorithm used is ASCON.
 """
 
+import os
 import subprocess
 import argparse
 from ascon_fct import ascon_initialize, ascon_process_one_encryption, ascon_permutation, bytes_to_int, reverse_bytes, int_to_bytes, state2str, instr2fct3_7_opcode
+from riscv_code import Code
+from riscv_instruction import *
+
 
 ###### Arguments ######
 parser = argparse.ArgumentParser(description="Encrypt an elf file.")
@@ -46,12 +50,17 @@ else:
 
 ###### Paths ######
 ELF_PATH = args.elf_path
+OBJ_PATH = os.path.dirname(ELF_PATH)
 CS_PATH = f"SRC/PROGRAM_TOOLS/CONTROL_SIGNALS/control_signals.csv"
 STATES_DEC_CSV_PATH = f"{ELF_PATH[:-4]}_states_dec.csv"
 STATES_HEX_CSV_PATH = f"{ELF_PATH[:-4]}_states_hex.csv"
 STATES_HEX_DBG_CSV_PATH = f"{ELF_PATH[:-4]}_states_hex_debug.csv"
 
-DEBUG = True
+DEBUG = False 
+
+def log(string):
+    if DEBUG:
+        print(string)
 
 
 ###### Parameters ######
@@ -71,8 +80,9 @@ rate = 4
 
 ###### CMD/SECTION NAMES ######
 READ_ELF_CMD = "/opt/corev/bin/riscv32-corev-elf-readelf -S "
-FIRST_SECTION = ".init"
-LAST_SECTION = ".text"
+FIRST_SECTION_EXECUTABLE = ".vectors"
+FIRST_SECTION_TO_ENC = ".init"
+LAST_SECTION_TO_ENC = ".text"
 
 
 ###### Usefull functions #####
@@ -105,15 +115,18 @@ def find_sections_to_encrypt():
         section_info = list(filter(('').__ne__, list(section.split(" "))))
         if len(section_info) > 2:
 
-            if FIRST_SECTION == section_info[2]:
+            if FIRST_SECTION_EXECUTABLE == section_info[2]:
+                address_start_executable = int(section_info[5], 16)
+
+            if FIRST_SECTION_TO_ENC == section_info[2]:
                 address_start_encrypt = int(section_info[5], 16)
 
-            if LAST_SECTION == section_info[2]:
+            if LAST_SECTION_TO_ENC == section_info[2]:
                 # Ending address = beginning address + offset
                 address_stop_encrypt = int(
                     section_info[5], 16) + int(section_info[6], 16)
 
-    return address_start_encrypt, address_stop_encrypt
+    return address_start_executable, address_start_encrypt, address_stop_encrypt
 
 
 ###### Main ######
@@ -162,12 +175,16 @@ def encrypt_elf():
             # control_transfer(BRANCH_COND) = 2'b11
 
 
+    # DISAS INSTRUCTIONS
+    code = Code(OBJ_PATH, OBJ_PATH, args.control_signals)
+    code.read_itb()
+
 
     # S, k, rate, a, b, key, nonce are global variables
     ascon_initialize(S, k, rate, a, 6, key, nonce) # todo replace 6 per b
 
     # The area to be encrypted is determined
-    address_start_encrypt, address_stop_encrypt = find_sections_to_encrypt()
+    address_start_executable, address_start_encrypt, address_stop_encrypt = find_sections_to_encrypt()
 
     # Before the area of encryption the elf is not encrypted (just copy/paste)
     cipher_elf = plain_elf[:address_start_encrypt]
@@ -179,10 +196,10 @@ def encrypt_elf():
     prev_prev_instr = 0x7
     prev_instr = 0x7
 
-
-    for i in range(address_start_encrypt, address_stop_encrypt, 4):
-        instr = int(reverse_bytes(plain_elf[i:i + 4]).hex(), 16)
-        pc_pc_instr = f"{hex(i-4096)[2:]},{i-4096},{reverse_bytes(plain_elf[i:i + 4]).hex()}"
+    for addr_elf in range(address_start_encrypt, address_stop_encrypt, 4):
+        addr_hex = addr_elf - address_start_executable
+        instr = int(reverse_bytes(plain_elf[addr_elf:addr_elf + 4]).hex(), 16)
+        pc_pc_instr = f"{hex(addr_hex)[2:]},{addr_hex},{reverse_bytes(plain_elf[addr_elf:addr_elf + 4]).hex()}"
         other_lines_dbg = f"{'state_not_patched':<24}:{pc_pc_instr},{state2str(S)}\n"
 
         if CS_MODE:
@@ -198,25 +215,31 @@ def encrypt_elf():
             #print(f"{hex(i-4096)},{is_prev_instr_disc}")
 
 
-            if is_prev_instr_multicycle == 1 or i == address_start_encrypt:
-                # A multicycle instruction generates a deassert_we = 1, from its second cycle of execution, 
-                # the following instruction will be decrypted using control signals masked by deassert_we, 
-                # thus, encryption must apply the mask. Deassert_we is null when first instr is decoded
-                cs_vector_prev_instr_mask = cs_vector_prev_instr & 0b01111111
-                cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr
-            else:
-                cs_vector_prev_instr_mask = cs_vector_prev_instr
+            # CS FROM THE PREVIOUS INSTRUCTION @PC-4  (THE ONE IN DECODE)
+            if cs_id_mode:
+                if is_prev_instr_multicycle == 1 or addr_elf == address_start_encrypt:
+                    # A multicycle instruction generates a deassert_we = 1, from its second cycle of execution, 
+                    # the following instruction will be decrypted using control signals masked by deassert_we, 
+                    # thus, encryption must apply the mask. Deassert_we is null when first instr is decoded
+                    cs_vector_prev_instr_mask = cs_vector_prev_instr & 0b01111111
+                    cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr
+                else:
+                    cs_vector_prev_instr_mask = cs_vector_prev_instr
 
 
-            if is_prev_instr_multicycle == 1 and not is_prev_instr_disc:
-                # In case of a multicycle, the instruction is still in the decode but with deassert (->mask)
-                # and the instruction is in execute, withtout deassert, thus ex=CS_decode (withtou mask)
-                cs_vector_prev_prev_instr_mask = cs_vector_prev_instr
-            elif is_prev_prev_instr_multicycle == 1 or i <= address_start_encrypt+4:
-                cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr & 0b01111111
-                #HERE cs_vector = cs_vector_prev_mask , cs_vector_prev_not_mask
-            else:
-                cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr
+            # CS FROM THE PREVIOUS PREVIOUS INSTRUCTION @PC-8  (THE ONE IN EXECUTE)
+            if cs_ex_mode:
+                log(f"{hex(addr_hex)},{code.instrs[addr_hex-8].inst},{code.instrs[addr_hex-4].inst},{code.instrs[addr_hex-8].rd},{code.instrs[addr_hex-4].rs1},{code.instrs[addr_hex-8].rd},{code.instrs[addr_hex-4].rs2}")
+                if code.instrs[addr_hex-8].inst in LOAD_INSTR and code.instrs[addr_hex-4].inst in BRANCH_INSTR and (code.instrs[addr_hex-8].rd == code.instrs[addr_hex-4].rs1 or code.instrs[addr_hex-8].rd == code.instrs[addr_hex-4].rs2):
+                    cs_vector_prev_prev_instr_mask = 0x83 #default value
+                elif is_prev_instr_multicycle == 1 and not is_prev_instr_disc:
+                    # In case of a multicycle, the instruction is still in the decode but with deassert (->mask)
+                    # and the instruction is in execute, withtout deassert, thus ex=CS_decode (withtou mask)
+                    cs_vector_prev_prev_instr_mask = cs_vector_prev_instr
+                elif is_prev_prev_instr_multicycle == 1 or addr_elf <= address_start_encrypt+4:
+                    cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr & 0b01111111
+                else:
+                    cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr
 
 
             if cs_id_mode and cs_ex_mode:
@@ -250,7 +273,7 @@ def encrypt_elf():
 
 
         # Iterate the encryption of one instruction (xor plain) rate = 4
-        S[0] ^= bytes_to_int(reverse_bytes(plain_elf[i:i + 4])) << 32
+        S[0] ^= bytes_to_int(reverse_bytes(plain_elf[addr_elf:addr_elf + 4])) << 32
         instr_cipher = int_to_bytes(S[0] >> 32, 4)
         cipher_elf += reverse_bytes(instr_cipher)
 
@@ -264,11 +287,11 @@ def encrypt_elf():
         other_lines_dbg += f"{'state_perm2reg':<24}:{pc_pc_instr},{state2str(S)}\n"
 
         if CS_MODE:
-            first_line_dbg = f"{'='*125}{reverse_bytes(plain_elf[i:i + 4]).hex()}==="
+            first_line_dbg = f"{'='*125}{reverse_bytes(plain_elf[addr_elf:addr_elf + 4]).hex()}==="
             first_line_dbg += f"CS:{hex(cs_list[instr2fct3_7_opcode(instr)]['cs_vector'])[2:]}"
             first_line_dbg += f"===Mul:{is_instr_multicycle == 1}\n"
         else:
-            first_line_dbg = f"{'='*125}{reverse_bytes(plain_elf[i:i + 4]).hex()}\n"
+            first_line_dbg = f"{'='*125}{reverse_bytes(plain_elf[addr_elf:addr_elf + 4]).hex()}\n"
         ascon_states_hex_dbg += first_line_dbg + other_lines_dbg
 
 
@@ -284,9 +307,8 @@ def encrypt_elf():
     with open(STATES_HEX_CSV_PATH, 'w', encoding="utf-8") as file:
         file.write(ascon_states_hex)
 
-    if DEBUG:
-        with open(STATES_HEX_DBG_CSV_PATH, 'w', encoding="utf-8") as file:
-            file.write(ascon_states_hex_dbg)
+    with open(STATES_HEX_DBG_CSV_PATH, 'w', encoding="utf-8") as file:
+        file.write(ascon_states_hex_dbg)
 
 
 if __name__ == "__main__":
