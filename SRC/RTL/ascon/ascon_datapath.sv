@@ -4,9 +4,9 @@ module ascon_datapath
     import cv32e40p_pkg::*;
     import ascon_pack::*;      
 #(
-`ifdef CS
-    parameter CS_LEN,
-`endif
+    parameter CS_WIDTH,
+    parameter CS_ID_WIDTH,
+    parameter CS_EX_WIDTH,
     parameter FIFO_DEPTH = 2,
     parameter FIFO_ADDR_DEPTH = 1,
     parameter PATCH_WIDTH = 320,
@@ -19,7 +19,7 @@ module ascon_datapath
     input logic                             rst_ni,
 
 `ifdef CS
-    input logic [CS_LEN-1:0]                cs_vector_i,
+    input logic [CS_WIDTH-1:0]              cs_vector_i,
 `endif
 
     input logic                             fifo_push_i,
@@ -44,7 +44,8 @@ module ascon_datapath
 `endif
     input logic                             apply_patch_i,
 
-    input logic [PATCH_WIDTH-1:0]           patch_i,
+    input logic [PATCH_WIDTH+CS_EX_WIDTH-1:0] patch_i,
+
     output logic [PATCH_MEM_ADDR_WIDTH-1:0] patch_addr_o,
 
     output logic                            redirection_in_id_o,
@@ -57,16 +58,15 @@ module ascon_datapath
     // DECLARATION
     localparam CLK_FACTOR = PB_ROUNDS / HW_PERMUTATION_N;
 
-    logic [PATCH_WIDTH-1:0]          patch_of_instr_in_if_reg_s = '0;
-    logic [PATCH_WIDTH-1:0]          patch_of_instr_in_id_reg_s = '0;
-    logic [PATCH_WIDTH-1:0]          patch_of_instr_in_ex_reg_s = '0;
+    logic [PATCH_WIDTH+CS_EX_WIDTH-1:0]          patch_of_instr_in_if_reg_s = '0;
+    logic [PATCH_WIDTH+CS_EX_WIDTH-1:0]          patch_of_instr_in_id_reg_s = '0;
+    logic [PATCH_WIDTH+CS_EX_WIDTH-1:0]          patch_of_instr_in_ex_reg_s = '0;
 
-`ifdef CS_EX
-    logic [PATCH_WIDTH-9:0]          patch_to_ascon_s;
-    logic [7:0]                      patch_cs_to_ascon_reg;
-    logic [7:0]                      patch_cs_to_ascon_s;
-`else
     logic [PATCH_WIDTH-1:0]          patch_to_ascon_s;
+`ifdef CS_EX
+    logic [63:0]          patch_s0_cs_to_ascon_s;
+    logic [CS_EX_WIDTH-1:0]          patch_cs_to_ascon_reg;
+    logic [CS_EX_WIDTH-1:0]          patch_cs_to_ascon_s;
 `endif
 
     logic [31:0]                     instr_rdata_plain_s;
@@ -174,7 +174,7 @@ module ascon_datapath
             patch_of_instr_in_id_reg_s[195:182]:  addr_redirected_s = {patch_of_instr_in_id_reg_s[181:168], 2'b0};
             patch_of_instr_in_id_reg_s[167:154]:  addr_redirected_s = {patch_of_instr_in_id_reg_s[153:140], 2'b0};
             patch_of_instr_in_id_reg_s[139:126]:  addr_redirected_s = {patch_of_instr_in_id_reg_s[125:112], 2'b0};
-            patch_of_instr_in_id_reg_s[111:98]:    addr_redirected_s = {patch_of_instr_in_id_reg_s[97:84], 2'b0};
+            patch_of_instr_in_id_reg_s[111:98]:   addr_redirected_s = {patch_of_instr_in_id_reg_s[97:84], 2'b0};
             patch_of_instr_in_id_reg_s[83:70]:    addr_redirected_s = {patch_of_instr_in_id_reg_s[69:56], 2'b0};
             patch_of_instr_in_id_reg_s[55:42]:    addr_redirected_s = {patch_of_instr_in_id_reg_s[41:28], 2'b0};
             patch_of_instr_in_id_reg_s[27:14]:    addr_redirected_s = {patch_of_instr_in_id_reg_s[13:0], 2'b0};
@@ -253,15 +253,9 @@ module ascon_datapath
     always_comb begin : patch_to_ascon_generation
         case (sel_patch_i)
             PATCH_NULL: patch_to_ascon_s = '0;
-`ifdef CS_EX
-            PATCH_IF: patch_to_ascon_s = patch_of_instr_in_if_reg_s[327:8];
-            PATCH_ID: patch_to_ascon_s = patch_of_instr_in_id_reg_s[327:8];
-            PATCH_EX: patch_to_ascon_s = patch_of_instr_in_ex_reg_s[327:8];
-`else
-            PATCH_IF: patch_to_ascon_s = patch_of_instr_in_if_reg_s;
-            PATCH_ID: patch_to_ascon_s = patch_of_instr_in_id_reg_s;
-            PATCH_EX: patch_to_ascon_s = patch_of_instr_in_ex_reg_s;
-`endif
+            PATCH_IF: patch_to_ascon_s = patch_of_instr_in_if_reg_s[319:0];
+            PATCH_ID: patch_to_ascon_s = patch_of_instr_in_id_reg_s[319:0];
+            PATCH_EX: patch_to_ascon_s = patch_of_instr_in_ex_reg_s[319:0];
         endcase
     end : patch_to_ascon_generation
 
@@ -269,16 +263,27 @@ module ascon_datapath
     assign state_not_patched = (sel_state_init_i) ? state_init : state_reg2mux_state_init;
 
 `ifdef CS_EX
+    always_comb begin : patch_cs_to_ascon_generation
+        case (sel_patch_i)
+            PATCH_NULL: patch_cs_to_ascon_s = '0;
+            PATCH_IF: patch_cs_to_ascon_s = patch_of_instr_in_if_reg_s[PATCH_WIDTH+CS_EX_WIDTH-1:PATCH_WIDTH];
+            PATCH_ID: patch_cs_to_ascon_s = patch_of_instr_in_id_reg_s[PATCH_WIDTH+CS_EX_WIDTH-1:PATCH_WIDTH];
+            PATCH_EX: patch_cs_to_ascon_s = patch_of_instr_in_ex_reg_s[PATCH_WIDTH+CS_EX_WIDTH-1:PATCH_WIDTH];
+        endcase
+    end : patch_cs_to_ascon_generation
+
     always_ff @(posedge clk_ascon_fast_i, negedge rst_ni) begin : patch_cs
         if (!rst_ni) begin
             patch_cs_to_ascon_reg <= '0;
         end else begin
-            patch_cs_to_ascon_reg <= patch_of_instr_in_ex_reg_s[7:0];
+            patch_cs_to_ascon_reg <= patch_cs_to_ascon_s;
         end
     end : patch_cs
 
-    assign patch_cs_to_ascon_s = (apply_patch_cs_i) ? patch_cs_to_ascon_reg : '0;
-    assign state_patched[0] = state_not_patched[0] ^ patch_to_ascon_s[319:256] ^ {48'h0, patch_cs_to_ascon_s, 8'h0};
+    assign patch_s0_cs_to_ascon_s[63:CS_EX_WIDTH+CS_ID_WIDTH] = '0;
+    assign patch_s0_cs_to_ascon_s[CS_EX_WIDTH+CS_ID_WIDTH-1:CS_ID_WIDTH] = (apply_patch_cs_i) ? patch_cs_to_ascon_reg : '0;
+    assign patch_s0_cs_to_ascon_s[CS_ID_WIDTH-1:0] = '0;
+    assign state_patched[0] = state_not_patched[0] ^ patch_to_ascon_s[319:256] ^ patch_s0_cs_to_ascon_s;
 `else
     assign state_patched[0] = state_not_patched[0] ^ patch_to_ascon_s[319:256];
 `endif
@@ -296,7 +301,7 @@ module ascon_datapath
     assign state_patch2cs = (apply_patch_i) ? state_patched : state_not_patched;
 `endif
     assign state_cs2cipher[4:1] = state_patch2cs[4:1];
-    assign state_cs2cipher[0] = {state_patch2cs[0][63:CS_LEN], state_patch2cs[0][CS_LEN-1:0] ^ cs_vector_i} ;
+    assign state_cs2cipher[0] = {state_patch2cs[0][63:CS_WIDTH], state_patch2cs[0][CS_WIDTH-1:0] ^ cs_vector_i} ;
 
     assign instr_rdata_plain_s = state_cs2cipher[0][63:32] ^ instr_rdata_cipher_i;
     assign instr_rdata_plain_o = (if_valid_i) ? instr_rdata_plain_s : 32'h0;
