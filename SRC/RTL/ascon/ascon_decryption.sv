@@ -4,9 +4,9 @@ module ascon_decryption
     import cv32e40p_pkg::*;
     import ascon_pack::*;    
 #(
-`ifdef CS
-    parameter CS_LEN,
-`endif
+    parameter CS_WIDTH,
+    parameter CS_ID_WIDTH,
+    parameter CS_EX_WIDTH,
     parameter FIFO_DEPTH = 2,
     parameter FIFO_ADDR_DEPTH = 1,
     parameter PATCH_WIDTH = 320,
@@ -19,7 +19,7 @@ module ascon_decryption
     input logic          rst_ni,
 
 `ifdef CS
-    input logic [CS_LEN-1:0] cs_vector_i,
+    input logic [CS_WIDTH-1:0] cs_vector_i,
 `endif
 
     input logic          fifo_push_i,
@@ -38,7 +38,7 @@ module ascon_decryption
     input logic          branch_decision_i,
     input logic          pc_set_i,
 
-    input logic [PATCH_WIDTH-1:0]           patch_i,
+    input logic [PATCH_WIDTH + CS_EX_WIDTH - 1:0]           patch_i,
     output logic [PATCH_MEM_ADDR_WIDTH-1:0] patch_addr_o,
 
     input  logic [PATCH_MEM_ADDR_WIDTH-1:0]  instr_addr_i,
@@ -83,9 +83,9 @@ module ascon_decryption
 
 
     ascon_datapath #(
-`ifdef CS
-        .CS_LEN               (CS_LEN),
-`endif
+        .CS_WIDTH             (CS_WIDTH),
+        .CS_ID_WIDTH          (CS_ID_WIDTH),
+        .CS_EX_WIDTH          (CS_EX_WIDTH),
         .FIFO_DEPTH           (FIFO_DEPTH),
         .FIFO_ADDR_DEPTH      (FIFO_ADDR_DEPTH),
         .PATCH_MEM_ADDR_WIDTH (PATCH_MEM_ADDR_WIDTH),
