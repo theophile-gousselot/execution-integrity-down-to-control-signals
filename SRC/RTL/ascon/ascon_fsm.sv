@@ -187,17 +187,26 @@ module ascon_fsm
             JAL_TAKEN: begin
                 sel_patch_o               = PATCH_ID;
                 apply_patch_o             = 1'b1;
+`ifdef CS_EX
+                apply_patch_cs_s          = 1'b1;
+`endif
             end
 
             JALR_TAKEN: begin
                 sel_patch_o               = PATCH_IF;
                 apply_patch_o             = 1'b1;
+`ifdef CS_EX
+                apply_patch_cs_s          = 1'b1;
+`endif
             end
 
             REDIRECTION_TAKEN: begin
                 sel_patch_o               = PATCH_IF;
                 apply_patch_o             = 1'b1;
                 sel_previous_instr_addr_en_o = 1'b1;
+`ifdef CS_EX
+                apply_patch_cs_s          = 1'b1;
+`endif
             end
 
             BRANCH_TAKEN: begin
