@@ -222,7 +222,6 @@ def encrypt_elf():
                     # the following instruction will be decrypted using control signals masked by deassert_we, 
                     # thus, encryption must apply the mask. Deassert_we is null when first instr is decoded
                     cs_vector_prev_instr_mask = cs_vector_prev_instr & 0b01111111
-                    cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr
                 else:
                     cs_vector_prev_instr_mask = cs_vector_prev_instr
 

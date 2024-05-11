@@ -15,9 +15,9 @@ REDIRECTION_TAG_SIZE = int((ASCON_STATE_WIDTH - WIDTH_ADDR * NB_ADDR_REDIRECTED_
 REDIRECTION_TAG = '1' * REDIRECTION_TAG_SIZE
 
 
-def zfint(i):
+def zfint(i,bits):
     """ Convert a int into a str filled with 0 to reach 5 caracters. """
-    return hex(i)[2:].zfill(5)
+    return hex(i)[2:].zfill(bits)
 
 class Code:
     """
@@ -33,7 +33,6 @@ class Code:
     """
 
     def __init__(self, src_path, obj_path, control_signals):
-        print(src_path, obj_path, control_signals)
         self.instrs = {}
         self.cs_id_mode = "id" in control_signals
         self.cs_ex_mode = "ex" in control_signals
@@ -209,7 +208,7 @@ class Code:
                     self.instrs[int(addr_dec)].is_multicycle = is_multicycle == "1"
                     # cs_vector_xored used to encrypt instr at PC is instr at PC-4
                     self.instrs[int(addr_dec)].cs_vector = int(cs_vector)
-                    self.instrs[int(addr_dec)-4].cs_vector_xored = int(cs_vector_xored)
+                    self.instrs[int(addr_dec)].cs_vector_xored = int(cs_vector_xored)
                 else:
                     addr_hex, addr_dec, instr, state = list(state_l.split(",", 3))
                     self.instrs[int(addr_dec)].state = list(map(int, list(state.split(",", 4))))
@@ -230,47 +229,72 @@ class Code:
             print(f"WARNING, conflict for patching address (@{addr_patch} to @{addr_dest})")
 
         else:
+            if disc_type == 'b':
+                addr_disc = addr_src - 8
+            elif disc_type in ['jal', 'jalr']:
+                addr_disc = addr_src - 4
+            else:
+                raise ValueError(f"Invalid disc type")
+
+
             patch = ''
             correction_str = ''
             for i in range(5):
                 state1, state2 = self.instrs[addr_src].state[i], self.instrs[addr_dest].state[i]
                 sub_state_patch = state1 ^ state2
 
-                # When a branch is in EXECUTE, even if instr in DECODE is not a multicycle instruction, 
-                # the signal we_deassert will be raised! Therefore, if the instr in DECODE was multicycle
-                # CS was already masked: nothing to do. However, if not, as mask is applied by xoring 
-                # cs_vector bits to mask to itself (as it is already in the patch through cs2cipher.
-                if self.cs_mode and i == 0 and disc_type == 'b': #addr_patch -> addr_src-8
-                    brplus4_mask = (self.instrs[addr_patch+4].cs_vector_xored & 0x8080)
-                    sub_state_patch ^= brplus4_mask
-                    correction_str = f",{hex(brplus4_mask)[2:]}"
+                ##### PATCH FOR CYCLE AT INSTRUCTION DISCONTINUITY EXECUTION #####
+                if self.cs_mode and i == 0:
+                    # When a branch is in EXECUTE, even if instr in DECODE is not a multicycle instruction, 
+                    # the signal we_deassert will be raised! Therefore, if the instr in DECODE was multicycle
+                    # CS was already masked: nothing to do. However, if not, as mask is applied by xoring 
+                    # cs_vector bits to mask to itself (as it is already in the patch through cs2cipher.
+                    if disc_type == 'b': #addr_patch -> addr_src-8
+                        if self.cs_ex_mode:
+                            brplus4_mask = (self.instrs[addr_patch+8].cs_vector_xored & 0x8080)
+                            sub_state_patch ^= brplus4_mask
+                            correction_str = f",{hex(brplus4_mask)[2:]:>4} ({zfint(self.instrs[addr_patch+4].cs_vector_xored,4)})"
+                        elif self.cs_id_mode:
+                            brplus4_mask = (self.instrs[addr_patch+8].cs_vector_xored & 0x80)
+                            sub_state_patch ^= brplus4_mask
+                            correction_str = f",{hex(brplus4_mask)[2:]:>2} ({zfint(self.instrs[addr_patch+4].cs_vector_xored,2)})"
 
-                # When a jump is executed, the pipeline is stall, thus, the jal is in the execute AND in the
-                # decode. Therefore, the JAL cs_vector must replace in the patch the cvs_vector of the
-                # instruction before the jal
-                if self.cs_ex_mode and i == 0 and disc_type in ['jal', 'jalr']:
-                    jal_ex_correction = (self.instrs[addr_src-4].cs_vector ^ self.instrs[addr_src-8].cs_vector) << 8
-                    sub_state_patch ^= jal_ex_correction
-                    correction_str = f",{hex(jal_ex_correction)[2:]}"
-
-
-
+                    # Destination of a jump is decrypted after the state get from jal decryption xor with patch, and CS from 
+                    # jal in the execute (not jal-4) AND in the decode (deasserted). Therefore, the execute cs_vector
+                    # must be replaced in the patch from the cs_vector of the instruction at JAL-4 to JAL cs_vector
+                    if disc_type in ['jal', 'jalr']:
+                        if self.cs_ex_mode:
+                            jal_ex_correction = ((self.instrs[addr_src].cs_vector_xored >> 8) ^ self.instrs[addr_disc].cs_vector) << 8 #jal-4 ^ jal
+                            sub_state_patch ^= jal_ex_correction
+                            correction_str = f",{hex(jal_ex_correction)[2:]:>4}({zfint(self.instrs[addr_disc].cs_vector_xored >> 8,2)}^{zfint(self.instrs[addr_disc].cs_vector,2)})"
+                        elif self.cs_id_mode:
+                            correction_str = f",{' '*11}"
 
                 patch += hex(sub_state_patch)[2:].zfill(16)
 
             #print(f"{hex(addr_patch)}({hex(self.instrs[addr_patch].cs_vector & 0x7f)}): {hex(addr_dest-4)}({hex(self.instrs[addr_dest-4].cs_vector & 0xff)}  {hex(((self.instrs[addr_patch].cs_vector & 0x7f) ^ self.instrs[addr_dest-4].cs_vector) & 0xff)[2:].zfill(2)}")
 
-            if self.cs_ex_mode:
-                if self.instrs[addr_patch].type == 'B':
-                    patch += hex(((self.instrs[addr_patch].cs_vector_xored & 0x7f) ^ self.instrs[addr_dest-4].cs_vector_xored) & 0xff)[2:].zfill(2)
-                else:
-                    patch += hex(0)[2:].zfill(2)
 
+            ##### PATCH FOR CYCLE AFTER THE ONE OF INSTRUCTION DISCONTINUITY EXECUTION #####
+            if self.cs_ex_mode:
+                if addr_dest+4 not in self.instrs.keys():
+                    cs_ex_corr = "00"
+                    correction_str += f"no dest+4"
+                elif disc_type in ['jal', 'jalr']: # Instruction in EX is jal deasserted not dest-4
+                    cs_ex_corr = hex((self.instrs[addr_disc].cs_vector & 0x7f) ^ (self.instrs[addr_dest+4].cs_vector_xored >> 8))[2:].zfill(2) #jal(deasserted_we) ^ dest-4 (used for dest+4 enc)
+                    correction_str += f",{cs_ex_corr}({zfint(self.instrs[addr_disc].cs_vector & 0x7f,2)}^{zfint(self.instrs[addr_dest+4].cs_vector_xored >> 8,2)})"
+
+                elif self.instrs[addr_patch].type == 'B': # Instruction in EX is br deasserted not dest-4
+                    cs_ex_corr = hex((self.instrs[addr_disc].cs_vector & 0x7f) ^ (self.instrs[addr_dest+4].cs_vector_xored >> 8))[2:].zfill(2) #br(deasserted_we) ^ dest-4 (used for dest+4 enc)
+                    correction_str += f",{cs_ex_corr}({zfint(self.instrs[addr_disc].cs_vector & 0x7f,2)}^{zfint(self.instrs[addr_dest+4].cs_vector_xored >> 8,2)})"
+                else:
+                    cs_ex_corr = hex(0)[2:].zfill(2)
+                patch = cs_ex_corr + patch
 
             self.hex_patches_free[addr_patch >> 2] = False
             self.hex_patches[addr_patch >> 2] = patch
 
-            patch_csv = f"{zfint(addr_patch)},{zfint(addr_src)},{zfint(addr_dest)},{patch}{correction_str}"
+            patch_csv = f"{disc_type:<4},{zfint(addr_patch,5)},{zfint(addr_disc,5)},{zfint(addr_src,5)},{zfint(addr_dest,5)},{patch}{correction_str}"
             self.hex_patches_csv[addr_patch >> 2] = patch_csv
 
     def get_patches(self, patch_policy):
@@ -308,7 +332,7 @@ class Code:
 
             PATCH_WIDTH = 82 if self.cs_ex_mode else 80
             self.hex_patches = ['0' * PATCH_WIDTH] * len(self.instrs.keys())
-            self.hex_patches_csv = ['00000,00000,00000,' + '0' * PATCH_WIDTH] * len(self.instrs.keys())
+            self.hex_patches_csv = ['    ,00000,00000,00000,00000,' + '0' * PATCH_WIDTH] * len(self.instrs.keys())
             self.hex_patches_free = [True] * len(self.instrs.keys())
 
             # FIRST ITERATION (Generate patches for all branch and jal)
@@ -383,9 +407,10 @@ class Code:
                     redirection_field += bin(self.patches_to_be_redirected[addr][s])[2:-2].zfill(WIDTH_ADDR)
                     redirection_field += bin(addr_redirected[s])[2:-2].zfill(WIDTH_ADDR)
                 if self.cs_ex_mode:
-                    redirection_field += "0" * 8
-                self.hex_patches[addr >> 2] = hex(int(REDIRECTION_TAG + redirection_field, 2))[2:]
-                self.hex_patches_csv[addr >> 2] = f"{zfint(addr)},REDIRECTION,{self.hex_patches[addr >> 2]}"
+                    self.hex_patches[addr >> 2] = "00" + hex(int(REDIRECTION_TAG + redirection_field, 2))[2:]
+                else:
+                    self.hex_patches[addr >> 2] = hex(int(REDIRECTION_TAG + redirection_field, 2))[2:]
+                self.hex_patches_csv[addr >> 2] = f"jalr,{zfint(addr,5)},{zfint(addr,5)},REDIRECTION,{self.hex_patches[addr >> 2]}"
                 self.hex_patches_free[addr >> 2] = False
 
             with open(self.EDGES_PATH, 'w', encoding="utf-8") as file:
