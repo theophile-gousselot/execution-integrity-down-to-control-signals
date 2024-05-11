@@ -25,27 +25,26 @@ module core_v_verif_fpga
     localparam BOOT_ADDR              = 'h80;
     localparam FIFO_DEPTH             = 2; //must be greater or equal to 2 
     localparam int unsigned FIFO_ADDR_DEPTH = (FIFO_DEPTH > 1) ? $clog2(FIFO_DEPTH) : 1;
-
-`ifdef CS_ID
-`ifdef CS_EX
-    localparam CS_LEN = 16;
-`else
-    localparam CS_LEN = 8;
-`endif
-`else
-`ifdef CS_EX
-    localparam CS_LEN = 8;
-`endif
-`endif
+    localparam PATCH_WIDTH            = 320;
 
 `ifdef ENCRYPT
-    localparam PB_ROUNDS              = 6;
-`ifdef CS_EX
-    localparam PATCH_WIDTH            = 328;
-`else
-    localparam PATCH_WIDTH            = 320;
-`endif
+    localparam PB_ROUNDS   = 6;
     localparam PATCH_MEM_ADDR_WIDTH   = 16;
+`endif
+`ifdef CS_EX
+    localparam CS_EX_WIDTH = 8;
+`else
+    localparam CS_EX_WIDTH = 0;
+`endif
+`ifdef CS_ID
+    localparam CS_ID_WIDTH = 8;
+`else
+    localparam CS_ID_WIDTH = 0;
+`endif
+`ifdef CS
+    localparam CS_WIDTH = CS_ID_WIDTH + CS_EX_WIDTH; 
+`else
+    localparam CS_WIDTH = 0;
 `endif
 
 
@@ -107,11 +106,11 @@ module core_v_verif_fpga
 
     // Control Signals: core to ascon_fsm
     logic [PATCH_MEM_ADDR_WIDTH-1:0] patch_addr_s;
-    logic [PATCH_WIDTH-1:0]          patch_s;
+    logic [PATCH_WIDTH + CS_EX_WIDTH - 1:0]          patch_s;
 `endif
 
 `ifdef CS
-    logic [CS_LEN-1:0] cs_vector_s;
+    logic [CS_WIDTH-1:0] cs_vector_s;
 `endif
 
     // RESET
@@ -175,7 +174,13 @@ module core_v_verif_fpga
 
     cv32e40p_core #(
 `ifdef CS
-        .CS_LEN                 (CS_LEN),
+        .CS_WIDTH         (CS_WIDTH),
+`endif
+`ifdef CS_ID
+        .CS_ID_WIDTH      (CS_ID_WIDTH),
+`endif
+`ifdef CS_EX
+        .CS_EX_WIDTH      (CS_EX_WIDTH),
 `endif
         .FIFO_DEPTH       (FIFO_DEPTH),
         .FIFO_ADDR_DEPTH  (FIFO_ADDR_DEPTH),
@@ -265,9 +270,9 @@ module core_v_verif_fpga
 
 `ifdef ENCRYPT
     ascon_decryption #(
-`ifdef CS
-        .CS_LEN                 (CS_LEN),
-`endif
+        .CS_WIDTH               (CS_WIDTH),
+        .CS_ID_WIDTH            (CS_ID_WIDTH),
+        .CS_EX_WIDTH            (CS_EX_WIDTH),
         .FIFO_DEPTH             (FIFO_DEPTH),
         .FIFO_ADDR_DEPTH        (FIFO_ADDR_DEPTH),
         .PATCH_WIDTH            (PATCH_WIDTH),
@@ -346,7 +351,7 @@ module core_v_verif_fpga
 `ifdef ENCRYPT
     patch_mem #(
         .ADDR_WIDTH   (PATCH_MEM_ADDR_WIDTH),
-        .PATCH_WIDTH  (PATCH_WIDTH)
+        .PATCH_WIDTH  (PATCH_WIDTH + CS_EX_WIDTH)
     ) patch_mem_i (
         .clk_i        (clk_core_slow_i),
         .patch_addr_i (patch_addr_s),
