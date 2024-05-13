@@ -40,6 +40,8 @@ SRC_TB_FILE			:= $(SV_BENCH_DIR)/core_v_verif_fpga_tb.cpp
 
 TB_CPP_NAME			:= core_v_verif_fpga
 
+SOFT_SCRIPTS		:= $(filter %.py,$(wildcard  SRC/SCRIPTS/*)) 
+
 #==== CV32E40P ====#
 CV_CORE_PKG 		:= $(SV_RTL_DIR)/iea_cv32e40p_fpga_dev
 CV_CORE_BRANCH 		:= iea_cv32e40p_fpga_dev
@@ -339,7 +341,6 @@ SRC/RTL/iea_cv32e40p_fpga_dev :
 
 
 #==== CONVERT HEX ENCRYPTED ====#
-.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp 
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp 
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id.timestamp 
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id-ex.timestamp 
@@ -350,12 +351,11 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id-ex.timestamp : \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.itb \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.readelf \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.objdump \
-		$(SCRIPT_DIR)/hex2mem.py
+		$(SOFT_SCRIPTS)
 	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs_val,$@).hex 
 	@echo "\n===> $@"
 	$(SCRIPT_DIR)/hex2mem.py OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs_val,$@).hex 
 	touch $@
-
 
 #==== GENERATE PATCH MEM FILE ====#
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.mem
@@ -365,7 +365,7 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id_patches.mem \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex_patches.mem: \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.itb \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv \
-		$(SCRIPT_DIR)/riscv-elf-generate-patches.py
+		$(SOFT_SCRIPTS)
 	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/.mem_encrypted$(call cs_val,$@).timestamp
 	@echo "\n===> $@"
 	$(SCRIPT_DIR)/riscv-elf-generate-patches.py OBJ/PROGRAMS/$*/SIM/REF OBJ/PROGRAMS/$*/PROGRAM_COMPILED $(call cs_flags_sw,$@)
@@ -375,13 +375,13 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex_patches.mem: \
 #==== GENERATE ENCRYPTED HEX FILE ====#
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.hex
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.hex
-.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs.hex
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id.hex
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.hex
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.hex \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.hex \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id.hex \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.hex : \
-		$(SCRIPT_DIR)/riscv-elf-encryption.py \
-		$(SCRIPT_DIR)/ascon_fct.py
+		$(SOFT_SCRIPTS)
 	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs_val,$@).elf
 	@echo "\n===> $@"
 	$(RISCV_EXE_PREFIX)objcopy -O verilog OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs_val,$@).elf $@
@@ -396,8 +396,7 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.elf \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id.elf\
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.elf: \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf \
-		$(SCRIPT_DIR)/riscv-elf-encryption.py \
-		$(SCRIPT_DIR)/ascon_fct.py
+		$(SOFT_SCRIPTS)
 	@echo "\n===> $@"
 	cp $< $@
 	$(SCRIPT_DIR)/riscv-elf-encryption.py $@ $(PB_ROUNDS_PY_FLAG) $(call cs_flags_sw,$@)
@@ -408,7 +407,7 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.elf: \
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv : \
 		OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv \
-		$(SCRIPT_DIR)/riscv-get-jalr-successors-from-extracted-signals.py
+		$(SOFT_SCRIPTS)
 	@echo "\n===> $@"
 	$(SCRIPT_DIR)/riscv-get-jalr-successors-from-extracted-signals.py $< $@
 	
