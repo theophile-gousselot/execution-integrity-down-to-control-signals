@@ -70,6 +70,9 @@ OBJ_BSP_DIR             := $(OBJ_TOOLS_DIR)/BSP
 cf_val = $(shell echo "$(1)" | sed 's=^.*_cf\([0-9]\).*$$=\1=' || true)
 cf = $(shell echo "$(1)" | sed -n 's=^.*_cf\([0-9]\).*$$=_cf\1=p' || true)
 
+keep_if_enc= $(shell echo "$(1)" | sed -E -n 's=^(.*_encrypted.*)$$=\1=p' || true)
+
+
 cs_val = $(shell echo "$(1)" | sed -E -n 's=^.*_cs(([a-z]|-)*).*$$=_cs\1=p' || true)
 #cs = $(shell echo "$(1)" | grep -q "_cs" && echo "_cs" || true)
 cs_id_hw = $(shell echo "$(1)" | sed -E -n 's=^.*_cs.*-(id).*$$=+define+CS_\U\1 -CFLAGS  '\''-D CS_\U\1'\''=p')
@@ -85,7 +88,7 @@ encrypted = $(shell echo "$(1)" | grep -q "_encrypted" && echo "_encrypted" || t
 encrypted_flags = $(shell echo "$(1)" | grep -q "_encrypted" && echo "+define+ENCRYPT -CFLAGS '-D ENCRYPT' -GHW_PERMUTATION_N=$(shell expr 6 / $(call cf_val,$@) ) -CFLAGS '-D CLK_FACTOR=$(call cf_val,$@)'" || true)
 
 
-
+remove_none= $(shell echo "$(1)" | sed 's=_none==g' || true)
 
 
 ########################################
@@ -97,6 +100,24 @@ encrypted_flags = $(shell echo "$(1)" | grep -q "_encrypted" && echo "+define+EN
 ##                |___/               ##
 ########################################
 
+
+
+CF= $(addprefix _encrypted_cf, 1 2 3 6)    							# _encrypted_cf1 _encrypted_cf2 ...
+CS= _none _cs-id _cs-id-ex
+CFCS= _none $(foreach cs,$(CS), $(foreach cf,$(CF), $(cf)$(cs)))    # _encrypted_cf1 _encrypted_cf1_cs-id ...
+MODE= _verif.log .vcd
+
+VERI_VERIF_TARGETS= \
+$(call remove_none,\
+$(foreach mode,$(MODE),\
+$(foreach cfcs,$(CFCS),\
+OBJ/PROGRAMS/%/SIM/LOG/program$(cfcs)$(mode))))
+
+.PHONY: info
+info :
+	@echo $(VERI_VERIF_TARGETS)
+
+
 ##                 _ _       _                                           _
 ## __   _____ _ __(_| | __ _| |_ ___  _ __ _     _____  _____  ___ _   _| |_ ___
 ## \ \ / / _ | '__| | |/ _` | __/ _ \| '__(_)   / _ \ \/ / _ \/ __| | | | __/ _ \
@@ -104,16 +125,11 @@ encrypted_flags = $(shell echo "$(1)" | grep -q "_encrypted" && echo "+define+EN
 ##   \_/ \___|_|  |_|_|\__,_|\__\___/|_|  (_)   \___/_/\_\___|\___|\__,_|\__\___|
 ##
 
+# Secondary Expansion allow Automatic Variablesto be used in dependancies field
+.SECONDEXPANSION:
 
-#==== VCD ====#
-OBJ/PROGRAMS/%/SIM/VCD/program.vcd : \
-		$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_vcd/V$(TB_CPP_NAME) \
-		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp \
-		OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
-	@echo "\n===> $@"
-	mkdir -p $(dir $@)
-	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_vcd/V$(TB_CPP_NAME) $* --verif
-
+#==== RUN SIMULATION ====#
+OBJ/PROGRAMS/%/SIM/LOG/program_verif.log \
 OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf1_verif.log \
 OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf2_verif.log \
 OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf3_verif.log \
@@ -126,6 +142,7 @@ OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf1_cs-id-ex_verif.log \
 OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf2_cs-id-ex_verif.log \
 OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf3_cs-id-ex_verif.log \
 OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf6_cs-id-ex_verif.log \
+OBJ/PROGRAMS/%/SIM/VCD/program.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf1.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf2.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf3.vcd \
@@ -138,21 +155,20 @@ OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf1_cs-id-ex.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf2_cs-id-ex.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf3_cs-id-ex.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf6_cs-id-ex.vcd : \
-		OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
-	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/.mem_encrypted$(call cs_val,$@).timestamp
-	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program_encrypted$(call cs_val,$@)_patches.mem
-	make $(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted$(call vcd,$@)$(call cf,$@)$(call cs_val,$@)/V$(TB_CPP_NAME)
+		OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv \
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem$$(call encrypted,$$@)$$(call cs_val,$$@).timestamp \
+		$$(call keep_if_enc, OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted$$(call cs_val,$$@)_patches.mem) \
+		$(OBJ_VERI_DIR)/$(TB_CPP_NAME)$$(call encrypted,$$@)$$(call vcd,$$@)$$(call cf,$$@)$$(call cs_val,$$@)/V$$(TB_CPP_NAME)
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
-	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)_encrypted$(call vcd,$@)$(call cf,$@)$(call cs_val,$@)/V$(TB_CPP_NAME) $* --verif
+	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)$(call encrypted,$@)$(call vcd,$@)$(call cf,$@)$(call cs_val,$@)/V$(TB_CPP_NAME) $* --verif
+
+
+#.PRECIOUS: OBJ/PROGRAMS/%/SIM/LOG/program_save_ref.log
+#OBJ/PROGRAMS/%/SIM/LOG/program_save_ref.log : OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
 
 
 #==== SAVE REF ====#
-.PRECIOUS: OBJ/PROGRAMS/%/SIM/LOG/program_save_ref.log
-OBJ/PROGRAMS/%/SIM/LOG/program_save_ref.log :
-	make OBJ/PROGRAMS/$*/SIM/REF/ref_decode_pc_instr_patch.csv
-
-
 .PRECIOUS: OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
 OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv : \
 		$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) \
@@ -162,6 +178,7 @@ OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv : \
 	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) $* --save_ref
 
 
+#==== SAVE CONTROL SIGNAL AT EXECUTION TIME ====#
 .PRECIOUS: OBJ/PROGRAMS/%/SIM/REF/ref_cs.csv
 OBJ/PROGRAMS/%/SIM/REF/ref_cs.csv : \
 		$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) \
@@ -171,25 +188,11 @@ OBJ/PROGRAMS/%/SIM/REF/ref_cs.csv : \
 	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) $* --save_ref --cs_ref
 
 
-#==== VERIFICATION ====#
-OBJ/PROGRAMS/%/SIM/LOG/program_verif.log :  \
-		$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) \
-		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp \
-		OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
-	@echo "\n===> $@"
-	mkdir -p $(dir $@)
-	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) $* --verif
-
-
-
 #==== TRACE SIGNALS ====#
-# "$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) \" must be added to the dependency list,
-# however it induces to compute again jalr_successor beacause of RTL edits, even if the
-# edits concern only encryption part.
 .PRECIOUS: OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv
 OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv : \
-		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp
-	make $(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME)
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp \
+		$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME)
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
 	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) $* --trace_signals --save_ref
@@ -233,6 +236,7 @@ OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf3_cs-id-ex/Vcore_v_verif
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6_cs-id-ex/Vcore_v_verif_fpga : \
 		$(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE)
 	@echo "\n===> $@"
+	echo "ok$(call cs_val,$@)"
 	mkdir -p $(dir $@)
 	verilator \
 		$(call vcd_flags,$@) \
@@ -280,7 +284,7 @@ OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf1/.simulate_behav_log.timesta
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf2/.simulate_behav_log.timestamp \
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf3/.simulate_behav_log.timestamp \
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6/.simulate_behav_log.timestamp :
-	make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)
+		OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted$$(call cf,$$@)
 	@echo "\n===> $@"
 	vivado -mode batch OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).xpr -source ./SRC/SCRIPTS/set_questa_dir_for_5simulations.tcl
 	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).sim/sim_1/behav/questa -c
@@ -341,6 +345,7 @@ SRC/RTL/iea_cv32e40p_fpga_dev :
 
 
 #==== CONVERT HEX ENCRYPTED ====#
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp 
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp 
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id.timestamp 
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id-ex.timestamp 
@@ -348,25 +353,26 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id.timestamp \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id-ex.timestamp : \
+		$(SCRIPT_DIR)/hex2mem.py \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.itb \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.readelf \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.objdump \
-		$(SOFT_SCRIPTS)
-	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs_val,$@).hex 
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program$$(call encrypted,$$@)$$(call cs_val,$$@).hex 
 	@echo "\n===> $@"
-	$(SCRIPT_DIR)/hex2mem.py OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs_val,$@).hex 
+	$< OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs_val,$@).hex 
 	touch $@
 
 #==== GENERATE PATCH MEM FILE ====#
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.mem
-.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs_patches.mem
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id_patches.mem
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex_patches.mem
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.mem \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id_patches.mem \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex_patches.mem: \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.itb \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv \
-		$(SOFT_SCRIPTS)
-	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/.mem_encrypted$(call cs_val,$@).timestamp
+		$(SOFT_SCRIPTS) \
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted$$(call cs_val,$$@).timestamp
 	@echo "\n===> $@"
 	$(SCRIPT_DIR)/riscv-elf-generate-patches.py OBJ/PROGRAMS/$*/SIM/REF OBJ/PROGRAMS/$*/PROGRAM_COMPILED $(call cs_flags_sw,$@)
 
@@ -381,8 +387,7 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.hex \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.hex \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id.hex \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.hex : \
-		$(SOFT_SCRIPTS)
-	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs_val,$@).elf
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program$$(call encrypted,$$@)$$(call cs_val,$$@).elf
 	@echo "\n===> $@"
 	$(RISCV_EXE_PREFIX)objcopy -O verilog OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs_val,$@).elf $@
 	
@@ -396,6 +401,7 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.elf \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id.elf\
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.elf: \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf \
+		$(SCRIPT_DIR)/riscv-elf-encryption.py  \
 		$(SOFT_SCRIPTS)
 	@echo "\n===> $@"
 	cp $< $@
@@ -407,7 +413,7 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.elf: \
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv : \
 		OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv \
-		$(SOFT_SCRIPTS)
+		SRC/SCRIPTS/riscv-get-jalr-successors-from-extracted-signals.py
 	@echo "\n===> $@"
 	$(SCRIPT_DIR)/riscv-get-jalr-successors-from-extracted-signals.py $< $@
 	
