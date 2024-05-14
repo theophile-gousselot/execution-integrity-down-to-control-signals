@@ -155,10 +155,10 @@ OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf1_cs-id-ex.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf2_cs-id-ex.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf3_cs-id-ex.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf6_cs-id-ex.vcd : \
-		OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv \
-		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem$$(call encrypted,$$@)$$(call cs_val,$$@).timestamp \
 		$$(call keep_if_enc, OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted$$(call cs_val,$$@)_patches.mem) \
-		$(OBJ_VERI_DIR)/$(TB_CPP_NAME)$$(call encrypted,$$@)$$(call vcd,$$@)$$(call cf,$$@)$$(call cs_val,$$@)/V$$(TB_CPP_NAME)
+		$(OBJ_VERI_DIR)/$(TB_CPP_NAME)$$(call encrypted,$$@)$$(call vcd,$$@)$$(call cf,$$@)$$(call cs_val,$$@)/V$$(TB_CPP_NAME) \
+		OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
+	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/.mem$(call encrypted,$@)$(call cs_val,$@)_timestamp
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
 	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)$(call encrypted,$@)$(call vcd,$@)$(call cf,$@)$(call cs_val,$@)/V$(TB_CPP_NAME) $* --verif
@@ -172,7 +172,7 @@ OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf6_cs-id-ex.vcd : \
 .PRECIOUS: OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
 OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv : \
 		$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) \
-		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_timestamp
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
 	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) $* --save_ref
@@ -182,7 +182,7 @@ OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv : \
 .PRECIOUS: OBJ/PROGRAMS/%/SIM/REF/ref_cs.csv
 OBJ/PROGRAMS/%/SIM/REF/ref_cs.csv : \
 		$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) \
-		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_timestamp
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
 	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME) $* --save_ref --cs_ref
@@ -191,7 +191,7 @@ OBJ/PROGRAMS/%/SIM/REF/ref_cs.csv : \
 #==== TRACE SIGNALS ====#
 .PRECIOUS: OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv
 OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv : \
-		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp \
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_timestamp \
 		$(OBJ_VERI_DIR)/$(TB_CPP_NAME)/V$(TB_CPP_NAME)
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
@@ -236,7 +236,6 @@ OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf3_cs-id-ex/Vcore_v_verif
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6_cs-id-ex/Vcore_v_verif_fpga : \
 		$(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE)
 	@echo "\n===> $@"
-	echo "ok$(call cs_val,$@)"
 	mkdir -p $(dir $@)
 	verilator \
 		$(call vcd_flags,$@) \
@@ -263,13 +262,13 @@ OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6_cs-id-ex/Vcore_v_verif
 
 
 
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%/.simulate_behav_log.timestamp : OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%/.simulate_behav_log_timestamp : OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%
 	@echo "\n===> $@"
 	vivado -mode batch OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.xpr -source ./SRC/SCRIPTS/set_questa_dir_for_5simulations.tcl
 	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/behav/questa -c
 	touch $@
 
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%/.simulate_log.timestamp : OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%/.simulate_log_timestamp : OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%
 	@echo "\n===> $@"
 	vivado -mode batch OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.xpr -source ./SRC/SCRIPTS/set_questa_dir_for_5simulations.tcl
 	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*/core_v_verif_fpga_$*.sim/sim_1/behav/questa -c
@@ -280,10 +279,10 @@ OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%/.simulate_log.timestamp : OBJ/VIVADO_OBJ_
 	touch $@
 
 
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf1/.simulate_behav_log.timestamp \
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf2/.simulate_behav_log.timestamp \
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf3/.simulate_behav_log.timestamp \
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6/.simulate_behav_log.timestamp :
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf1/.simulate_behav_log_timestamp \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf2/.simulate_behav_log_timestamp \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf3/.simulate_behav_log_timestamp \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6/.simulate_behav_log_timestamp :
 		OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted$$(call cf,$$@)
 	@echo "\n===> $@"
 	vivado -mode batch OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).xpr -source ./SRC/SCRIPTS/set_questa_dir_for_5simulations.tcl
@@ -291,10 +290,10 @@ OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6/.simulate_behav_log.timesta
 	touch $@
 
 
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf1/.simulate_log.timestamp \
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf2/.simulate_log.timestamp \
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf3/.simulate_log.timestamp \
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6/.simulate_log.timestamp :
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf1/.simulate_log_timestamp \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf2/.simulate_log_timestamp \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf3/.simulate_log_timestamp \
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6/.simulate_log_timestamp :
 	make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)
 	@echo "\n===> $@"
 	vivado -mode batch OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).xpr -source ./SRC/SCRIPTS/set_questa_dir_for_5simulations.tcl
@@ -307,7 +306,7 @@ OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6/.simulate_log.timestamp :
 
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_% : $(CV_CORE_PKG) $(SRC_RTL) $(SRC_TB_FILE) \
 		SRC/SCRIPTS/create_projects.tcl \
-		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_timestamp
 	@echo "\n===> $@"
 	vivado -mode batch -source SRC/SCRIPTS/create_projects.tcl -tclargs core_v_verif_fpga_$*
 
@@ -316,7 +315,7 @@ OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf2 \
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf3 \
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6 :  $(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE) \
 		SRC/SCRIPTS/create_projects.tcl \
-		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp \
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_timestamp \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.mem
 	@echo "\n===> $@"
 	vivado -mode batch -source SRC/SCRIPTS/create_projects.tcl -tclargs core_v_verif_fpga_$*_encrypted$(call cf,$@)
@@ -345,14 +344,14 @@ SRC/RTL/iea_cv32e40p_fpga_dev :
 
 
 #==== CONVERT HEX ENCRYPTED ====#
-.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp 
-.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp 
-.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id.timestamp 
-.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id-ex.timestamp 
-OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem.timestamp \
-OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted.timestamp \
-OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id.timestamp \
-OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id-ex.timestamp : \
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_timestamp 
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_timestamp 
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id_timestamp 
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id-ex_timestamp 
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_timestamp \
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_timestamp \
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id_timestamp \
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id-ex_timestamp : \
 		$(SCRIPT_DIR)/hex2mem.py \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.itb \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.readelf \
@@ -372,7 +371,7 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex_patches.mem: \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.itb \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv \
 		$(SOFT_SCRIPTS) \
-		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted$$(call cs_val,$$@).timestamp
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program$$(call encrypted,$$@)$$(call cs_val,$$@).elf
 	@echo "\n===> $@"
 	$(SCRIPT_DIR)/riscv-elf-generate-patches.py OBJ/PROGRAMS/$*/SIM/REF OBJ/PROGRAMS/$*/PROGRAM_COMPILED $(call cs_flags_sw,$@)
 
@@ -387,7 +386,8 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.hex \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.hex \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id.hex \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.hex : \
-		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program$$(call encrypted,$$@)$$(call cs_val,$$@).elf
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program$$(call encrypted,$$@)$$(call cs_val,$$@).elf \
+		SRC/PROGRAM_TOOLS/CONTROL_SIGNALS/control_signals.csv
 	@echo "\n===> $@"
 	$(RISCV_EXE_PREFIX)objcopy -O verilog OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs_val,$@).elf $@
 	
@@ -401,6 +401,7 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.elf \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id.elf\
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.elf: \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf \
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.itb \
 		$(SCRIPT_DIR)/riscv-elf-encryption.py  \
 		$(SOFT_SCRIPTS)
 	@echo "\n===> $@"
@@ -447,7 +448,7 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.itb: OBJ/PROGRAMS/%/PROGRAM_COMPILED/pro
 
 #==== COMPILE PROGRAM ====#
 .PRECIOUS : OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf
-OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf: $(OBJ_BSP_DIR)/.bsp.timestamp
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf: $(OBJ_BSP_DIR)/.bsp_timestamp
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
 	$(RISCV_EXE_PREFIX)$(RISCV_CC) \
@@ -462,7 +463,7 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf: $(OBJ_BSP_DIR)/.bsp.timestamp
 
 
 #==== COMPILE BSP ====#
-OBJ/PROGRAM_TOOLS/BSP/.bsp.timestamp :
+OBJ/PROGRAM_TOOLS/BSP/.bsp_timestamp :
 	@echo "\n===> $@"
 	make -C $(SRC_BSP_DIR) \
 		VPATH=$(SRC_BSP_DIR) \
