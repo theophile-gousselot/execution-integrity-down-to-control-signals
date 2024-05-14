@@ -411,10 +411,17 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.elf: \
 
 
 #==== EXTRACT JALR SUCCESSORS ====#
+# backup for distribution (to increase speed get-jalr not executed in dev step)
+#.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv
+#OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv : \
+#		OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv \
+#		SRC/SCRIPTS/riscv-get-jalr-successors-from-extracted-signals.py
+#	@echo "\n===> $@"
+#	$(SCRIPT_DIR)/riscv-get-jalr-successors-from-extracted-signals.py $< $@
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv
-OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv : \
-		OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv \
-		SRC/SCRIPTS/riscv-get-jalr-successors-from-extracted-signals.py
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv : 
+	make OBJ/PROGRAMS/$*/SIM/REF/program_trace_signals.csv 
+	make SRC/SCRIPTS/riscv-get-jalr-successors-from-extracted-signals.py
 	@echo "\n===> $@"
 	$(SCRIPT_DIR)/riscv-get-jalr-successors-from-extracted-signals.py $< $@
 	
