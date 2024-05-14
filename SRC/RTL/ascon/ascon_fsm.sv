@@ -21,6 +21,7 @@ module ascon_fsm
     output logic        clk_ascon_fast_cnt_en_o,
 `ifdef CS_EX
     output logic        apply_patch_cs_o,
+    output logic        en_apply_patch_cs_destplus8_o,
 `endif
     output logic        apply_patch_o
 );
@@ -41,6 +42,7 @@ module ascon_fsm
 
 `ifdef CS_EX
     logic apply_patch_cs_s;
+    logic en_apply_patch_cs_destplus8_s;
 `endif
 
 
@@ -175,6 +177,7 @@ module ascon_fsm
         apply_patch_o             = 1'b0;
 `ifdef CS_EX
         apply_patch_cs_s          = 1'b0;
+        en_apply_patch_cs_destplus8_s = 1'b0;
 `endif
 
         case (state_s)
@@ -214,6 +217,7 @@ module ascon_fsm
                 apply_patch_o             = 1'b1;
 `ifdef CS_EX
                 apply_patch_cs_s          = 1'b1;
+                en_apply_patch_cs_destplus8_s = 1'b1;
 `endif
             end
 
@@ -226,10 +230,13 @@ module ascon_fsm
 
 `ifdef CS_EX
     always_ff @(posedge clk_core_slow_i or negedge rst_ni) begin : apply_cs_patch_delay_one_cycle
-        if (!rst_ni)
+        if (!rst_ni) begin
             apply_patch_cs_o <= 1'b0;
-        else 
+            en_apply_patch_cs_destplus8_o <= 1'b0;
+        end else begin
             apply_patch_cs_o <= apply_patch_cs_s;
+            en_apply_patch_cs_destplus8_o <= en_apply_patch_cs_destplus8_s;
+        end
     end : apply_cs_patch_delay_one_cycle
 
 `endif
