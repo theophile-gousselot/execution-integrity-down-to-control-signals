@@ -39,10 +39,9 @@ INSTR_TYPE['R'] = [
     'rem',
     'remu']
 
-
+MULTIPLICATION_INSTR = ['mul', 'mulh', 'mulhsu', 'mulhu', 'div', 'divu']
 DISC_INSTR = ['jalr', 'jal', 'beq', 'bne', 'blt', 'bge', 'bltu', 'bgeu']
 LOAD_INSTR = ['lb', 'lh', 'lw', 'lbu', 'lhu', 'jalr']
-BRANCH_INSTR = INSTR_TYPE['B']
 
 
 class Instruction:
