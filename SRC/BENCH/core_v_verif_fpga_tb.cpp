@@ -14,12 +14,16 @@
 #include "Vcore_v_verif_fpga.h"
 #include "Vcore_v_verif_fpga_core_v_verif_fpga.h"
 #if defined(CS_EX)
+#if defined(VCD)
 #include "Vcore_v_verif_fpga_cv32e40p_core__C10_FB1.h"
+#endif
 #include "Vcore_v_verif_fpga_patch_mem__P148.h"
 #include "Vcore_v_verif_fpga_cv32e40p_core__C10_CB8_CC8_FB1.h"
 #endif
 #if defined(CS_ID)
+#if defined(VCD)
 #include "Vcore_v_verif_fpga_cv32e40p_core__C8_FB1.h"
+#endif
 #endif
 #if defined(CS_ID) && !defined(CS_EX)
 #include "Vcore_v_verif_fpga_cv32e40p_core__C8_CB8_FB1.h"
@@ -42,7 +46,9 @@
 #include "Vcore_v_verif_fpga_cv32e40p_alu.h"
 #include "Vcore_v_verif_fpga_program_mem.h"
 #ifdef ENCRYPT
+#if defined(VCD)
 #include "Vcore_v_verif_fpga_patch_mem.h"
+#endif
 #endif
 // #include "Vcore_v_verif_fpga___024unit.h"
 
