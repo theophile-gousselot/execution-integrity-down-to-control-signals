@@ -39,7 +39,7 @@ INSTR_TYPE['R'] = [
     'rem',
     'remu']
 
-MULTIPLICATION_INSTR = ['mul', 'mulh', 'mulhsu', 'mulhu', 'div', 'divu']
+INSTR_MULT_EN = ['mul', 'mulh', 'mulhsu', 'mulhu']
 DISC_INSTR = ['jalr', 'jal', 'beq', 'bne', 'blt', 'bge', 'bltu', 'bgeu']
 LOAD_INSTR = ['lb', 'lh', 'lw', 'lbu', 'lhu', 'jalr']
 
