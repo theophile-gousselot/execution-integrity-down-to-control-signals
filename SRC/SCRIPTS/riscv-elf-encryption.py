@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """
 riscv-elf-encryption.py
 
@@ -9,7 +8,7 @@ This script encrypts sections of an elf file (fct: encrypt_elf()). The algorithm
 import os
 import subprocess
 import argparse
-from ascon_fct import ascon_initialize, ascon_process_one_encryption, ascon_permutation, bytes_to_int, reverse_bytes, int_to_bytes, state2str, instr2fct3_7_opcode
+from ascon_fct import ascon_initialize, ascon_process_one_encryption, ascon_permutation, bytes_to_int, reverse_bytes, int_to_bytes, state2str, instr2fct7_3_opcode
 from riscv_code import Code, zfint
 from riscv_instruction import *
 
@@ -59,6 +58,14 @@ STATES_HEX_DBG_CSV_PATH = f"{ELF_PATH[:-4]}_states_hex_debug.csv"
 DEBUG = True
 
 def log(string):
+    '''
+    Function to print debug info if DEBUG == True
+
+    Parameters
+    ----------
+    string : str
+        String to print if DEBUG == True
+    '''
     if DEBUG:
         print(string)
 
@@ -128,18 +135,64 @@ def find_sections_to_encrypt():
 
     return address_start_executable, address_start_encrypt, address_stop_encrypt
 
+
+
+def read_decoding_table():
+    '''
+    Read the decoding table (.csv file) generated outside of this project.
+
+    Parameters
+    ----------
+
+    Returns
+    ----------
+    cs_decoder : list of dict
+        Index of list is the fct7_3_opcode (= concatenation of instr[31:25] | instr[14:12] | instr[6:2])
+        Every dict has 3 fields: cs_vector on N bits, is_multicycle on 1 bit, ctrl_transfer on 2 bits.
+            - control_transfer(BRANCH_NONE) = 2'b00
+            - control_transfer(BRANCH_JAL) = 2'b01
+            - control_transfer(BRANCH_JALR) = 2'b10
+            - control_transfer(BRANCH_COND) = 2'b11
+    '''
+    with open(CS_PATH, "r") as file:
+        cs_file = file.read()
+    cs_file_list = list(filter(('').__ne__, list(cs_file.split('\n'))))
+
+    cs_decoder = []
+    for fct7_3_opcode in range(len(cs_file_list)):
+        cs_file_line = list(cs_file_list[fct7_3_opcode].split(','))
+        if int(cs_file_line[1], 16) != fct7_3_opcode:
+            raise ValueError(f'Error, {CS_PATH} is bad-formated.')
+        cs_decoder.append({'cs_vector': int(cs_file_line[2], 16), 'is_multicycle': int(cs_file_line[3]), 'ctrl_transfer': int(cs_file_line[4])})
+    return (cs_decoder)
+
+
+
+###### RISC-V asm analysis ######
 def check_load_stall(instr, next_instr):
-    load_stall = False
+    '''
+    Check if a load_stall will happen at execution time.
+    When a rs1/rs2 of an instruction is the same of a LW rd.
+
+    Parameters
+    ----------
+    instr : Instruction
+    next_instr : Instruction
+
+    Returns
+    ----------
+    load_stall : bool
+    '''
+    load_stall = False # Instructions without rs1 or rs2 cannot generate a load_stall after a LW.
     if instr.inst in LOAD_INSTR:
-        if next_instr.inst in INSTR_TYPE["R"] + INSTR_TYPE["S"] + INSTR_TYPE["B"]:
+        if next_instr.inst in INSTR_TYPE["R"] + INSTR_TYPE["S"] + INSTR_TYPE["B"]: # Instruction with rs1 and rs2
             if instr.rd == next_instr.rs1 or instr.rd == next_instr.rs2:
                 load_stall = True
-        if next_instr.inst in INSTR_TYPE["I_arith"] + INSTR_TYPE["I_load_jalr"]:
+        if next_instr.inst in INSTR_TYPE["I_arith"] + INSTR_TYPE["I_load_jalr"]: # Instruction with rs1 only
             if instr.rd == next_instr.rs1:
                 load_stall = True
     return load_stall
 
-INSTR_TYPE["I_arith"] + INSTR_TYPE["I_load_jalr"]
 
 
 ###### Main ######
@@ -150,13 +203,13 @@ def encrypt_elf():
 
     Informations
     ------------
-    According to cv32e40p/bsp/link.ld, there are 2 memories:
+    According to link.ld, there are 2 memories:
     - dbg (rwxai) : ORIGIN = 0x1A110800, LENGTH = 0x1000
-    - ram (rwxai) : ORIGIN = 0x00000000, LENGTH = 0x400000
+    - ram (rwxai) : ORIGIN = 0x00000000, LENGTH = 0x10000
 
     Therefore:
     - dbg fills the first 0x1000 bits
-    - RAM begins at 0x1000 = 4096, thus i-4096 is used to index the ram only
+    - RAM begins at 0x1000 = 4096, thus addr_elf-4096 (= addr_hex) is used to index the ram only
 
     Parameters
     ----------
@@ -170,28 +223,13 @@ def encrypt_elf():
     with open(ELF_PATH, 'rb') as file:
         plain_elf = file.read()
 
-    # READ CONTROL SIGNALS
+    # fct7_3_opcode to control signal decoding table
     if args.control_signals:
-        with open(CS_PATH, "r") as file:
-            cs_file = file.read()
-        cs_file_list = list(filter(('').__ne__, list(cs_file.split('\n'))))
+        cs_decoder = read_decoding_table()
 
-        cs_list = []
-        for fct3_7_opcode in range(len(cs_file_list)):
-            cs_file_line = list(cs_file_list[fct3_7_opcode].split(','))
-            if int(cs_file_line[1], 16) != fct3_7_opcode:
-                raise ValueError(f'Error, {CS_PATH} is bad-formated.')
-            cs_list.append({'cs_vector': int(cs_file_line[2], 16), 'is_multicycle': int(cs_file_line[3]), 'ctrl_transfer': int(cs_file_line[4])})
-            # control_transfer(BRANCH_NONE) = 2'b00
-            # control_transfer(BRANCH_JAL) = 2'b01
-            # control_transfer(BRANCH_JALR) = 2'b10
-            # control_transfer(BRANCH_COND) = 2'b11
-
-
-    # DISAS INSTRUCTIONS
+    # Code class instanciation
     code = Code(OBJ_PATH, OBJ_PATH, args.control_signals)
     code.read_itb()
-
 
     # S, k, rate, a, b, key, nonce are global variables
     ascon_initialize(S, k, rate, a, 6, key, nonce) # todo replace 6 per b
@@ -202,15 +240,20 @@ def encrypt_elf():
     # Before the area of encryption the elf is not encrypted (just copy/paste)
     cipher_elf = plain_elf[:address_start_encrypt]
 
+    # String to be written in files
     ascon_states_hex = ""
     ascon_states_dec = ""
     ascon_states_hex_dbg = ""
+
     cs_vector = 0 # default in case there is no "--control_signals" option
-    prev_prev_instr = 0x7
+
     prev_instr = 0x7
-    alu_en = True
+    prev_prev_instr = 0x7
+
+    alu_en_id = True
     alu_en_ex = False
 
+    # Encrypt every instruction in the range
     for addr_elf in range(address_start_encrypt, address_stop_encrypt, 4):
         addr_hex = addr_elf - address_start_executable
         instr = int(reverse_bytes(plain_elf[addr_elf:addr_elf + 4]).hex(), 16)
@@ -218,68 +261,56 @@ def encrypt_elf():
         other_lines_dbg = f"{'state_not_patched':<24}:{pc_pc_instr},{state2str(S)}\n"
 
         if CS_MODE:
-            cs_vector_instr = cs_list[instr2fct3_7_opcode(instr)]['cs_vector']
-            cs_vector_prev_instr = cs_list[instr2fct3_7_opcode(prev_instr)]['cs_vector']
-            cs_vector_prev_prev_instr = cs_list[instr2fct3_7_opcode(prev_prev_instr)]['cs_vector']
+            # Extract info from cs_decoder 
+            cs_vector_instr = cs_decoder[instr2fct7_3_opcode(instr)]['cs_vector']
+            cs_vector_prev_instr = cs_decoder[instr2fct7_3_opcode(prev_instr)]['cs_vector']
+            cs_vector_prev_prev_instr = cs_decoder[instr2fct7_3_opcode(prev_prev_instr)]['cs_vector']
+            if addr_elf == address_start_encrypt:
+                cs_vector_prev_instr = 0x03
+            if addr_elf <= address_start_encrypt+4:
+                cs_vector_prev_prev_instr = 0x03
 
-            is_prev_prev_instr_multicycle = cs_list[instr2fct3_7_opcode(prev_prev_instr)]['is_multicycle']
-            is_prev_instr_multicycle = cs_list[instr2fct3_7_opcode(prev_instr)]['is_multicycle']
-            is_instr_multicycle = cs_list[instr2fct3_7_opcode(instr)]['is_multicycle']
+            is_instr_multicycle = cs_decoder[instr2fct7_3_opcode(instr)]['is_multicycle']
+            is_prev_instr_multicycle = cs_decoder[instr2fct7_3_opcode(prev_instr)]['is_multicycle']
+            is_prev_prev_instr_multicycle = cs_decoder[instr2fct7_3_opcode(prev_prev_instr)]['is_multicycle']
 
-            is_prev_instr_disc = cs_list[instr2fct3_7_opcode(prev_instr)]['ctrl_transfer'] in [1, 2, 3]
+            is_prev_instr_disc = cs_decoder[instr2fct7_3_opcode(prev_instr)]['ctrl_transfer'] in [1, 2, 3]
 
+            """
+            Setup cs_vector_xored to be xored with ascon state. cs_vector is concatenation of :
+                - cs_vector_prev_instr_mask : from ID stage
+                - cs_vector_prev_prev_instr_mask : from EX stage
+            CS Generate cs_vector_prev_instr_mask: CS FROM THE PREVIOUS INSTRUCTION @PC-4  (THE ONE IN DECODE)
+            """
+            if cs_id_mode or cs_ex_mode: # cs from ID stage
+                alu_en_decoder = "ok"
+                # A multicycle instruction generates a deassert_we = 1, thus alu_en_id = False
+                alu_en_id = not (is_prev_instr_multicycle == 1)
+                cs_vector_prev_instr_mask = cs_vector_prev_instr if alu_en_id else cs_vector_prev_instr & 0b01111111
 
-            #print(f"{hex(i-4096)},{is_prev_instr_disc}")
-
-
-            # CS FROM THE PREVIOUS INSTRUCTION @PC-4  (THE ONE IN DECODE)
-            if cs_id_mode or cs_ex_mode:
-                # A multicycle instruction generates a deassert_we = 1, thus alu_en = False
-                alu_en = not (is_prev_instr_multicycle == 1 or addr_elf == address_start_encrypt)
-
-                #log(f"{hex(addr_hex)},{code.instrs[addr_hex].inst},{is_prev_instr_multicycle ==1 or addr_elf == address_start_encrypt},{not alu_en}")
-
-                cs_vector_prev_instr_mask = cs_vector_prev_instr if alu_en else cs_vector_prev_instr & 0b01111111
-
-
-            # CS FROM THE PREVIOUS PREVIOUS INSTRUCTION @PC-8  (THE ONE IN EXECUTE)
-            if cs_ex_mode:
+            if cs_ex_mode: # cs from ID stage
                 #log(f"{hex(addr_hex)},{code.instrs[addr_hex-8].inst},{code.instrs[addr_hex-4].inst},{code.instrs[addr_hex-8].rd},{code.instrs[addr_hex-4].rs1},{code.instrs[addr_hex-8].rd},{code.instrs[addr_hex-4].rs2}")
-
-
-                id_invalid = check_load_stall(code.instrs[addr_hex-8], code.instrs[addr_hex-4]) # load_stall -> id_invalid -> CSex = default
-
-                #log(f"{hex(addr_hex)},{code.instrs[addr_hex].inst},{zfint(cs_vector_prev_prev_instr_mask,4)}")
-
+                id_invalid = check_load_stall(code.instrs[addr_hex-8], code.instrs[addr_hex-4]) # load_stall -> id_invalid
                 if id_invalid:
                     cs_vector_prev_prev_instr_mask = 0x83 #default value
 
-
-                elif code.instrs[addr_hex-8].inst in ["div", "divu"]: #alu_en = 0, therefore  mult-instruction CS are not propageted to EX stage, the one of previous instr are frozen in
-                    cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr
-
-                elif code.instrs[addr_hex-8].inst in MULTIPLICATION_INSTR: #alu_en = 0, therefore  mult-instruction CS are not propageted to EX stage, the one of previous instr are frozen in
-                    #cs_vector_prev_prev_instr_mask = cs_vector_prev_instr & 0b01111111
+                # Instr which not use alu => the cs_vector from EX relative to ALU are not updated
+                elif code.instrs[addr_hex-8].inst in INSTR_MULT_EN:
                     cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr_mask & 0b01111111
 
+                # When instr at PC+4 of a multicycle instruction is decrypted, the multicycle instr is still in EX
                 elif is_prev_instr_multicycle == 1 and not is_prev_instr_disc:
-                    # In case of a multicycle, the instruction is still in the decode but with deassert (->mask)
-                    # and the instruction is in execute, withtout deassert, thus ex=CS_decode (without mask)
                     cs_vector_prev_prev_instr_mask = cs_vector_prev_instr
 
-                elif is_prev_prev_instr_multicycle == 1 or addr_elf <= address_start_encrypt+4:
+                # When instr at PC+8 of a multicycle instruction is decrypted, the multicycle deasserted instr is still in EX
+                elif is_prev_prev_instr_multicycle == 1:
                     cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr & 0b01111111
 
-                elif addr_elf <= address_start_encrypt+4:
-                    cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr & 0b01111111
                 else:
-
                     cs_vector_prev_prev_instr_mask = cs_vector_prev_prev_instr
 
 
-                alu_en_ex = alu_en
-
-
+            # Build cs_vector depending of the mode ok control signal association
             if cs_id_mode and cs_ex_mode:
                 cs_vector_xored = (cs_vector_prev_prev_instr_mask << 8) | cs_vector_prev_instr_mask
             elif cs_id_mode:
@@ -288,6 +319,7 @@ def encrypt_elf():
                 cs_vector_xored = cs_vector_prev_prev_instr_mask
 
 
+            alu_en_ex = alu_en_id
             prev_prev_instr = prev_instr
             prev_instr = instr
             if (cs_vector_xored >> 32) != 0:
@@ -326,7 +358,7 @@ def encrypt_elf():
 
         if CS_MODE:
             first_line_dbg = f"{'='*125}{reverse_bytes(plain_elf[addr_elf:addr_elf + 4]).hex()}==="
-            first_line_dbg += f"CS:{hex(cs_list[instr2fct3_7_opcode(instr)]['cs_vector'])[2:]}"
+            first_line_dbg += f"CS:{hex(cs_decoder[instr2fct7_3_opcode(instr)]['cs_vector'])[2:]}"
             first_line_dbg += f"===Mul:{is_instr_multicycle == 1}\n"
         else:
             first_line_dbg = f"{'='*125}{reverse_bytes(plain_elf[addr_elf:addr_elf + 4]).hex()}\n"
