@@ -310,7 +310,9 @@ module ascon_datapath
 
     assign patch_s0_cs_to_ascon_s[63:CS_EX_WIDTH+CS_ID_WIDTH] = '0;
     assign patch_s0_cs_to_ascon_s[CS_EX_WIDTH+CS_ID_WIDTH-1:CS_ID_WIDTH] = (apply_patch_cs_s) ? patch_cs_to_ascon_reg : '0;
+`ifdef CS_ID
     assign patch_s0_cs_to_ascon_s[CS_ID_WIDTH-1:0] = '0;
+`endif
     assign state_patched[0] = state_not_patched[0] ^ patch_to_ascon_s[319:256] ^ patch_s0_cs_to_ascon_s;
 `else
     assign state_patched[0] = state_not_patched[0] ^ patch_to_ascon_s[319:256];
