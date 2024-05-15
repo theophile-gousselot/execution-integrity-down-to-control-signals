@@ -11,46 +11,7 @@
 // #include <cstdlib>
 #include <verilated.h>
 #include <verilated_vcd_c.h>
-#include "Vcore_v_verif_fpga.h"
-#include "Vcore_v_verif_fpga_core_v_verif_fpga.h"
-#if defined(CS_EX)
-#if defined(VCD)
-#include "Vcore_v_verif_fpga_cv32e40p_core__C10_FB1.h"
-#endif
-#include "Vcore_v_verif_fpga_patch_mem__P148.h"
-#include "Vcore_v_verif_fpga_cv32e40p_core__C10_CB8_CC8_FB1.h"
-#endif
-#if defined(CS_ID)
-#if defined(VCD)
-#include "Vcore_v_verif_fpga_cv32e40p_core__C8_FB1.h"
-#endif
-#endif
-#if defined(CS_ID) && !defined(CS_EX)
-#include "Vcore_v_verif_fpga_cv32e40p_core__C8_CB8_FB1.h"
-#endif
-#if defined(ENCRYPT) and !defined(CS_EX)
-#include "Vcore_v_verif_fpga_patch_mem__P140.h"
-#endif
-#if defined(CS_ID) || defined(CS_EX)
-#include "Vcore_v_verif_fpga_cv32e40p_id_stage__C8_P0.h"
-#include "Vcore_v_verif_fpga_cv32e40p_id_stage__C8_P0.h"
-#include "Vcore_v_verif_fpga_cv32e40p_decoder__C8_P0.h"
-#else
-#include "Vcore_v_verif_fpga_cv32e40p_core__FB1.h"
-#include "Vcore_v_verif_fpga_cv32e40p_id_stage__P0.h"
-#include "Vcore_v_verif_fpga_cv32e40p_decoder__P0.h"
-#endif
-
-#include "Vcore_v_verif_fpga_cv32e40p_if_stage__FB1.h"
-#include "Vcore_v_verif_fpga_cv32e40p_ex_stage.h"
-#include "Vcore_v_verif_fpga_cv32e40p_alu.h"
-#include "Vcore_v_verif_fpga_program_mem.h"
-#ifdef ENCRYPT
-#if defined(VCD)
-#include "Vcore_v_verif_fpga_patch_mem.h"
-#endif
-#endif
-// #include "Vcore_v_verif_fpga___024unit.h"
+#include "all_headers.h"
 
 using namespace std;
 using namespace boost;
@@ -348,10 +309,15 @@ int main(int argc, char** argv, char** env) {
 
     if (verif_mode) {
 #ifdef ENCRYPT
-#ifdef CS
-        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_encrypted_cs_verif.log";
+#if defined(CS_ID) && defined(CS_EX)
+        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs-id-ex_verif.log";
+#elif CS_ID
+        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs-id_verif.log";
+#elif CS_EX
+        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs-ex_verif.log";
+#else
+        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_encrypted_cf" + to_string(CLK_FACTOR) + "_verif.log";
 #endif
-        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_encrypted_verif.log";
 #else
         log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_verif.log";
 #endif
