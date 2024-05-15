@@ -138,6 +138,10 @@ OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf1_cs-id_verif.log \
 OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf2_cs-id_verif.log \
 OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf3_cs-id_verif.log \
 OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf6_cs-id_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf1_cs-ex_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf2_cs-ex_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf3_cs-ex_verif.log \
+OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf6_cs-ex_verif.log \
 OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf1_cs-id-ex_verif.log \
 OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf2_cs-id-ex_verif.log \
 OBJ/PROGRAMS/%/SIM/LOG/program_encrypted_cf3_cs-id-ex_verif.log \
@@ -151,6 +155,10 @@ OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf1_cs-id.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf2_cs-id.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf3_cs-id.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf6_cs-id.vcd \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf1_cs-ex.vcd \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf2_cs-ex.vcd \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf3_cs-ex.vcd \
+OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf6_cs-ex.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf1_cs-id-ex.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf2_cs-id-ex.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf3_cs-id-ex.vcd \
@@ -218,6 +226,10 @@ OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf1_cs-id/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf2_cs-id/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf3_cs-id/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf6_cs-id/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf1_cs-ex/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf2_cs-ex/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf3_cs-ex/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf6_cs-ex/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf1_cs-id-ex/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf2_cs-id-ex/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_cf3_cs-id-ex/Vcore_v_verif_fpga \
@@ -230,6 +242,10 @@ OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf1_cs-id/Vcore_v_verif_fp
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf2_cs-id/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf3_cs-id/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6_cs-id/Vcore_v_verif_fpga  \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf1_cs-ex/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf2_cs-ex/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf3_cs-ex/Vcore_v_verif_fpga \
+OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6_cs-ex/Vcore_v_verif_fpga  \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf1_cs-id-ex/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf2_cs-id-ex/Vcore_v_verif_fpga \
 OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf3_cs-id-ex/Vcore_v_verif_fpga \
@@ -246,6 +262,7 @@ OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6_cs-id-ex/Vcore_v_verif
 	   	--cc -sv --exe \
 	   	--top-module $(TB_CPP_NAME) ../../$(SRC_TB_FILE) \
 	   	-f SRC/RTL/rtl_encrypted.flist
+	./SRC/SCRIPTS/gen_all_headers.sh $@
 	make \
 		-C $(OBJ_VERI_DIR)/$(TB_CPP_NAME)$(call encrypted,$@)$(call vcd,$@)$(call cf,$@)$(call cs_val,$@) \
 		-f V$(TB_CPP_NAME).mk \
@@ -347,10 +364,12 @@ SRC/RTL/iea_cv32e40p_fpga_dev :
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_timestamp 
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_timestamp 
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id_timestamp 
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-ex_timestamp 
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id-ex_timestamp 
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_timestamp \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_timestamp \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id_timestamp \
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-ex_timestamp \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id-ex_timestamp : \
 		$(SCRIPT_DIR)/hex2mem.py \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.itb \
@@ -364,9 +383,11 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_encrypted_cs-id-ex_timestamp : \
 #==== GENERATE PATCH MEM FILE ====#
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.mem
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id_patches.mem
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-ex_patches.mem
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex_patches.mem
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_patches.mem \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id_patches.mem \
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-ex_patches.mem \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex_patches.mem: \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.itb \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv \
@@ -381,10 +402,12 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex_patches.mem: \
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.hex
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.hex
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id.hex
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-ex.hex
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.hex
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.hex \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.hex \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id.hex \
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-ex.hex \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.hex : \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program$$(call encrypted,$$@)$$(call cs_val,$$@).elf \
 		SRC/PROGRAM_TOOLS/CONTROL_SIGNALS/control_signals.csv
@@ -396,9 +419,11 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.hex : \
 #==== ENCRYPT MEMORY ====#
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.elf
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id.elf
+.PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-ex.elf
 .PRECIOUS: OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.elf
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted.elf \
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id.elf\
+OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-ex.elf\
 OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted_cs-id-ex.elf: \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.elf \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.itb \
