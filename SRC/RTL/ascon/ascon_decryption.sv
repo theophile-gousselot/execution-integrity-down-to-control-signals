@@ -108,7 +108,6 @@ module ascon_decryption
 `endif
 `ifdef CS_EX
         .dec_alu_en_i               (dec_alu_en_i),
-        .ctrl_transfer_insn_in_id_i (ctrl_transfer_insn_in_id_i),
 `endif
 
 
