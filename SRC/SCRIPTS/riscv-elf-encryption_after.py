@@ -73,16 +73,8 @@ rate = 4
 
 ###### Paths ######
 CS_VECTOR_ARCH = {'id': ['alu_en', 'alu_operator'], 'ex': ['alu_en', 'alu_operator']}
-#CS_VECTOR_ARCH = {'id': ['alu_operator', 'alu_en'], 'ex': ['alu_operator', 'alu_en']}
-SIGNAL_SET = []
-for stage in CS_VECTOR_ARCH.values():
-    for name in stage:
-        if name not in SIGNAL_SET:
-            SIGNAL_SET.append(name)
-SIGNAL_SET.reverse()
-
+SIGNAL_SET = set([name for stage in CS_VECTOR_ARCH.values() for name in stage])
 SIGNAL_DESCRIPTION = {'alu_en': {'width': 1, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b1}, 'alu_operator': {'width': 7, 'reset_val': 0b11, 'id_invalid_ex_ready': 0b11, 'ex_en':'alu_en'}}
-{'alu_en': {'width': 1, 'reset_val': 0, 'id_invalid_ex_ready': 1, 'position': 0}, 'alu_operator': {'width': 7, 'reset_val': 3, 'id_invalid_ex_ready': 3, 'ex_en': 'alu_en', 'position': 1}}
 
 CS_VECTOR = {}
 position = 0
@@ -90,7 +82,6 @@ for cs_name in SIGNAL_SET:
     CS_VECTOR[cs_name]=SIGNAL_DESCRIPTION[cs_name]
     CS_VECTOR[cs_name]['position']= position
     position += CS_VECTOR[cs_name]['width']
-
 
 def reduce_cs_vector(cs_vector):
     cs_vector_reduced = 0
@@ -120,53 +111,47 @@ EN_AFFECTED_SIGNALS = {
 #if not 'data_req_id'  thus:  data_load_event_ex_o <= 1'b0;
 
 
-mask = 0
+mask = ''
 for cs in CS_VECTOR:
-    if cs not in DEASSERT_WE_AFFECTED_SIGNALS:
-        mask |= ((1 << CS_VECTOR[cs]['width']) - 1) << CS_VECTOR[cs]['position']
-DEASSERT_WE_MASK = mask
+    if cs in DEASSERT_WE_AFFECTED_SIGNALS:
+        mask += '0'*CS_VECTOR[cs]['width']
+    else:
+        mask += '1'*CS_VECTOR[cs]['width']
+DEASSERT_WE_MASK = int(mask,2)
 
 
-cs_vector_reset = 0
+cs_vector_reset = ''
 cs_vector_width = 0
 for cs in CS_VECTOR:
-    cs_vector_reset |= CS_VECTOR[cs]['reset_val'] << (CS_VECTOR[cs]['position'])
+    cs_vector_reset += bin(CS_VECTOR[cs]['reset_val'])[2:].zfill(CS_VECTOR[cs]['width'])
     cs_vector_width += CS_VECTOR[cs]['width']
-CS_VECTOR_RESET = cs_vector_reset
+CS_VECTOR_RESET = int(cs_vector_reset, 2)
 CS_VECTOR_WIDTH = cs_vector_width
 CS_VECTOR_ALL_ONE = (1 << 8) - 1
 
 
-cs_vector_id_invalid_ex_ready = 0
-mask_cs_vector_id_invalid_ex_ready = 0
+cs_vector_id_invalid_ex_ready = ''
+mask_cs_vector_id_invalid_ex_ready = ''
 for cs in CS_VECTOR:
     if 'id_invalid_ex_ready' in CS_VECTOR[cs].keys():
-        cs_vector_id_invalid_ex_ready |= CS_VECTOR[cs]['id_invalid_ex_ready'] << CS_VECTOR[cs]['position']
+        cs_vector_id_invalid_ex_ready += bin(CS_VECTOR[cs]['id_invalid_ex_ready'])[2:].zfill(CS_VECTOR[cs]['width'])
+        mask_cs_vector_id_invalid_ex_ready += '0'*CS_VECTOR[cs]['width']
     else:
-        mask_cs_vector_id_invalid_ex_ready |= ((1 << CS_VECTOR[cs]['width']) - 1) << CS_VECTOR[cs]['position']
-CS_VECTOR_ID_INVALID_EX_READY = cs_vector_id_invalid_ex_ready
-MASK_CS_VECTOR_ID_INVALID_EX_READY = mask_cs_vector_id_invalid_ex_ready
+        cs_vector_id_invalid_ex_ready += '0'*CS_VECTOR[cs]['width']
+        mask_cs_vector_id_invalid_ex_ready += '1'*CS_VECTOR[cs]['width']
+CS_VECTOR_ID_INVALID_EX_READY = int(cs_vector_id_invalid_ex_ready, 2)
+MASK_CS_VECTOR_ID_INVALID_EX_READY = int(mask_cs_vector_id_invalid_ex_ready, 2)
 
-
-print(SIGNAL_SET)
-print(CS_VECTOR)
-print(CS_VECTOR_RESET)
-print(bin(DEASSERT_WE_MASK))
-print(CS_VECTOR_WIDTH)
-print(bin(CS_VECTOR_ID_INVALID_EX_READY))
-print(bin(MASK_CS_VECTOR_ID_INVALID_EX_READY))
 
 def make_mask_ex_en(cs_vector_id):
-    mask = 0
+    mask = ''
     for cs in CS_VECTOR:
         if not 'ex_en' in CS_VECTOR[cs]:
-            mask |= ((1 << CS_VECTOR[cs]['width']) - 1) << CS_VECTOR[cs]['position']
+            mask += '1'*CS_VECTOR[cs]['width']
         else:
             en_ex = (cs_vector_id >> CS_VECTOR[CS_VECTOR[cs]['ex_en']]['position']) & 1
-            if en_ex == 1:
-                mask |= ((1 << CS_VECTOR[cs]['width']) - 1) << CS_VECTOR[cs]['position']
-
-    return mask
+            mask += str(en_ex)*CS_VECTOR[cs]['width']
+    return int(mask, 2)
 
 ###### CMD/SECTION NAMES ######
 READ_ELF_CMD = "/opt/corev/bin/riscv32-corev-elf-readelf -S "
@@ -347,9 +332,9 @@ def encrypt_elf():
     instr_minus4 = 0x7
 
     cs_vector = {}
-    cs_vector['id'] = CS_VECTOR_RESET
-    cs_vector['ex'] = CS_VECTOR_RESET
-    cs_decoder_instr = CS_VECTOR_RESET
+    cs_vector['id'] = 0x3
+    cs_vector['ex'] = 0x3
+    cs_decoder_instr = 0x03
     is_instr_multicycle = 0
     is_instr_minus4_multicycle = 0
     is_instr_minus8_multicycle = 0
@@ -414,6 +399,7 @@ def encrypt_elf():
 
             cs_vector_xored = reduce_cs_vector(cs_vector)
 
+
             alu_en_ex = alu_en_id
             instr_minus4 = instr
             if (cs_vector_xored >> 32) != 0:
@@ -423,7 +409,7 @@ def encrypt_elf():
             S[0] ^= cs_vector_xored
 
             other_lines_dbg += f"{'state_cs2cipher':<24}:{pc_pc_instr},{state2str(S)},"
-            other_lines_dbg += f"{hex(cs_vector_xored)[2:]},{hex(cs_vector['if'])},{hex(cs_vector['id'])},{hex(cs_vector['ex'])},{is_instr_multicycle}\n"
+            other_lines_dbg += f"{hex(cs_vector_xored)[2:]},{is_instr_multicycle}\n"
 
             # PC(hex), PC(dec), instr, instr_cs_vector, cs_vector_used, is_instr_multicycle, state
             ascon_states_dec +=f"{pc_pc_instr},{cs_decoder_instr},{cs_vector_xored},{is_instr_multicycle},{','.join(map(str, S))}\n"
@@ -477,3 +463,4 @@ def encrypt_elf():
 
 if __name__ == "__main__":
     encrypt_elf()
+

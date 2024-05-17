@@ -72,35 +72,7 @@ b = args.pb_rounds   # rounds
 rate = 4
 
 ###### Paths ######
-CS_VECTOR_ARCH = {'id': ['alu_en', 'alu_operator'], 'ex': ['alu_en', 'alu_operator']}
-#CS_VECTOR_ARCH = {'id': ['alu_operator', 'alu_en'], 'ex': ['alu_operator', 'alu_en']}
-SIGNAL_SET = []
-for stage in CS_VECTOR_ARCH.values():
-    for name in stage:
-        if name not in SIGNAL_SET:
-            SIGNAL_SET.append(name)
-SIGNAL_SET.reverse()
-
-SIGNAL_DESCRIPTION = {'alu_en': {'width': 1, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b1}, 'alu_operator': {'width': 7, 'reset_val': 0b11, 'id_invalid_ex_ready': 0b11, 'ex_en':'alu_en'}}
-{'alu_en': {'width': 1, 'reset_val': 0, 'id_invalid_ex_ready': 1, 'position': 0}, 'alu_operator': {'width': 7, 'reset_val': 3, 'id_invalid_ex_ready': 3, 'ex_en': 'alu_en', 'position': 1}}
-
-CS_VECTOR = {}
-position = 0
-for cs_name in SIGNAL_SET:
-    CS_VECTOR[cs_name]=SIGNAL_DESCRIPTION[cs_name]
-    CS_VECTOR[cs_name]['position']= position
-    position += CS_VECTOR[cs_name]['width']
-
-
-def reduce_cs_vector(cs_vector):
-    cs_vector_reduced = 0
-    for stage in ['wb','ex','id']:
-        if stage in CS_VECTOR_ARCH.keys():
-            for cs in CS_VECTOR_ARCH[stage]:
-                cs_vector_reduced <<= CS_VECTOR[cs]['width']
-                cs_vector_reduced |= (cs_vector[stage] >> CS_VECTOR[cs]['position']) & ((1 << CS_VECTOR[cs]['width']) - 1)
-    return(cs_vector_reduced)
-
+CS_VECTOR_ARCH = {'alu_en': {'position': 7, 'width': 1, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b1}, 'alu_operator': {'position': 0, 'width': 7, 'reset_val': 0b11, 'id_invalid_ex_ready': 0b11, 'ex_en':'alu_en'}}
 
 DEASSERT_WE_AFFECTED_SIGNALS = ['alu_en']
 EN_AFFECTED_SIGNALS = {
@@ -120,53 +92,47 @@ EN_AFFECTED_SIGNALS = {
 #if not 'data_req_id'  thus:  data_load_event_ex_o <= 1'b0;
 
 
-mask = 0
-for cs in CS_VECTOR:
-    if cs not in DEASSERT_WE_AFFECTED_SIGNALS:
-        mask |= ((1 << CS_VECTOR[cs]['width']) - 1) << CS_VECTOR[cs]['position']
-DEASSERT_WE_MASK = mask
+mask = ''
+for cs in CS_VECTOR_ARCH:
+    if cs in DEASSERT_WE_AFFECTED_SIGNALS:
+        mask += '0'*CS_VECTOR_ARCH[cs]['width']
+    else:
+        mask += '1'*CS_VECTOR_ARCH[cs]['width']
+DEASSERT_WE_MASK = int(mask,2)
 
 
-cs_vector_reset = 0
+cs_vector_reset = ''
 cs_vector_width = 0
-for cs in CS_VECTOR:
-    cs_vector_reset |= CS_VECTOR[cs]['reset_val'] << (CS_VECTOR[cs]['position'])
-    cs_vector_width += CS_VECTOR[cs]['width']
-CS_VECTOR_RESET = cs_vector_reset
+for cs in CS_VECTOR_ARCH:
+    cs_vector_reset += bin(CS_VECTOR_ARCH[cs]['reset_val'])[2:].zfill(CS_VECTOR_ARCH[cs]['width'])
+    cs_vector_width += CS_VECTOR_ARCH[cs]['width']
+CS_VECTOR_RESET = int(cs_vector_reset, 2)
 CS_VECTOR_WIDTH = cs_vector_width
 CS_VECTOR_ALL_ONE = (1 << 8) - 1
 
 
-cs_vector_id_invalid_ex_ready = 0
-mask_cs_vector_id_invalid_ex_ready = 0
-for cs in CS_VECTOR:
-    if 'id_invalid_ex_ready' in CS_VECTOR[cs].keys():
-        cs_vector_id_invalid_ex_ready |= CS_VECTOR[cs]['id_invalid_ex_ready'] << CS_VECTOR[cs]['position']
+cs_vector_id_invalid_ex_ready = ''
+mask_cs_vector_id_invalid_ex_ready = ''
+for cs in CS_VECTOR_ARCH:
+    if 'id_invalid_ex_ready' in CS_VECTOR_ARCH[cs].keys():
+        cs_vector_id_invalid_ex_ready += bin(CS_VECTOR_ARCH[cs]['id_invalid_ex_ready'])[2:].zfill(CS_VECTOR_ARCH[cs]['width'])
+        mask_cs_vector_id_invalid_ex_ready += '0'*CS_VECTOR_ARCH[cs]['width']
     else:
-        mask_cs_vector_id_invalid_ex_ready |= ((1 << CS_VECTOR[cs]['width']) - 1) << CS_VECTOR[cs]['position']
-CS_VECTOR_ID_INVALID_EX_READY = cs_vector_id_invalid_ex_ready
-MASK_CS_VECTOR_ID_INVALID_EX_READY = mask_cs_vector_id_invalid_ex_ready
+        cs_vector_id_invalid_ex_ready += '0'*CS_VECTOR_ARCH[cs]['width']
+        mask_cs_vector_id_invalid_ex_ready += '1'*CS_VECTOR_ARCH[cs]['width']
+CS_VECTOR_ID_INVALID_EX_READY = int(cs_vector_id_invalid_ex_ready, 2)
+MASK_CS_VECTOR_ID_INVALID_EX_READY = int(mask_cs_vector_id_invalid_ex_ready, 2)
 
-
-print(SIGNAL_SET)
-print(CS_VECTOR)
-print(CS_VECTOR_RESET)
-print(bin(DEASSERT_WE_MASK))
-print(CS_VECTOR_WIDTH)
-print(bin(CS_VECTOR_ID_INVALID_EX_READY))
-print(bin(MASK_CS_VECTOR_ID_INVALID_EX_READY))
 
 def make_mask_ex_en(cs_vector_id):
-    mask = 0
-    for cs in CS_VECTOR:
-        if not 'ex_en' in CS_VECTOR[cs]:
-            mask |= ((1 << CS_VECTOR[cs]['width']) - 1) << CS_VECTOR[cs]['position']
+    mask = ''
+    for cs in CS_VECTOR_ARCH:
+        if not 'ex_en' in CS_VECTOR_ARCH[cs]:
+            mask += '1'*CS_VECTOR_ARCH[cs]['width']
         else:
-            en_ex = (cs_vector_id >> CS_VECTOR[CS_VECTOR[cs]['ex_en']]['position']) & 1
-            if en_ex == 1:
-                mask |= ((1 << CS_VECTOR[cs]['width']) - 1) << CS_VECTOR[cs]['position']
-
-    return mask
+            en_ex = (cs_vector_id >> CS_VECTOR_ARCH[CS_VECTOR_ARCH[cs]['ex_en']]['position']) & 1
+            mask += str(en_ex)*CS_VECTOR_ARCH[cs]['width']
+    return int(mask, 2)
 
 ###### CMD/SECTION NAMES ######
 READ_ELF_CMD = "/opt/corev/bin/riscv32-corev-elf-readelf -S "
@@ -346,10 +312,9 @@ def encrypt_elf():
     cs_vector = 0 # default in case there is no "--control_signals" option
     instr_minus4 = 0x7
 
-    cs_vector = {}
-    cs_vector['id'] = CS_VECTOR_RESET
-    cs_vector['ex'] = CS_VECTOR_RESET
-    cs_decoder_instr = CS_VECTOR_RESET
+    cs_vector_id = 0x3
+    cs_vector_ex = 0x3
+    cs_decoder_instr = 0x03
     is_instr_multicycle = 0
     is_instr_minus4_multicycle = 0
     is_instr_minus8_multicycle = 0
@@ -367,7 +332,7 @@ def encrypt_elf():
 
         if CS_MODE:
             # Extract info from cs_decoder 
-            cs_vector['if'] = cs_decoder_instr
+            cs_vector_if = cs_decoder_instr
             cs_decoder_instr = cs_decoder[instr2fct7_3_opcode(instr)]['cs_vector']
 
             is_instr_minus8_multicycle = is_instr_minus4_multicycle
@@ -379,9 +344,9 @@ def encrypt_elf():
 
             """
             Setup cs_vector_xored to be xored with ascon state. cs_vector is concatenation of :
-                - cs_vector['id'] : from ID stage
-                - cs_vector['ex'] : from EX stage
-            CS Generate cs_vector['id']: CS FROM THE PREVIOUS INSTRUCTION @PC-4  (THE ONE IN DECODE)
+                - cs_vector_id : from ID stage
+                - cs_vector_ex : from EX stage
+            CS Generate cs_vector_id: CS FROM THE PREVIOUS INSTRUCTION @PC-4  (THE ONE IN DECODE)
             """
             #when ex_ready = 0 => id_ready = if_ready = id_valid = 0 => no decryption
             ex_ready = True 
@@ -392,27 +357,34 @@ def encrypt_elf():
 
                 if id_invalid:
                     if ex_ready:
-                        cs_vector['ex'] = (cs_vector['ex'] & MASK_CS_VECTOR_ID_INVALID_EX_READY) | CS_VECTOR_ID_INVALID_EX_READY
+                        cs_vector_ex = (cs_vector_ex & MASK_CS_VECTOR_ID_INVALID_EX_READY) | CS_VECTOR_ID_INVALID_EX_READY
                     else:
-                        cs_vector['ex'] = cs_vector['ex']
+                        cs_vector_ex = cs_vector_ex
 
                 # When instr at PC+4 of a multicycle instruction is decrypted, the multicycle instr is still in EX
                 elif is_instr_minus4_multicycle == 1:# and not is_prev_instr_disc:
-                    cs_vector['ex'] = cs_vector['if']
+                    cs_vector_ex = cs_vector_if
 
                 else:
-                # Update specific EX signals from ID according to the their enable signals. Look at 'ex_en' in SIGNAL_DESCRIPTION.
-                    cs_vector['ex'] = (cs_vector['id'] & make_mask_ex_en(cs_vector['id'])) | \
-                                   (cs_vector['ex'] & (CS_VECTOR_ALL_ONE ^ make_mask_ex_en(cs_vector['id'])))
+                # Update specific EX signals from ID according to the their enable signals. Look at 'ex_en' in CS_VECTOR_ARCH.
+                    cs_vector_ex = (cs_vector_id & make_mask_ex_en(cs_vector_id)) | \
+                                   (cs_vector_ex & (CS_VECTOR_ALL_ONE ^ make_mask_ex_en(cs_vector_id)))
 
 
             # Update CS_VECTOR_ID
             deassert_we = (is_instr_minus4_multicycle == 1) | (prev_instr_ctrl_transfer in [0b01, 0b10])
             #log(f"#{hex(addr_hex)},{code.instrs[addr_hex].inst},{deassert_we},{prev_instr_ctrl_transfer}")
-            cs_vector['id'] = cs_vector['if'] & DEASSERT_WE_MASK if deassert_we else cs_vector['if']
+            cs_vector_id = cs_vector_if & DEASSERT_WE_MASK if deassert_we else cs_vector_if
 
 
-            cs_vector_xored = reduce_cs_vector(cs_vector)
+            # Build cs_vector depending of the mode of control signal association
+            if cs_id_mode and cs_ex_mode:
+                cs_vector_xored = (cs_vector_ex << 8) | cs_vector_id
+            elif cs_id_mode:
+                cs_vector_xored = cs_vector_id
+            elif cs_ex_mode:
+                cs_vector_xored = cs_vector_ex
+
 
             alu_en_ex = alu_en_id
             instr_minus4 = instr
@@ -423,7 +395,7 @@ def encrypt_elf():
             S[0] ^= cs_vector_xored
 
             other_lines_dbg += f"{'state_cs2cipher':<24}:{pc_pc_instr},{state2str(S)},"
-            other_lines_dbg += f"{hex(cs_vector_xored)[2:]},{hex(cs_vector['if'])},{hex(cs_vector['id'])},{hex(cs_vector['ex'])},{is_instr_multicycle}\n"
+            other_lines_dbg += f"{hex(cs_vector_xored)[2:]},{is_instr_multicycle}\n"
 
             # PC(hex), PC(dec), instr, instr_cs_vector, cs_vector_used, is_instr_multicycle, state
             ascon_states_dec +=f"{pc_pc_instr},{cs_decoder_instr},{cs_vector_xored},{is_instr_multicycle},{','.join(map(str, S))}\n"
@@ -477,3 +449,4 @@ def encrypt_elf():
 
 if __name__ == "__main__":
     encrypt_elf()
+

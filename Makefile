@@ -165,7 +165,8 @@ OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf3_cs-id-ex.vcd \
 OBJ/PROGRAMS/%/SIM/VCD/program_encrypted_cf6_cs-id-ex.vcd : \
 		$$(call keep_if_enc, OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_encrypted$$(call cs_val,$$@)_patches.mem) \
 		$(OBJ_VERI_DIR)/$(TB_CPP_NAME)$$(call encrypted,$$@)$$(call vcd,$$@)$$(call cf,$$@)$$(call cs_val,$$@)/V$$(TB_CPP_NAME) \
-		OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
+		OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv \
+		SRC/PROGRAM_TOOLS/CONTROL_SIGNALS/control_signals.csv
 	make OBJ/PROGRAMS/$*/PROGRAM_COMPILED/.mem$(call encrypted,$@)$(call cs_val,$@)_timestamp
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
