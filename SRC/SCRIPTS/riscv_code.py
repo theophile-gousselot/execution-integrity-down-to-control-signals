@@ -2,6 +2,10 @@ import os
 import sys
 
 from riscv_instruction import Instruction
+from riscv_control_signals import *
+from riscv_setup_control_signals import CS_VECTOR_ARCH, CS_VECTOR_DESCRIPTION, DEASSERT_WE_MASK, CS_VECTOR_RESET, CS_VECTOR_WIDTH, CS_VECTOR_ALL_ONE, CS_VECTOR_ID_INVALID_EX_READY, MASK_CS_VECTOR_ID_INVALID_EX_READY
+
+
 
 
 PATCH_POLICIES = ['NL']  # Patch when No Linear
@@ -203,12 +207,13 @@ class Code:
         for state_l in states_list:
             if len(state_l) > 0:
                 if self.cs_mode:
-                    addr_hex, addr_dec, instr, cs_vector, cs_vector_xored, is_multicycle, state = list(state_l.split(",", 6)) 
+                    addr_hex, addr_dec, instr, cs_vector, cs_vector_xored, is_multicycle, state = list(state_l.split(",", 6))
                     self.instrs[int(addr_dec)].state = list( map(int, list(state.split(",", 4))))
                     self.instrs[int(addr_dec)].is_multicycle = is_multicycle == "1"
                     # cs_vector_xored used to encrypt instr at PC is instr at PC-4
                     self.instrs[int(addr_dec)].cs_vector = int(cs_vector)
-                    self.instrs[int(addr_dec)].cs_vector_xored = int(cs_vector_xored)
+                    self.instrs[int(addr_dec)].cs_vector_xored2 = dict(zip(['if', 'id', 'ex'], list(map(int, list(cs_vector_xored.split('-'))))))
+                    #self.instrs[int(addr_dec)].cs_vector_xored2 = dict(zip([stage for stage in ['if', 'id', 'ex'] if stage in list(CS_VECTOR_ARCH.keys()) + ['if']], list(map(int, list(cs_vector_xored.split('-'))))))
                 else:
                     addr_hex, addr_dec, instr, state = list(state_l.split(",", 3))
                     self.instrs[int(addr_dec)].state = list(map(int, list(state.split(",", 4))))
@@ -245,30 +250,30 @@ class Code:
 
                 ##### PATCH FOR CYCLE AT INSTRUCTION DISCONTINUITY EXECUTION #####
                 if self.cs_mode and i == 0:
+
+
                     # When a branch is in EXECUTE, even if instr in DECODE is not a multicycle instruction, 
                     # the signal we_deassert will be raised! Therefore, if the instr in DECODE was multicycle
                     # CS was already masked: nothing to do. However, if not, as mask is applied by xoring 
                     # cs_vector bits to mask to itself (as it is already in the patch through cs2cipher.
                     if disc_type == 'b': #addr_patch -> addr_src-8
-                        if self.cs_ex_mode:
-                            brplus4_mask = (self.instrs[addr_patch+8].cs_vector_xored & 0x8080)
-                            sub_state_patch ^= brplus4_mask
-                            correction_str = f",{hex(brplus4_mask)[2:]:>4} ({zfint(self.instrs[addr_patch+4].cs_vector_xored,4)})"
-                        elif self.cs_id_mode:
-                            brplus4_mask = (self.instrs[addr_patch+8].cs_vector_xored & 0x80)
-                            sub_state_patch ^= brplus4_mask
-                            correction_str = f",{hex(brplus4_mask)[2:]:>2} ({zfint(self.instrs[addr_patch+4].cs_vector_xored,2)})"
+                        br_corr_deassert = {}
+                        br_corr_deassert['id'] = self.instrs[addr_patch+8].cs_vector_xored2['id'] & (CS_VECTOR_ALL_ONE ^ DEASSERT_WE_MASK)
+                        br_corr_deassert['ex'] = self.instrs[addr_patch+8].cs_vector_xored2['ex'] & (CS_VECTOR_ALL_ONE ^ DEASSERT_WE_MASK)
+                        brplus4_mask = cs_vector_dict_to_xored_int(br_corr_deassert)
+
+                        sub_state_patch ^= brplus4_mask
+                        correction_str = f",{hex(brplus4_mask)[2:]:>4} ({zfint(self.instrs[addr_patch+4].cs_vector_xored2['id'],4)})"
 
                     # Destination of a jump is decrypted after the state get from jal decryption xor with patch, and CS from 
                     # jal in the execute (not jal-4) AND in the decode (deasserted). Therefore, the execute cs_vector
                     # must be replaced in the patch from the cs_vector of the instruction at JAL-4 to JAL cs_vector
                     if disc_type in ['jal', 'jalr']:
-                        if self.cs_ex_mode:
-                            jal_ex_correction = ((self.instrs[addr_src].cs_vector_xored >> 8) ^ self.instrs[addr_disc].cs_vector) << 8 #jal-4 ^ jal
-                            sub_state_patch ^= jal_ex_correction
-                            correction_str = f",{hex(jal_ex_correction)[2:]:>4}({zfint(self.instrs[addr_disc].cs_vector_xored >> 8,2)}^{zfint(self.instrs[addr_disc].cs_vector,2)})"
-                        elif self.cs_id_mode:
-                            correction_str = f",{' '*11}"
+                        jal_ex_correction = {}
+                        jal_ex_correction['id'] = 0
+                        jal_ex_correction['ex'] = self.instrs[addr_src].cs_vector_xored2['ex'] ^ self.instrs[addr_disc].cs_vector_xored2['if'] #jal-4 ^ jal
+                        sub_state_patch ^= cs_vector_dict_to_xored_int(jal_ex_correction)
+                        correction_str = f",{hex(jal_ex_correction['ex'])[2:]:>4}({zfint(self.instrs[addr_src].cs_vector_xored2['ex'],2)}^{zfint(self.instrs[addr_disc].cs_vector_xored2['if'],2)})"
 
                 patch += hex(sub_state_patch)[2:].zfill(16)
 
@@ -280,13 +285,10 @@ class Code:
                 if addr_dest+4 not in self.instrs.keys():
                     cs_ex_corr = "00"
                     correction_str += f"no dest+4"
-                elif disc_type in ['jal', 'jalr']: # Instruction in EX is jal deasserted not dest-4
-                    cs_ex_corr = hex((self.instrs[addr_disc].cs_vector & 0x7f) ^ (self.instrs[addr_dest+4].cs_vector_xored >> 8))[2:].zfill(2) #jal(deasserted_we) ^ dest-4 (used for dest+4 enc)
-                    correction_str += f",{cs_ex_corr}({zfint(self.instrs[addr_disc].cs_vector & 0x7f,2)}^{zfint(self.instrs[addr_dest+4].cs_vector_xored >> 8,2)})"
-
-                elif self.instrs[addr_patch].type == 'B': # Instruction in EX is br deasserted not dest-4
-                    cs_ex_corr = hex((self.instrs[addr_disc].cs_vector & 0x7f) ^ (self.instrs[addr_dest+4].cs_vector_xored >> 8))[2:].zfill(2) #br(deasserted_we) ^ dest-4 (used for dest+4 enc)
-                    correction_str += f",{cs_ex_corr}({zfint(self.instrs[addr_disc].cs_vector & 0x7f,2)}^{zfint(self.instrs[addr_dest+4].cs_vector_xored >> 8,2)})"
+                elif disc_type in ['jal', 'jalr'] or self.instrs[addr_patch].type == 'B': # Instruction in EX is disc deasserted not dest-4
+                    cs_ex_corr_dict = {'ex': ((self.instrs[addr_disc].cs_vector_xored2['if'] & DEASSERT_WE_MASK) ^ (self.instrs[addr_dest+4].cs_vector_xored2['ex']))} # ex only because extra patch for cs in on ex only
+                    cs_ex_corr = hex(cs_vector_dict_to_xored_int(cs_ex_corr_dict))[2:].zfill(2)
+                    correction_str += f",{cs_ex_corr}({zfint(self.instrs[addr_disc].cs_vector_xored2['if'] & DEASSERT_WE_MASK, 2)}^{zfint(self.instrs[addr_dest+4].cs_vector_xored2['ex'],2)})"
                 else:
                     cs_ex_corr = hex(0)[2:].zfill(2)
                 patch = cs_ex_corr + patch

@@ -11,6 +11,8 @@ import argparse
 from ascon_fct import ascon_initialize, ascon_process_one_encryption, ascon_permutation, bytes_to_int, reverse_bytes, int_to_bytes, state2str, instr2fct7_3_opcode
 from riscv_code import Code, zfint
 from riscv_instruction import *
+from riscv_control_signals import *
+from riscv_setup_control_signals import CS_VECTOR_ARCH, SIGNAL_SET, CS_VECTOR_DESCRIPTION, DEASSERT_WE_MASK, CS_VECTOR_RESET, CS_VECTOR_WIDTH, CS_VECTOR_ALL_ONE, CS_VECTOR_ID_INVALID_EX_READY, MASK_CS_VECTOR_ID_INVALID_EX_READY
 
 
 ###### Arguments ######
@@ -72,101 +74,8 @@ b = args.pb_rounds   # rounds
 rate = 4
 
 ###### Paths ######
-CS_VECTOR_ARCH = {'id': ['alu_en', 'alu_operator'], 'ex': ['alu_en', 'alu_operator']}
-#CS_VECTOR_ARCH = {'id': ['alu_operator', 'alu_en'], 'ex': ['alu_operator', 'alu_en']}
-SIGNAL_SET = []
-for stage in CS_VECTOR_ARCH.values():
-    for name in stage:
-        if name not in SIGNAL_SET:
-            SIGNAL_SET.append(name)
-SIGNAL_SET.reverse()
-
-SIGNAL_DESCRIPTION = {'alu_en': {'width': 1, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b1}, 'alu_operator': {'width': 7, 'reset_val': 0b11, 'id_invalid_ex_ready': 0b11, 'ex_en':'alu_en'}}
-{'alu_en': {'width': 1, 'reset_val': 0, 'id_invalid_ex_ready': 1, 'position': 0}, 'alu_operator': {'width': 7, 'reset_val': 3, 'id_invalid_ex_ready': 3, 'ex_en': 'alu_en', 'position': 1}}
-
-CS_VECTOR = {}
-position = 0
-for cs_name in SIGNAL_SET:
-    CS_VECTOR[cs_name]=SIGNAL_DESCRIPTION[cs_name]
-    CS_VECTOR[cs_name]['position']= position
-    position += CS_VECTOR[cs_name]['width']
 
 
-def reduce_cs_vector(cs_vector):
-    cs_vector_reduced = 0
-    for stage in ['wb','ex','id']:
-        if stage in CS_VECTOR_ARCH.keys():
-            for cs in CS_VECTOR_ARCH[stage]:
-                cs_vector_reduced <<= CS_VECTOR[cs]['width']
-                cs_vector_reduced |= (cs_vector[stage] >> CS_VECTOR[cs]['position']) & ((1 << CS_VECTOR[cs]['width']) - 1)
-    return(cs_vector_reduced)
-
-
-DEASSERT_WE_AFFECTED_SIGNALS = ['alu_en']
-EN_AFFECTED_SIGNALS = {
-    'alu_en': ['alu_operator', 'alu_operand_a', 'alu_operand_b', 'alu_operand_c',
-               'bmask_a_id', 'bmask_b_id', 'imm_vec_ext_id', 'alu_vec_mode',
-               'is_clpx', 'alu_clpx_shift', 'is_subrot'],
-    'mult_int_en': ['mult_operator', 'mult_sel_subword', 'mult_signed_mode',
-                    'alu_operand_a', 'alu_operand_b', 'alu_operand_c', 'mult_imm_id'],
-    'mult_dot_en': ['mult_operator', 'mult_dot_signed', 'alu_operand_a', 'alu_operand_b',
-                    'alu_operand_c', 'is_clpx', 'clpx_shift_ex_o', 'clpx_img_ex_o'],
-    'apu_en': ['apu_op', 'apu_lat', 'apu_operands', 'apu_flags', 'apu_waddr'],
-    'regfile_we_id': ['regfile_waddr_id'],
-    'regfile_alu_we_id': ['regfile_alu_waddr_id'],
-    'data_req_id': ['data_we_id', 'data_type_id', 'data_sign_ext_id',
-                    'data_reg_offset_id', 'data_load_event_id', 'atop_id']}
-
-#if not 'data_req_id'  thus:  data_load_event_ex_o <= 1'b0;
-
-
-mask = 0
-for cs in CS_VECTOR:
-    if cs not in DEASSERT_WE_AFFECTED_SIGNALS:
-        mask |= ((1 << CS_VECTOR[cs]['width']) - 1) << CS_VECTOR[cs]['position']
-DEASSERT_WE_MASK = mask
-
-
-cs_vector_reset = 0
-cs_vector_width = 0
-for cs in CS_VECTOR:
-    cs_vector_reset |= CS_VECTOR[cs]['reset_val'] << (CS_VECTOR[cs]['position'])
-    cs_vector_width += CS_VECTOR[cs]['width']
-CS_VECTOR_RESET = cs_vector_reset
-CS_VECTOR_WIDTH = cs_vector_width
-CS_VECTOR_ALL_ONE = (1 << 8) - 1
-
-
-cs_vector_id_invalid_ex_ready = 0
-mask_cs_vector_id_invalid_ex_ready = 0
-for cs in CS_VECTOR:
-    if 'id_invalid_ex_ready' in CS_VECTOR[cs].keys():
-        cs_vector_id_invalid_ex_ready |= CS_VECTOR[cs]['id_invalid_ex_ready'] << CS_VECTOR[cs]['position']
-    else:
-        mask_cs_vector_id_invalid_ex_ready |= ((1 << CS_VECTOR[cs]['width']) - 1) << CS_VECTOR[cs]['position']
-CS_VECTOR_ID_INVALID_EX_READY = cs_vector_id_invalid_ex_ready
-MASK_CS_VECTOR_ID_INVALID_EX_READY = mask_cs_vector_id_invalid_ex_ready
-
-
-print(SIGNAL_SET)
-print(CS_VECTOR)
-print(CS_VECTOR_RESET)
-print(bin(DEASSERT_WE_MASK))
-print(CS_VECTOR_WIDTH)
-print(bin(CS_VECTOR_ID_INVALID_EX_READY))
-print(bin(MASK_CS_VECTOR_ID_INVALID_EX_READY))
-
-def make_mask_ex_en(cs_vector_id):
-    mask = 0
-    for cs in CS_VECTOR:
-        if not 'ex_en' in CS_VECTOR[cs]:
-            mask |= ((1 << CS_VECTOR[cs]['width']) - 1) << CS_VECTOR[cs]['position']
-        else:
-            en_ex = (cs_vector_id >> CS_VECTOR[CS_VECTOR[cs]['ex_en']]['position']) & 1
-            if en_ex == 1:
-                mask |= ((1 << CS_VECTOR[cs]['width']) - 1) << CS_VECTOR[cs]['position']
-
-    return mask
 
 ###### CMD/SECTION NAMES ######
 READ_ELF_CMD = "/opt/corev/bin/riscv32-corev-elf-readelf -S "
@@ -235,36 +144,6 @@ def find_sections_to_encrypt():
 
 
 
-def read_decoding_table():
-    '''
-    Read the decoding table (.csv file) generated outside of this project.
-
-    Parameters
-    ----------
-
-    Returns
-    ----------
-    cs_decoder : list of dict
-        Index of list is the fct7_3_opcode (= concatenation of instr[31:25] | instr[14:12] | instr[6:2])
-        Every dict has 3 fields: cs_vector on N bits, is_multicycle on 1 bit, ctrl_transfer on 2 bits.
-            - control_transfer(BRANCH_NONE) = 2'b00
-            - control_transfer(BRANCH_JAL) = 2'b01
-            - control_transfer(BRANCH_JALR) = 2'b10
-            - control_transfer(BRANCH_COND) = 2'b11
-    '''
-    with open(CS_PATH, "r") as file:
-        cs_file = file.read()
-    cs_file_list = list(filter(('').__ne__, list(cs_file.split('\n'))))
-
-    cs_decoder = []
-    for fct7_3_opcode in range(len(cs_file_list)):
-        cs_file_line = list(cs_file_list[fct7_3_opcode].split(','))
-        if int(cs_file_line[1], 16) != fct7_3_opcode:
-            raise ValueError(f'Error, {CS_PATH} is bad-formated.')
-        cs_decoder.append({'cs_vector': int(cs_file_line[2], 16), 'is_multicycle': int(cs_file_line[3]), 'ctrl_transfer': int(cs_file_line[4])})
-    return (cs_decoder)
-
-
 
 ###### RISC-V asm analysis ######
 def check_load_stall(instr, next_instr):
@@ -317,13 +196,23 @@ def encrypt_elf():
         Generate a new elf file: the encrypted one
     '''
 
+    print(f"CS_VECTOR_ARCH:{CS_VECTOR_ARCH}")
+    print(f"SIGNAL_SET:{SIGNAL_SET}")
+    print(f"CS_VECTOR_DESCRIPTION:{CS_VECTOR_DESCRIPTION}")
+    print(f"CS_VECTOR_WIDTH:{CS_VECTOR_WIDTH}")
+    print(f"DEASSERT_WE_MASK:{bin(DEASSERT_WE_MASK)[2:].zfill(CS_VECTOR_WIDTH)}")
+    print(f"CS_VECTOR_RESET:{bin(CS_VECTOR_RESET)[2:].zfill(CS_VECTOR_WIDTH)}")
+    print(f"CS_VECTOR_ALL_ONE:{bin(CS_VECTOR_ALL_ONE)[2:].zfill(CS_VECTOR_WIDTH)}")
+    print(f"CS_VECTOR_ID_INVALID_EX_READY:{bin(CS_VECTOR_ID_INVALID_EX_READY)[2:].zfill(CS_VECTOR_WIDTH)}")
+    print(f"MASK_CS_VECTOR_ID_INVALID_EX_READY:{bin(MASK_CS_VECTOR_ID_INVALID_EX_READY)[2:].zfill(CS_VECTOR_WIDTH)}")
+
     # Read the original elf file
     with open(ELF_PATH, 'rb') as file:
         plain_elf = file.read()
 
     # fct7_3_opcode to control signal decoding table
     if args.control_signals:
-        cs_decoder = read_decoding_table()
+        cs_decoder = read_decoding_table(CS_PATH)
 
     # Code class instanciation
     code = Code(OBJ_PATH, OBJ_PATH, args.control_signals)
@@ -346,10 +235,11 @@ def encrypt_elf():
     cs_vector = 0 # default in case there is no "--control_signals" option
     instr_minus4 = 0x7
 
-    cs_vector = {}
-    cs_vector['id'] = CS_VECTOR_RESET
-    cs_vector['ex'] = CS_VECTOR_RESET
+    cs_vector_dict = {}
     cs_decoder_instr = CS_VECTOR_RESET
+    cs_vector_dict['if'] = CS_VECTOR_RESET
+    cs_vector_dict['id'] = CS_VECTOR_RESET
+    cs_vector_dict['ex'] = CS_VECTOR_RESET
     is_instr_multicycle = 0
     is_instr_minus4_multicycle = 0
     is_instr_minus8_multicycle = 0
@@ -367,8 +257,8 @@ def encrypt_elf():
 
         if CS_MODE:
             # Extract info from cs_decoder 
-            cs_vector['if'] = cs_decoder_instr
-            cs_decoder_instr = cs_decoder[instr2fct7_3_opcode(instr)]['cs_vector']
+            cs_decoder_instr = decode_tab_to_cs_vector(cs_decoder[instr2fct7_3_opcode(instr)]['cs_vector'])
+            #log(f"#{hex(addr_hex)},{code.instrs[addr_hex].inst},{hex(cs_decoder_instr)}")
 
             is_instr_minus8_multicycle = is_instr_minus4_multicycle
             is_instr_minus4_multicycle = is_instr_multicycle
@@ -378,13 +268,13 @@ def encrypt_elf():
 
 
             """
-            Setup cs_vector_xored to be xored with ascon state. cs_vector is concatenation of :
-                - cs_vector['id'] : from ID stage
-                - cs_vector['ex'] : from EX stage
-            CS Generate cs_vector['id']: CS FROM THE PREVIOUS INSTRUCTION @PC-4  (THE ONE IN DECODE)
+            Setup cs_vector_xored_int to be xored with ascon state. cs_vector is concatenation of :
+                - cs_vector_dict['id'] : from ID stage
+                - cs_vector_dict['ex'] : from EX stage
+            CS Generate cs_vector_dict['id']: CS FROM THE PREVIOUS INSTRUCTION @PC-4  (THE ONE IN DECODE)
             """
             #when ex_ready = 0 => id_ready = if_ready = id_valid = 0 => no decryption
-            ex_ready = True 
+            ex_ready = True
 
             # Update CS_VECTOR_EX
             if cs_ex_mode:
@@ -392,42 +282,49 @@ def encrypt_elf():
 
                 if id_invalid:
                     if ex_ready:
-                        cs_vector['ex'] = (cs_vector['ex'] & MASK_CS_VECTOR_ID_INVALID_EX_READY) | CS_VECTOR_ID_INVALID_EX_READY
+                        cs_vector_dict['ex'] = (cs_vector_dict['ex'] & MASK_CS_VECTOR_ID_INVALID_EX_READY) | CS_VECTOR_ID_INVALID_EX_READY
                     else:
-                        cs_vector['ex'] = cs_vector['ex']
+                        cs_vector_dict['ex'] = cs_vector_dict['ex']
 
                 # When instr at PC+4 of a multicycle instruction is decrypted, the multicycle instr is still in EX
                 elif is_instr_minus4_multicycle == 1:# and not is_prev_instr_disc:
-                    cs_vector['ex'] = cs_vector['if']
+                    cs_vector_dict['ex'] = cs_vector_dict['if']
 
                 else:
                 # Update specific EX signals from ID according to the their enable signals. Look at 'ex_en' in SIGNAL_DESCRIPTION.
-                    cs_vector['ex'] = (cs_vector['id'] & make_mask_ex_en(cs_vector['id'])) | \
-                                   (cs_vector['ex'] & (CS_VECTOR_ALL_ONE ^ make_mask_ex_en(cs_vector['id'])))
+                    cs_vector_dict['ex'] = (cs_vector_dict['id'] & make_mask_ex_en(cs_vector_dict['id'])) | \
+                                   (cs_vector_dict['ex'] & (CS_VECTOR_ALL_ONE ^ make_mask_ex_en(cs_vector_dict['id'])))
 
 
             # Update CS_VECTOR_ID
             deassert_we = (is_instr_minus4_multicycle == 1) | (prev_instr_ctrl_transfer in [0b01, 0b10])
-            #log(f"#{hex(addr_hex)},{code.instrs[addr_hex].inst},{deassert_we},{prev_instr_ctrl_transfer}")
-            cs_vector['id'] = cs_vector['if'] & DEASSERT_WE_MASK if deassert_we else cs_vector['if']
+            cs_vector_dict['id'] = cs_vector_dict['if'] & DEASSERT_WE_MASK if deassert_we else cs_vector_dict['if']
 
 
-            cs_vector_xored = reduce_cs_vector(cs_vector)
+            cs_vector_xored_int = cs_vector_dict_to_xored_int(cs_vector_dict)
 
             alu_en_ex = alu_en_id
             instr_minus4 = instr
-            if (cs_vector_xored >> 32) != 0:
+            cs_vector_dict['if'] = cs_decoder_instr
+            if (cs_vector_xored_int >> 32) != 0:
                 raise ValueError(f"Error, cs_vector should fit on 32 bits")
 
             # XOR CONTROL_SIGNALS WITH STATE
-            S[0] ^= cs_vector_xored
+            S[0] ^= cs_vector_xored_int
 
             other_lines_dbg += f"{'state_cs2cipher':<24}:{pc_pc_instr},{state2str(S)},"
-            other_lines_dbg += f"{hex(cs_vector_xored)[2:]},{hex(cs_vector['if'])},{hex(cs_vector['id'])},{hex(cs_vector['ex'])},{is_instr_multicycle}\n"
+            other_lines_dbg += f"{hex(cs_vector_xored_int)[2:]},{hex(cs_vector_dict['if'])},{hex(cs_vector_dict['id'])},{hex(cs_vector_dict['ex'])},{is_instr_multicycle}\n"
 
             # PC(hex), PC(dec), instr, instr_cs_vector, cs_vector_used, is_instr_multicycle, state
-            ascon_states_dec +=f"{pc_pc_instr},{cs_decoder_instr},{cs_vector_xored},{is_instr_multicycle},{','.join(map(str, S))}\n"
-            ascon_states_hex +=f"{pc_pc_instr},{hex(cs_decoder_instr)[2:]},{hex(cs_vector_xored)[2:]},{is_instr_multicycle},{state2str(S)}\n"
+            cs_vector_dict_str_dec, cs_vector_dict_str_hex = "", ""
+            for stage in ['if', 'id', 'ex', 'wb']:
+                if stage in cs_vector_dict:
+                    cs_vector_dict_str_dec += f"-{cs_vector_dict[stage]}"
+                    cs_vector_dict_str_hex += f"-{hex(cs_vector_dict[stage])[2:]}"
+            cs_vector_dict_str_dec, cs_vector_dict_str_hex = cs_vector_dict_str_dec[1:], cs_vector_dict_str_hex[1:]
+
+            ascon_states_dec +=f"{pc_pc_instr},{cs_decoder_instr},{cs_vector_dict_str_dec},{is_instr_multicycle},{','.join(map(str, S))}\n"
+            ascon_states_hex +=f"{pc_pc_instr},{hex(cs_decoder_instr)[2:]},{cs_vector_dict_str_hex},{is_instr_multicycle},{state2str(S)}\n"
         else:
             # PC(hex), PC(dec), instr, state
             ascon_states_dec +=f"{pc_pc_instr},{','.join(map(str, S))}\n"
