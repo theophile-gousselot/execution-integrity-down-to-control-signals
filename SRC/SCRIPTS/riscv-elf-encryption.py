@@ -258,7 +258,7 @@ def encrypt_elf():
         if CS_MODE:
             # Extract info from cs_decoder 
             cs_decoder_instr = decode_tab_to_cs_vector(cs_decoder[instr2fct7_3_opcode(instr)]['cs_vector'])
-            #log(f"#{hex(addr_hex)},{code.instrs[addr_hex].inst},{hex(cs_decoder_instr)}")
+            #log(f"#{hex(addr_hex)},{code.instrs[addr_hex].inst},{hex(cs_decoder_instr)},{hex(instr2fct7_3_opcode(instr))},{hex(cs_decoder[instr2fct7_3_opcode(instr)]['cs_vector'])}")
 
             is_instr_minus8_multicycle = is_instr_minus4_multicycle
             is_instr_minus4_multicycle = is_instr_multicycle

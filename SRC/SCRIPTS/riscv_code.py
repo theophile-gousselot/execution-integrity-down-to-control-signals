@@ -18,6 +18,8 @@ NB_ADDR_REDIRECTED_MAX = 11
 REDIRECTION_TAG_SIZE = int((ASCON_STATE_WIDTH - WIDTH_ADDR * NB_ADDR_REDIRECTED_MAX * 2))
 REDIRECTION_TAG = '1' * REDIRECTION_TAG_SIZE
 
+def h(interger):
+    return (hex(interger)[2:])
 
 def zfint(i,bits):
     """ Convert a int into a str filled with 0 to reach 5 caracters. """
@@ -263,7 +265,7 @@ class Code:
                         brplus4_mask = cs_vector_dict_to_xored_int(br_corr_deassert)
 
                         sub_state_patch ^= brplus4_mask
-                        correction_str = f",{hex(brplus4_mask)[2:]:>4} ({zfint(self.instrs[addr_patch+4].cs_vector_xored2['id'],4)})"
+                        correction_str = f",{h(brplus4_mask)} ({h(br_corr_deassert['ex'])} {h(br_corr_deassert['id'])}  mask={h(CS_VECTOR_ALL_ONE ^ DEASSERT_WE_MASK)})"
 
                     # Destination of a jump is decrypted after the state get from jal decryption xor with patch, and CS from 
                     # jal in the execute (not jal-4) AND in the decode (deasserted). Therefore, the execute cs_vector
@@ -273,7 +275,7 @@ class Code:
                         jal_ex_correction['id'] = 0
                         jal_ex_correction['ex'] = self.instrs[addr_src].cs_vector_xored2['ex'] ^ self.instrs[addr_disc].cs_vector_xored2['if'] #jal-4 ^ jal
                         sub_state_patch ^= cs_vector_dict_to_xored_int(jal_ex_correction)
-                        correction_str = f",{hex(jal_ex_correction['ex'])[2:]:>4}({zfint(self.instrs[addr_src].cs_vector_xored2['ex'],2)}^{zfint(self.instrs[addr_disc].cs_vector_xored2['if'],2)})"
+                        correction_str = f",{h(jal_ex_correction['ex']):>4}({zfint(self.instrs[addr_src].cs_vector_xored2['ex'],2)}^{zfint(self.instrs[addr_disc].cs_vector_xored2['if'],2)})"
 
                 patch += hex(sub_state_patch)[2:].zfill(16)
 

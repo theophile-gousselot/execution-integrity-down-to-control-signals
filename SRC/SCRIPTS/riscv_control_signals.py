@@ -1,11 +1,12 @@
 CS_VECTOR_ARCH = {'id': ['alu_operator', 'alu_en'], 'ex': ['alu_operator', 'alu_en']}
+CS_VECTOR_ARCH = {'id': ['alu_operator', 'alu_en', 'alu_op_a_mux_sel', 'regfile_we_id'], 'ex': ['alu_operator', 'alu_en', 'regfile_we_id']}
 
 
 SIGNAL_DESCRIPTION = {}
 SIGNAL_DESCRIPTION['alu_bmask_a_mux_sel']          = {'width': 1, 'position_dec_tab': 119}
 SIGNAL_DESCRIPTION['alu_bmask_b_mux_sel']          = {'width': 1, 'position_dec_tab': 118}
 SIGNAL_DESCRIPTION['alu_en']                       = {'width': 1, 'position_dec_tab': 117, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b1}
-SIGNAL_DESCRIPTION['alu_op_a_mux_sel']             = {'width': 3, 'position_dec_tab': 114}
+SIGNAL_DESCRIPTION['alu_op_a_mux_sel']             = {'width': 3, 'position_dec_tab': 114, 'reset_val': 0b0}
 SIGNAL_DESCRIPTION['alu_op_b_mux_sel']             = {'width': 3, 'position_dec_tab': 111}
 SIGNAL_DESCRIPTION['alu_op_c_mux_sel']             = {'width': 2, 'position_dec_tab': 109}
 SIGNAL_DESCRIPTION['alu_operator']                 = {'width': 7, 'position_dec_tab': 102,  'reset_val': 0b11, 'id_invalid_ex_ready': 0b11, 'ex_en':'alu_en'}
@@ -63,11 +64,11 @@ SIGNAL_DESCRIPTION['regc_used_dec']                = {'width': 1, 'position_dec_
 SIGNAL_DESCRIPTION['regfile_alu_waddr_mux_sel']    = {'width': 1, 'position_dec_tab': 13}
 SIGNAL_DESCRIPTION['regfile_alu_we_dec_id']        = {'width': 1, 'position_dec_tab': 12}
 SIGNAL_DESCRIPTION['regfile_alu_we_id']            = {'width': 1, 'position_dec_tab': 11}
-SIGNAL_DESCRIPTION['regfile_fp_a']                 = {'width': 1, 'position_dec_tab': 10}
+SIGNAL_DESCRIPTION['regfile_fp_a']                 = {'width': 1, 'position_dec_tab': 10, 'reset_val': 0b0, 'ex_en':'regfile_we_id'}
 SIGNAL_DESCRIPTION['regfile_fp_b']                 = {'width': 1, 'position_dec_tab': 9}
 SIGNAL_DESCRIPTION['regfile_fp_c']                 = {'width': 1, 'position_dec_tab': 8}
 SIGNAL_DESCRIPTION['regfile_fp_d']                 = {'width': 1, 'position_dec_tab': 7}
-SIGNAL_DESCRIPTION['regfile_we_id']                = {'width': 1, 'position_dec_tab': 6}
+SIGNAL_DESCRIPTION['regfile_we_id']                = {'width': 1, 'position_dec_tab': 6, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0}
 SIGNAL_DESCRIPTION['scalar_replication']           = {'width': 1, 'position_dec_tab': 5}
 SIGNAL_DESCRIPTION['scalar_replication_c']         = {'width': 1, 'position_dec_tab': 4}
 SIGNAL_DESCRIPTION['uret_dec']                     = {'width': 1, 'position_dec_tab': 3}
@@ -77,7 +78,7 @@ SIGNAL_DESCRIPTION['null']                         = {'width': 1, 'position_dec_
 
 
 
-DEASSERT_WE_AFFECTED_SIGNALS = ['alu_en', ' apu_en', ' mult_int_en', ' mult_dot_en', ' regfile_mem_we', ' regfile_alu_we', ' data_req', ' hwlp_we', ' csr_op', ' ctrl_transfer_insn']
+DEASSERT_WE_AFFECTED_SIGNALS = ['alu_en', 'apu_en', 'mult_int_en', 'mult_dot_en', 'regfile_we_id', 'regfile_alu_we', 'data_req', 'hwlp_we', 'csr_op', 'ctrl_transfer_insn']
 
 #if not 'data_req_id'  thus:  data_load_event_ex_o <= 1'b0;
 
@@ -239,7 +240,7 @@ def read_decoding_table(cs_path):
         cs_file_line = list(cs_file_list[fct7_3_opcode].split(','))
         if int(cs_file_line[1], 16) != fct7_3_opcode:
             raise ValueError(f'Error, {cs_path} is bad-formated.')
-        cs_decoder.append({'cs_vector': (int(cs_file_line[2], 16) << (56+8)) | ( int(cs_file_line[2], 16) << 8) | int(cs_file_line[2], 16),
+        cs_decoder.append({'cs_vector': (int(cs_file_line[2], 16) << (56+8)) | ( int(cs_file_line[3], 16) << 8) | int(cs_file_line[4], 16),
             'is_multicycle': int(cs_file_line[5]), 'ctrl_transfer': int(cs_file_line[6])})
     return (cs_decoder)
 
