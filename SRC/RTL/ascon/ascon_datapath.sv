@@ -1,12 +1,11 @@
 `timescale 1ns / 1ps
 
+`include "macro_def.sv"
+
 module ascon_datapath
     import cv32e40p_pkg::*;
     import ascon_pack::*;      
 #(
-    parameter CS_WIDTH,
-    parameter CS_ID_WIDTH,
-    parameter CS_EX_WIDTH,
     parameter FIFO_DEPTH = 2,
     parameter FIFO_ADDR_DEPTH = 1,
     parameter PATCH_WIDTH = 320,
@@ -19,7 +18,7 @@ module ascon_datapath
     input logic                             rst_ni,
 
 `ifdef CS
-    input logic [CS_WIDTH-1:0]              cs_vector_i,
+    input logic [`CS_WIDTH-1:0]              cs_vector_i,
 `endif
 `ifdef CS_EX
     input logic                             dec_alu_en_i,
@@ -49,7 +48,7 @@ module ascon_datapath
 `endif
     input logic                             apply_patch_i,
 
-    input logic [PATCH_WIDTH+CS_EX_WIDTH-1:0] patch_i,
+    input logic [PATCH_WIDTH+`CS_EX_WIDTH-1:0] patch_i,
 
     output logic [PATCH_MEM_ADDR_WIDTH-1:0] patch_addr_o,
 
@@ -63,15 +62,15 @@ module ascon_datapath
     // DECLARATION
     localparam CLK_FACTOR = PB_ROUNDS / HW_PERMUTATION_N;
 
-    logic [PATCH_WIDTH+CS_EX_WIDTH-1:0]          patch_of_instr_in_if_reg_s = '0;
-    logic [PATCH_WIDTH+CS_EX_WIDTH-1:0]          patch_of_instr_in_id_reg_s = '0;
-    logic [PATCH_WIDTH+CS_EX_WIDTH-1:0]          patch_of_instr_in_ex_reg_s = '0;
+    logic [PATCH_WIDTH+`CS_EX_WIDTH-1:0]          patch_of_instr_in_if_reg_s = '0;
+    logic [PATCH_WIDTH+`CS_EX_WIDTH-1:0]          patch_of_instr_in_id_reg_s = '0;
+    logic [PATCH_WIDTH+`CS_EX_WIDTH-1:0]          patch_of_instr_in_ex_reg_s = '0;
 
     logic [PATCH_WIDTH-1:0]          patch_to_ascon_s;
 `ifdef CS_EX
     logic [63:0]          patch_s0_cs_to_ascon_s;
-    logic [CS_EX_WIDTH-1:0]          patch_cs_to_ascon_reg;
-    logic [CS_EX_WIDTH-1:0]          patch_cs_to_ascon_s;
+    logic [`CS_EX_WIDTH-1:0]          patch_cs_to_ascon_reg;
+    logic [`CS_EX_WIDTH-1:0]          patch_cs_to_ascon_s;
     logic                            apply_patch_cs_reg;
     logic                            apply_patch_cs_s;
 `endif
@@ -275,9 +274,9 @@ module ascon_datapath
     always_comb begin : patch_cs_to_ascon_generation
         case (sel_patch_i)
             PATCH_NULL: patch_cs_to_ascon_s = '0;
-            PATCH_IF: patch_cs_to_ascon_s = patch_of_instr_in_if_reg_s[PATCH_WIDTH+CS_EX_WIDTH-1:PATCH_WIDTH];
-            PATCH_ID: patch_cs_to_ascon_s = patch_of_instr_in_id_reg_s[PATCH_WIDTH+CS_EX_WIDTH-1:PATCH_WIDTH];
-            PATCH_EX: patch_cs_to_ascon_s = patch_of_instr_in_ex_reg_s[PATCH_WIDTH+CS_EX_WIDTH-1:PATCH_WIDTH];
+            PATCH_IF: patch_cs_to_ascon_s = patch_of_instr_in_if_reg_s[PATCH_WIDTH+`CS_EX_WIDTH-1:PATCH_WIDTH];
+            PATCH_ID: patch_cs_to_ascon_s = patch_of_instr_in_id_reg_s[PATCH_WIDTH+`CS_EX_WIDTH-1:PATCH_WIDTH];
+            PATCH_EX: patch_cs_to_ascon_s = patch_of_instr_in_ex_reg_s[PATCH_WIDTH+`CS_EX_WIDTH-1:PATCH_WIDTH];
         endcase
     end : patch_cs_to_ascon_generation
 
@@ -308,10 +307,10 @@ module ascon_datapath
 
     assign apply_patch_cs_s = apply_patch_cs_i || apply_patch_cs_reg;
 
-    assign patch_s0_cs_to_ascon_s[63:CS_EX_WIDTH+CS_ID_WIDTH] = '0;
-    assign patch_s0_cs_to_ascon_s[CS_EX_WIDTH+CS_ID_WIDTH-1:CS_ID_WIDTH] = (apply_patch_cs_s) ? patch_cs_to_ascon_reg : '0;
+    assign patch_s0_cs_to_ascon_s[63:`CS_EX_WIDTH+`CS_ID_WIDTH] = '0;
+    assign patch_s0_cs_to_ascon_s[`CS_EX_WIDTH+`CS_ID_WIDTH-1:`CS_ID_WIDTH] = (apply_patch_cs_s) ? patch_cs_to_ascon_reg : '0;
 `ifdef CS_ID
-    assign patch_s0_cs_to_ascon_s[CS_ID_WIDTH-1:0] = '0;
+    assign patch_s0_cs_to_ascon_s[`CS_ID_WIDTH-1:0] = '0;
 `endif
     assign state_patched[0] = state_not_patched[0] ^ patch_to_ascon_s[319:256] ^ patch_s0_cs_to_ascon_s;
 `else
@@ -331,7 +330,7 @@ module ascon_datapath
     assign state_patch2cs = (apply_patch_i) ? state_patched : state_not_patched;
 `endif
     assign state_cs2cipher[4:1] = state_patch2cs[4:1];
-    assign state_cs2cipher[0] = {state_patch2cs[0][63:CS_WIDTH], state_patch2cs[0][CS_WIDTH-1:0] ^ cs_vector_i} ;
+    assign state_cs2cipher[0] = {state_patch2cs[0][63:`CS_WIDTH], state_patch2cs[0][`CS_WIDTH-1:0] ^ cs_vector_i} ;
 
     assign instr_rdata_plain_s = state_cs2cipher[0][63:32] ^ instr_rdata_cipher_i;
     assign instr_rdata_plain_o = (if_valid_i) ? instr_rdata_plain_s : 32'h0;

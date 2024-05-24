@@ -1,5 +1,7 @@
 `timescale 1ns / 1ps
 
+`include "macro_def.sv"
+
 module ascon_fsm
     import cv32e40p_pkg::*;
     import ascon_pack::*;      

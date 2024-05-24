@@ -1,5 +1,7 @@
 `timescale 1ns / 1ps
 
+`include "macro_def.sv"
+
 module patch_mem
 #(
     parameter ADDR_WIDTH = 16,
@@ -25,18 +27,10 @@ module patch_mem
         //    mem[i] = '0;
         //end
 `ifdef VERILATOR
-`ifdef CS_ID
-`ifdef CS_EX
-	    $readmemh({program_path,"_encrypted_cs-id-ex_patches.mem"}, mem);
-`else
-	    $readmemh({program_path,"_encrypted_cs-id_patches.mem"}, mem);
-`endif
-`else
-`ifdef CS_EX
-	    $readmemh({program_path,"_encrypted_cs-ex_patches.mem"}, mem);
+`ifdef CS
+	    $readmemh({program_path,"_encrypted_cs",`STRINGIFY(`CS),"_patches.mem"}, mem);
 `else
 	    $readmemh({program_path,"_encrypted_patches.mem"}, mem);
-`endif
 `endif
 `else
 	    $readmemh("program_encrypted_patches.mem", mem);

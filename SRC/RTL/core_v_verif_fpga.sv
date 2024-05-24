@@ -1,11 +1,7 @@
 `timescale 1ns / 1ps
 
-`ifdef CS_ID 
-`define CS
-`endif
-`ifdef CS_EX
-`define CS
-`endif
+
+`include "macro_def.sv"
 
 module core_v_verif_fpga
 `ifdef ENCRYPT
@@ -28,23 +24,8 @@ module core_v_verif_fpga
     localparam PATCH_WIDTH            = 320;
 
 `ifdef ENCRYPT
-    localparam PB_ROUNDS   = 6;
+    localparam PB_ROUNDS              = 6;
     localparam PATCH_MEM_ADDR_WIDTH   = 16;
-`endif
-`ifdef CS_EX
-    localparam CS_EX_WIDTH = 8;
-`else
-    localparam CS_EX_WIDTH = 0;
-`endif
-`ifdef CS_ID
-    localparam CS_ID_WIDTH = 8;
-`else
-    localparam CS_ID_WIDTH = 0;
-`endif
-`ifdef CS
-    localparam CS_WIDTH = CS_ID_WIDTH + CS_EX_WIDTH; 
-`else
-    localparam CS_WIDTH = 0;
 `endif
 
 
@@ -106,9 +87,9 @@ module core_v_verif_fpga
 
     // Control Signals: core to ascon_fsm
     logic [PATCH_MEM_ADDR_WIDTH-1:0] patch_addr_s;
-    logic [PATCH_WIDTH + CS_EX_WIDTH - 1:0]          patch_s;
+    logic [PATCH_WIDTH + `CS_EX_WIDTH - 1:0]          patch_s;
 `ifdef CS
-    logic [CS_WIDTH-1:0] cs_vector_s;
+    logic [`CS_WIDTH-1:0] cs_vector_s;
 `endif
 `ifdef CS_EX
     logic dec_alu_en_s;
@@ -176,15 +157,6 @@ module core_v_verif_fpga
     ////////////////////////////////
 
     cv32e40p_core #(
-`ifdef CS
-        .CS_WIDTH         (CS_WIDTH),
-`endif
-`ifdef CS_ID
-        .CS_ID_WIDTH      (CS_ID_WIDTH),
-`endif
-`ifdef CS_EX
-        .CS_EX_WIDTH      (CS_EX_WIDTH),
-`endif
         .FIFO_DEPTH       (FIFO_DEPTH),
         .FIFO_ADDR_DEPTH  (FIFO_ADDR_DEPTH),
         .PULP_XPULP       (0),
@@ -276,9 +248,6 @@ module core_v_verif_fpga
 
 `ifdef ENCRYPT
     ascon_decryption #(
-        .CS_WIDTH               (CS_WIDTH),
-        .CS_ID_WIDTH            (CS_ID_WIDTH),
-        .CS_EX_WIDTH            (CS_EX_WIDTH),
         .FIFO_DEPTH             (FIFO_DEPTH),
         .FIFO_ADDR_DEPTH        (FIFO_ADDR_DEPTH),
         .PATCH_WIDTH            (PATCH_WIDTH),
@@ -360,7 +329,7 @@ module core_v_verif_fpga
 `ifdef ENCRYPT
     patch_mem #(
         .ADDR_WIDTH   (PATCH_MEM_ADDR_WIDTH),
-        .PATCH_WIDTH  (PATCH_WIDTH + CS_EX_WIDTH)
+        .PATCH_WIDTH  (PATCH_WIDTH + `CS_EX_WIDTH )
     ) patch_mem_i (
         .clk_i        (clk_core_slow_i),
         .patch_addr_i (patch_addr_s),
