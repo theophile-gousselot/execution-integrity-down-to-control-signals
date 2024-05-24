@@ -20,9 +20,15 @@ using namespace boost;
 #define MAX_SIM_TIME 5000000
 #endif
 
+
 #ifndef CLK_FACTOR
 #define CLK_FACTOR 1
 #endif
+
+#ifndef CS
+#define CS 0
+#endif
+
 
 int exit_error_argv(int argc, char** argv) {
     cout <<  endl << "usage: " << argv[0] << " <program_name> " << "[--verif, --save_ref, --trace_signals, --cs_ref]" << endl;
@@ -82,12 +88,8 @@ void log_start_simu(ofstream& log_file, string program_name, bool verif_mode, bo
     write_log(cout, log_file, "VERILATOR:      Simulation launched...\n");
     write_log(cout, log_file, "PROGRAM:        " + program_name + "\n");
     write_log(cout, log_file, "CLOCK FACTOR:   " + to_string(CLK_FACTOR) + "\n");
-#if defined(CS_ID) && defined(CS_EX)
-    write_log(cout, log_file, "CONTROL SIGNALS FROM ID and EX ARE ASSOCIATED TO ENCRYPTION\n");
-#elif CS_ID
-    write_log(cout, log_file, "CONTROL SIGNALS FROM ID ARE ASSOCIATED TO ENCRYPTION\n");
-#elif CS_EX
-    write_log(cout, log_file, "CONTROL SIGNALS FROM EX ARE ASSOCIATED TO ENCRYPTION\n");
+#if CS != 0
+    write_log(cout, log_file, "CONTROL SIGNALS (" +  to_string(CS) + ") ARE ASSOCIATED TO ENCRYPTION\n");
 #endif
     if (verif_mode) {
         write_log(cout, log_file, "MODE:           VERIFICATION of PC/instr\n\n");
@@ -154,12 +156,9 @@ void log_start_overview(bool verif_mode, bool trace_signals_mode, string program
     }
     overview_log_file << format("|%=18i") % program_name;
 #ifdef ENCRYPT
-#if defined(CS_ID) && defined(CS_EX)
-    overview_log_file << format("|%=15i") % "instr+cs-id-ex";
-#elif CS_ID
-    overview_log_file << format("|%=15i") % "instr+cs-id";
-#elif CS_EX
-    overview_log_file << format("|%=15i") % "instr+cs-ex";
+#if defined(CS)
+    string encrypt_with_cs = "instr+cs" + to_string(CS);
+    overview_log_file << format("|%=15i") % encrypt_with_cs;
 #else
     overview_log_file << format("|%=15i") % "instr";
 #endif
@@ -290,12 +289,8 @@ int main(int argc, char** argv, char** env) {
     argv_analyze(argc, argv, program_name, verif_mode, trace_signals_mode, cs_ref_mode);
 
 #ifdef ENCRYPT
-#if defined(CS_ID) && defined(CS_EX)
-    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs-id-ex.vcd";
-#elif CS_ID
-    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs-id.vcd";
-#elif CS_EX
-    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs-ex.vcd";
+#if defined(CS)
+    vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs" +to_string(CS) + ".vcd";
 #else
     vcd_path = "OBJ/PROGRAMS/" + program_name + "/SIM/VCD/program_encrypted_cf" + to_string(CLK_FACTOR) + ".vcd";
 #endif
@@ -309,12 +304,8 @@ int main(int argc, char** argv, char** env) {
 
     if (verif_mode) {
 #ifdef ENCRYPT
-#if defined(CS_ID) && defined(CS_EX)
-        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs-id-ex_verif.log";
-#elif CS_ID
-        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs-id_verif.log";
-#elif CS_EX
-        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs-ex_verif.log";
+#if defined(CS)
+        log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_encrypted_cf" + to_string(CLK_FACTOR) + "_cs" + to_string(CS) + "_verif.log";
 #else
         log_path = "OBJ/PROGRAMS/" + program_name + "/SIM/LOG/program_encrypted_cf" + to_string(CLK_FACTOR) + "_verif.log";
 #endif
