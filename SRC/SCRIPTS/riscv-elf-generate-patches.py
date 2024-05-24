@@ -23,8 +23,8 @@ parser.add_argument("src_path", help="specify the source path",
                     type=str, nargs='?', const="", default="")
 parser.add_argument("obj_path", help="specify the object path",
                     type=str, nargs='?', const="", default="")
-parser.add_argument("-c", "--control_signals", help="use control signal in encryption",
-                    type=str, nargs='?', const="", default="")
+parser.add_argument("-i", "--cs_vector_arch_id", help="use control signal in encryption",
+                    type=int, default=0)
 parser.add_argument("-v", "--verbose",
                     help="increase output verbosity", action="store_true")
 args = parser.parse_args()
@@ -54,7 +54,7 @@ def save_several_subgraph(code):
 
 ###### Main ######
 if __name__ == "__main__":
-    code = Code(args.src_path, args.obj_path, args.control_signals)
+    code = Code(args.src_path, args.obj_path, args.cs_vector_arch_id)
     code.read_itb()
     code.get_predecessors()
     code.get_ret_successors()

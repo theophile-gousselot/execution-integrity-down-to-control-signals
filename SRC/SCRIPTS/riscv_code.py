@@ -2,8 +2,7 @@ import os
 import sys
 
 from riscv_instruction import Instruction
-from riscv_control_signals import *
-from riscv_setup_control_signals import CS_VECTOR_ARCH, CS_VECTOR_DESCRIPTION, DEASSERT_WE_MASK, CS_VECTOR_RESET, CS_VECTOR_WIDTH, CS_VECTOR_ALL_ONE, CS_VECTOR_ID_INVALID_EX_READY, MASK_CS_VECTOR_ID_INVALID_EX_READY
+from riscv_control_signals import Control_signals
 
 
 
@@ -38,15 +37,15 @@ class Code:
         Predecessors of every instructions instances are compeleted.
     """
 
-    def __init__(self, src_path, obj_path, control_signals):
+    def __init__(self, src_path, obj_path, cs_vector_arch_id):
         self.instrs = {}
-        self.cs_id_mode = "id" in control_signals
-        self.cs_ex_mode = "ex" in control_signals
-        self.cs_mode = control_signals != ''
+        self.cs_mode = cs_vector_arch_id != 0
+        self.CS_FLAG = f"_cs{cs_vector_arch_id}" if self.cs_mode else ""
+        if self.cs_mode:
+            self.cs = Control_signals(cs_vector_arch_id)
 
         ###### Paths ######
         PROGRAM = "program"
-        self.CS_FLAG = f"_{control_signals}" if self.cs_mode else ""
         self.ITB_PATH = f"{obj_path}/{PROGRAM}.itb"
         self.STATES_DEC_CSV_PATH = f"{obj_path}/{PROGRAM}_encrypted{self.CS_FLAG}_states_dec.csv"
         self.EDGES_PATH = f"{obj_path}/{PROGRAM}_edges.csv"
@@ -209,13 +208,11 @@ class Code:
         for state_l in states_list:
             if len(state_l) > 0:
                 if self.cs_mode:
-                    addr_hex, addr_dec, instr, cs_vector, cs_vector_xored, is_multicycle, state = list(state_l.split(",", 6))
+                    addr_hex, addr_dec, instr, cs_vector, cs_vector_str , is_multicycle, state = list(state_l.split(",", 6))
                     self.instrs[int(addr_dec)].state = list( map(int, list(state.split(",", 4))))
                     self.instrs[int(addr_dec)].is_multicycle = is_multicycle == "1"
-                    # cs_vector_xored used to encrypt instr at PC is instr at PC-4
                     self.instrs[int(addr_dec)].cs_vector = int(cs_vector)
-                    self.instrs[int(addr_dec)].cs_vector_xored2 = dict(zip(['if', 'id', 'ex'], list(map(int, list(cs_vector_xored.split('-'))))))
-                    #self.instrs[int(addr_dec)].cs_vector_xored2 = dict(zip([stage for stage in ['if', 'id', 'ex'] if stage in list(CS_VECTOR_ARCH.keys()) + ['if']], list(map(int, list(cs_vector_xored.split('-'))))))
+                    self.instrs[int(addr_dec)].cs_vector_dict = dict(zip([stage for stage in ['if', 'id', 'ex', 'wb'] if stage in list(self.cs.CS_VECTOR_ARCH.keys()) + ['if']], list(map(int, list(cs_vector_str.split('-'))))))
                 else:
                     addr_hex, addr_dec, instr, state = list(state_l.split(",", 3))
                     self.instrs[int(addr_dec)].state = list(map(int, list(state.split(",", 4))))
@@ -260,12 +257,12 @@ class Code:
                     # cs_vector bits to mask to itself (as it is already in the patch through cs2cipher.
                     if disc_type == 'b': #addr_patch -> addr_src-8
                         br_corr_deassert = {}
-                        br_corr_deassert['id'] = self.instrs[addr_patch+8].cs_vector_xored2['id'] & (CS_VECTOR_ALL_ONE ^ DEASSERT_WE_MASK)
-                        br_corr_deassert['ex'] = self.instrs[addr_patch+8].cs_vector_xored2['ex'] & (CS_VECTOR_ALL_ONE ^ DEASSERT_WE_MASK)
-                        brplus4_mask = cs_vector_dict_to_xored_int(br_corr_deassert)
+                        br_corr_deassert['id'] = self.instrs[addr_patch+8].cs_vector_dict['id'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
+                        br_corr_deassert['ex'] = self.instrs[addr_patch+8].cs_vector_dict['ex'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
+                        brplus4_mask = self.cs.cs_vector_dict_to_xored_int(br_corr_deassert)
 
                         sub_state_patch ^= brplus4_mask
-                        correction_str = f",{h(brplus4_mask)} ({h(br_corr_deassert['ex'])} {h(br_corr_deassert['id'])}  mask={h(CS_VECTOR_ALL_ONE ^ DEASSERT_WE_MASK)})"
+                        correction_str = f",{h(brplus4_mask)} ({h(br_corr_deassert['ex'])} {h(br_corr_deassert['id'])}  mask={h(self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)})"
 
                     # Destination of a jump is decrypted after the state get from jal decryption xor with patch, and CS from 
                     # jal in the execute (not jal-4) AND in the decode (deasserted). Therefore, the execute cs_vector
@@ -273,9 +270,9 @@ class Code:
                     if disc_type in ['jal', 'jalr']:
                         jal_ex_correction = {}
                         jal_ex_correction['id'] = 0
-                        jal_ex_correction['ex'] = self.instrs[addr_src].cs_vector_xored2['ex'] ^ self.instrs[addr_disc].cs_vector_xored2['if'] #jal-4 ^ jal
-                        sub_state_patch ^= cs_vector_dict_to_xored_int(jal_ex_correction)
-                        correction_str = f",{h(jal_ex_correction['ex']):>4}({zfint(self.instrs[addr_src].cs_vector_xored2['ex'],2)}^{zfint(self.instrs[addr_disc].cs_vector_xored2['if'],2)})"
+                        jal_ex_correction['ex'] = self.instrs[addr_src].cs_vector_dict['ex'] ^ self.instrs[addr_disc].cs_vector_dict['if'] #jal-4 ^ jal
+                        sub_state_patch ^= self.cs.cs_vector_dict_to_xored_int(jal_ex_correction)
+                        correction_str = f",{h(jal_ex_correction['ex']):>4}({zfint(self.instrs[addr_src].cs_vector_dict['ex'],2)}^{zfint(self.instrs[addr_disc].cs_vector_dict['if'],2)})"
 
                 patch += hex(sub_state_patch)[2:].zfill(16)
 
@@ -283,16 +280,16 @@ class Code:
 
 
             ##### PATCH FOR CYCLE AFTER THE ONE OF INSTRUCTION DISCONTINUITY EXECUTION #####
-            if self.cs_ex_mode:
+            if self.cs_mode:
                 if addr_dest+4 not in self.instrs.keys():
-                    cs_ex_corr = "00"
+                    cs_ex_corr = "0" * self.cs.PATCH_CS_EX_HEX_WIDTH
                     correction_str += f"no dest+4"
                 elif disc_type in ['jal', 'jalr'] or self.instrs[addr_patch].type == 'B': # Instruction in EX is disc deasserted not dest-4
-                    cs_ex_corr_dict = {'ex': ((self.instrs[addr_disc].cs_vector_xored2['if'] & DEASSERT_WE_MASK) ^ (self.instrs[addr_dest+4].cs_vector_xored2['ex']))} # ex only because extra patch for cs in on ex only
-                    cs_ex_corr = hex(cs_vector_dict_to_xored_int(cs_ex_corr_dict))[2:].zfill(2)
-                    correction_str += f",{cs_ex_corr}({zfint(self.instrs[addr_disc].cs_vector_xored2['if'] & DEASSERT_WE_MASK, 2)}^{zfint(self.instrs[addr_dest+4].cs_vector_xored2['ex'],2)})"
+                    cs_ex_corr_dict = {'ex': ((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK) ^ (self.instrs[addr_dest+4].cs_vector_dict['ex']))} # ex only because extra patch for cs in on ex only
+                    cs_ex_corr = hex(self.cs.cs_vector_dict_to_xored_int(cs_ex_corr_dict))[2:].zfill(self.cs.PATCH_CS_EX_HEX_WIDTH)
+                    correction_str += f",{cs_ex_corr}({zfint(self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK, 2)}^{zfint(self.instrs[addr_dest+4].cs_vector_dict['ex'],2)})"
                 else:
-                    cs_ex_corr = hex(0)[2:].zfill(2)
+                    cs_ex_corr = "0" * self.cs.PATCH_CS_EX_HEX_WIDTH
                 patch = cs_ex_corr + patch
 
             self.hex_patches_free[addr_patch >> 2] = False
@@ -334,7 +331,7 @@ class Code:
             # dict of jalr when patches are in conflicts
             self.patches_to_be_redirected = {}
 
-            PATCH_WIDTH = 82 if self.cs_ex_mode else 80
+            PATCH_WIDTH = 80 + self.cs.PATCH_CS_EX_HEX_WIDTH if self.cs_mode else 80
             self.hex_patches = ['0' * PATCH_WIDTH] * len(self.instrs.keys())
             self.hex_patches_csv = ['    ,00000,00000,00000,00000,' + '0' * PATCH_WIDTH] * len(self.instrs.keys())
             self.hex_patches_free = [True] * len(self.instrs.keys())
@@ -410,8 +407,8 @@ class Code:
                     # Remove '0b' and the two least significant bits
                     redirection_field += bin(self.patches_to_be_redirected[addr][s])[2:-2].zfill(WIDTH_ADDR)
                     redirection_field += bin(addr_redirected[s])[2:-2].zfill(WIDTH_ADDR)
-                if self.cs_ex_mode:
-                    self.hex_patches[addr >> 2] = "00" + hex(int(REDIRECTION_TAG + redirection_field, 2))[2:]
+                if self.cs_mode:
+                    self.hex_patches[addr >> 2] = "0" * self.cs.PATCH_CS_EX_HEX_WIDTH + hex(int(REDIRECTION_TAG + redirection_field, 2))[2:]
                 else:
                     self.hex_patches[addr >> 2] = hex(int(REDIRECTION_TAG + redirection_field, 2))[2:]
                 self.hex_patches_csv[addr >> 2] = f"jalr,{zfint(addr,5)},{zfint(addr,5)},REDIRECTION,{self.hex_patches[addr >> 2]}"

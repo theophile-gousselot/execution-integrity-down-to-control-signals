@@ -11,9 +11,7 @@ import argparse
 from ascon_fct import ascon_initialize, ascon_process_one_encryption, ascon_permutation, bytes_to_int, reverse_bytes, int_to_bytes, state2str, instr2fct7_3_opcode
 from riscv_code import Code, zfint
 from riscv_instruction import *
-from riscv_control_signals import *
-from riscv_setup_control_signals import CS_VECTOR_ARCH, SIGNAL_SET, CS_VECTOR_DESCRIPTION, DEASSERT_WE_MASK, CS_VECTOR_RESET, CS_VECTOR_WIDTH, CS_VECTOR_ALL_ONE, CS_VECTOR_ID_INVALID_EX_READY, MASK_CS_VECTOR_ID_INVALID_EX_READY
-
+from riscv_control_signals import Control_signals
 
 ###### Arguments ######
 parser = argparse.ArgumentParser(description="Encrypt an elf file.")
@@ -36,15 +34,13 @@ parser.add_argument(
     type=int,
     default=6)
 parser.add_argument(
-    "-c",
-    "--control_signals",
+    "-i",
+    "--cs_vector_arch_id",
     help="XOR control_signal to patch",
-    type=str, nargs='?', const="", default="")
+    type=int, default=0)
 args = parser.parse_args()
 
-cs_id_mode = "id" in args.control_signals
-cs_ex_mode = "ex" in args.control_signals
-if args.control_signals != '':
+if args.cs_vector_arch_id != 0:
     CS_MODE = True
 else:
     CS_MODE = False
@@ -196,26 +192,39 @@ def encrypt_elf():
         Generate a new elf file: the encrypted one
     '''
 
-    print(f"CS_VECTOR_ARCH:{CS_VECTOR_ARCH}")
-    print(f"SIGNAL_SET:{SIGNAL_SET}")
-    print(f"CS_VECTOR_DESCRIPTION:{CS_VECTOR_DESCRIPTION}")
-    print(f"CS_VECTOR_WIDTH:{CS_VECTOR_WIDTH}")
-    print(f"DEASSERT_WE_MASK:{bin(DEASSERT_WE_MASK)[2:].zfill(CS_VECTOR_WIDTH)}")
-    print(f"CS_VECTOR_RESET:{bin(CS_VECTOR_RESET)[2:].zfill(CS_VECTOR_WIDTH)}")
-    print(f"CS_VECTOR_ALL_ONE:{bin(CS_VECTOR_ALL_ONE)[2:].zfill(CS_VECTOR_WIDTH)}")
-    print(f"CS_VECTOR_ID_INVALID_EX_READY:{bin(CS_VECTOR_ID_INVALID_EX_READY)[2:].zfill(CS_VECTOR_WIDTH)}")
-    print(f"MASK_CS_VECTOR_ID_INVALID_EX_READY:{bin(MASK_CS_VECTOR_ID_INVALID_EX_READY)[2:].zfill(CS_VECTOR_WIDTH)}")
 
     # Read the original elf file
     with open(ELF_PATH, 'rb') as file:
         plain_elf = file.read()
 
     # fct7_3_opcode to control signal decoding table
-    if args.control_signals:
-        cs_decoder = read_decoding_table(CS_PATH)
+    if CS_MODE:
+        cs = Control_signals(args.cs_vector_arch_id)
+        cs_decoder = cs.read_decoding_table(CS_PATH)
+        instr_minus4 = 0x7
+
+        cs_vector_dict = {}
+        cs_decoder_instr = cs.CS_VECTOR_RESET
+        cs_vector_dict['if'] = cs.CS_VECTOR_RESET
+        cs_vector_dict['id'] = cs.CS_VECTOR_RESET
+        cs_vector_dict['ex'] = cs.CS_VECTOR_RESET
+        cs_vector_dict['wb'] = cs.CS_VECTOR_RESET
+        is_instr_multicycle = 0
+        is_instr_minus4_multicycle = 0
+        is_instr_minus8_multicycle = 0
+        is_instr_minus12_multicycle = 0
+        print(f"cs.CS_VECTOR_ARCH:{cs.CS_VECTOR_ARCH}")
+        print(f"cs.SIGNAL_SET:{cs.SIGNAL_SET}")
+        print(f"cs.CS_VECTOR_DESCRIPTION:{cs.CS_VECTOR_DESCRIPTION}")
+        print(f"cs.CS_VECTOR_WIDTH:{cs.CS_VECTOR_WIDTH}")
+        print(f"cs.DEASSERT_WE_MASK:{bin(cs.DEASSERT_WE_MASK)[2:].zfill(cs.CS_VECTOR_WIDTH)}")
+        print(f"cs.CS_VECTOR_RESET:{bin(cs.CS_VECTOR_RESET)[2:].zfill(cs.CS_VECTOR_WIDTH)}")
+        print(f"cs.CS_VECTOR_ALL_ONE:{bin(cs.CS_VECTOR_ALL_ONE)[2:].zfill(cs.CS_VECTOR_WIDTH)}")
+        print(f"cs.CS_VECTOR_ID_INVALID_EX_READY:{bin(cs.CS_VECTOR_ID_INVALID_EX_READY)[2:].zfill(cs.CS_VECTOR_WIDTH)}")
+        print(f"cs.MASK_CS_VECTOR_ID_INVALID_EX_READY:{bin(cs.MASK_CS_VECTOR_ID_INVALID_EX_READY)[2:].zfill(cs.CS_VECTOR_WIDTH)}")
 
     # Code class instanciation
-    code = Code(OBJ_PATH, OBJ_PATH, args.control_signals)
+    code = Code(OBJ_PATH, OBJ_PATH, args.cs_vector_arch_id)
     code.read_itb()
 
     # S, k, rate, a, b, key, nonce are global variables
@@ -232,21 +241,6 @@ def encrypt_elf():
     ascon_states_dec = ""
     ascon_states_hex_dbg = ""
 
-    cs_vector = 0 # default in case there is no "--control_signals" option
-    instr_minus4 = 0x7
-
-    cs_vector_dict = {}
-    cs_decoder_instr = CS_VECTOR_RESET
-    cs_vector_dict['if'] = CS_VECTOR_RESET
-    cs_vector_dict['id'] = CS_VECTOR_RESET
-    cs_vector_dict['ex'] = CS_VECTOR_RESET
-    is_instr_multicycle = 0
-    is_instr_minus4_multicycle = 0
-    is_instr_minus8_multicycle = 0
-    is_instr_minus12_multicycle = 0
-
-    alu_en_id = True
-    alu_en_ex = False
 
     # Encrypt every instruction in the range
     for addr_elf in range(address_start_encrypt, address_stop_encrypt, 4):
@@ -257,7 +251,7 @@ def encrypt_elf():
 
         if CS_MODE:
             # Extract info from cs_decoder 
-            cs_decoder_instr = decode_tab_to_cs_vector(cs_decoder[instr2fct7_3_opcode(instr)]['cs_vector'])
+            cs_decoder_instr = cs.decode_tab_to_cs_vector(cs_decoder[instr2fct7_3_opcode(instr)]['cs_vector'])
             #log(f"#{hex(addr_hex)},{code.instrs[addr_hex].inst},{hex(cs_decoder_instr)},{hex(instr2fct7_3_opcode(instr))},{hex(cs_decoder[instr2fct7_3_opcode(instr)]['cs_vector'])}")
 
             is_instr_minus8_multicycle = is_instr_minus4_multicycle
@@ -271,39 +265,49 @@ def encrypt_elf():
             Setup cs_vector_xored_int to be xored with ascon state. cs_vector is concatenation of :
                 - cs_vector_dict['id'] : from ID stage
                 - cs_vector_dict['ex'] : from EX stage
+                - cs_vector_dict['wb'] : from WB stage
             CS Generate cs_vector_dict['id']: CS FROM THE PREVIOUS INSTRUCTION @PC-4  (THE ONE IN DECODE)
             """
             #when ex_ready = 0 => id_ready = if_ready = id_valid = 0 => no decryption
             ex_ready = True
+            ex_valid = cs.extract_cs(cs_vector_dict['ex'], 'alu_en') | cs.extract_cs(cs_vector_dict['ex'], 'mult_int_en') 
+            #wb_ready is always, but it only depends on memory access
+            wb_ready = True
+
+
+            # Update CS_VECTOR_WB
+            if ex_valid:
+                cs_vector_dict['wb'] = cs_vector_dict['ex']
+            else:
+                if wb_ready:
+                    cs_vector_dict['wb'] = ((cs_vector_dict['wb'] & cs.MASK_CS_VECTOR_EX_INVALID_WB_READY) | cs.CS_VECTOR_EX_INVALID_WB_READY)
 
             # Update CS_VECTOR_EX
-            if cs_ex_mode:
-                id_invalid = check_load_stall(code.instrs[addr_hex-8], code.instrs[addr_hex-4]) # load_stall -> id_invalid
+            id_invalid = check_load_stall(code.instrs[addr_hex-8], code.instrs[addr_hex-4]) # load_stall -> id_invalid
 
-                if id_invalid:
-                    if ex_ready:
-                        cs_vector_dict['ex'] = (cs_vector_dict['ex'] & MASK_CS_VECTOR_ID_INVALID_EX_READY) | CS_VECTOR_ID_INVALID_EX_READY
-                    else:
-                        cs_vector_dict['ex'] = cs_vector_dict['ex']
-
-                # When instr at PC+4 of a multicycle instruction is decrypted, the multicycle instr is still in EX
-                elif is_instr_minus4_multicycle == 1:# and not is_prev_instr_disc:
-                    cs_vector_dict['ex'] = cs_vector_dict['if']
-
+            if id_invalid:
+                if ex_ready:
+                    cs_vector_dict['ex'] = (cs_vector_dict['ex'] & cs.MASK_CS_VECTOR_ID_INVALID_EX_READY) | cs.CS_VECTOR_ID_INVALID_EX_READY
                 else:
-                # Update specific EX signals from ID according to the their enable signals. Look at 'ex_en' in SIGNAL_DESCRIPTION.
-                    cs_vector_dict['ex'] = (cs_vector_dict['id'] & make_mask_ex_en(cs_vector_dict['id'])) | \
-                                   (cs_vector_dict['ex'] & (CS_VECTOR_ALL_ONE ^ make_mask_ex_en(cs_vector_dict['id'])))
+                    cs_vector_dict['ex'] = cs_vector_dict['ex']
+
+            # When instr at PC+4 of a multicycle instruction is decrypted, the multicycle instr is still in EX
+            elif is_instr_minus4_multicycle == 1:# and not is_prev_instr_disc:
+                cs_vector_dict['ex'] = cs_vector_dict['if']
+
+            else:
+            # Update specific EX signals from ID according to the their enable signals. Look at 'ex_en' in SIGNAL_DESCRIPTION.
+                cs_vector_dict['ex'] = (cs_vector_dict['id'] & cs.make_mask_ex_en(cs_vector_dict['id'])) | \
+                                (cs_vector_dict['ex'] & (cs.CS_VECTOR_ALL_ONE ^ cs.make_mask_ex_en(cs_vector_dict['id'])))
 
 
             # Update CS_VECTOR_ID
             deassert_we = (is_instr_minus4_multicycle == 1) | (prev_instr_ctrl_transfer in [0b01, 0b10])
-            cs_vector_dict['id'] = cs_vector_dict['if'] & DEASSERT_WE_MASK if deassert_we else cs_vector_dict['if']
+            cs_vector_dict['id'] = cs_vector_dict['if'] & cs.DEASSERT_WE_MASK if deassert_we else cs_vector_dict['if']
 
 
-            cs_vector_xored_int = cs_vector_dict_to_xored_int(cs_vector_dict)
+            cs_vector_xored_int = cs.cs_vector_dict_to_xored_int(cs_vector_dict)
 
-            alu_en_ex = alu_en_id
             instr_minus4 = instr
             cs_vector_dict['if'] = cs_decoder_instr
             if (cs_vector_xored_int >> 32) != 0:
