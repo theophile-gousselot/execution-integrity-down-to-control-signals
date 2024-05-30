@@ -41,7 +41,7 @@ module ascon_decryption
     input logic          branch_decision_i,
     input logic          pc_set_i,
 
-    input logic [PATCH_WIDTH + `CS_EX_WIDTH - 1:0]           patch_i,
+    input logic [PATCH_WIDTH + 2*`CS_WB_WIDTH + `CS_EX_WIDTH - 1:0]           patch_i,
     output logic [PATCH_MEM_ADDR_WIDTH-1:0] patch_addr_o,
 
     input  logic [PATCH_MEM_ADDR_WIDTH-1:0]  instr_addr_i,

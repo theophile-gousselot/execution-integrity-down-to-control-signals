@@ -48,7 +48,7 @@ module ascon_datapath
 `endif
     input logic                             apply_patch_i,
 
-    input logic [PATCH_WIDTH+`CS_EX_WIDTH-1:0] patch_i,
+    input logic [PATCH_WIDTH + 2*`CS_WB_WIDTH + `CS_EX_WIDTH-1:0] patch_i,
 
     output logic [PATCH_MEM_ADDR_WIDTH-1:0] patch_addr_o,
 
@@ -62,17 +62,24 @@ module ascon_datapath
     // DECLARATION
     localparam CLK_FACTOR = PB_ROUNDS / HW_PERMUTATION_N;
 
-    logic [PATCH_WIDTH+`CS_EX_WIDTH-1:0]          patch_of_instr_in_if_reg_s = '0;
-    logic [PATCH_WIDTH+`CS_EX_WIDTH-1:0]          patch_of_instr_in_id_reg_s = '0;
-    logic [PATCH_WIDTH+`CS_EX_WIDTH-1:0]          patch_of_instr_in_ex_reg_s = '0;
+    logic [PATCH_WIDTH + 2*`CS_WB_WIDTH + `CS_EX_WIDTH-1:0]          patch_of_instr_in_if_reg_s = '0;
+    logic [PATCH_WIDTH + 2*`CS_WB_WIDTH + `CS_EX_WIDTH-1:0]          patch_of_instr_in_id_reg_s = '0;
+    logic [PATCH_WIDTH + 2*`CS_WB_WIDTH + `CS_EX_WIDTH-1:0]          patch_of_instr_in_ex_reg_s = '0;
 
     logic [PATCH_WIDTH-1:0]          patch_to_ascon_s;
 `ifdef CS_EX
     logic [63:0]          patch_s0_cs_to_ascon_s;
-    logic [`CS_EX_WIDTH-1:0]          patch_cs_to_ascon_reg;
-    logic [`CS_EX_WIDTH-1:0]          patch_cs_to_ascon_s;
-    logic                            apply_patch_cs_reg;
-    logic                            apply_patch_cs_s;
+    logic [`CS_WB_WIDTH + `CS_EX_WIDTH-1:0]          patch_cs_cycplus1_reg;
+    logic [`CS_WB_WIDTH + `CS_EX_WIDTH-1:0]          patch_cs_cycplus1_s;
+    logic                            apply_patch_cs_cycplus1_reg;
+    logic                            apply_patch_cs_cycplus1_s;
+    logic                            apply_patch_cs_cycplus2_s;
+`endif
+
+`ifdef CS_WB
+    logic [`CS_WB_WIDTH-1:0]                           patch_cs_cycplus2_reg_reg;
+    logic [`CS_WB_WIDTH-1:0]                           patch_cs_cycplus2_reg;
+    logic [`CS_WB_WIDTH-1:0]                           patch_cs_cycplus2_s;
 `endif
 
     logic [31:0]                     instr_rdata_plain_s;
@@ -271,47 +278,77 @@ module ascon_datapath
     assign state_not_patched = (sel_state_init_i) ? state_init : state_reg2mux_state_init;
 
 `ifdef CS_EX
-    always_comb begin : patch_cs_to_ascon_generation
+    always_comb begin : patch_cs_cycplus1_generation
         case (sel_patch_i)
-            PATCH_NULL: patch_cs_to_ascon_s = '0;
-            PATCH_IF: patch_cs_to_ascon_s = patch_of_instr_in_if_reg_s[PATCH_WIDTH+`CS_EX_WIDTH-1:PATCH_WIDTH];
-            PATCH_ID: patch_cs_to_ascon_s = patch_of_instr_in_id_reg_s[PATCH_WIDTH+`CS_EX_WIDTH-1:PATCH_WIDTH];
-            PATCH_EX: patch_cs_to_ascon_s = patch_of_instr_in_ex_reg_s[PATCH_WIDTH+`CS_EX_WIDTH-1:PATCH_WIDTH];
+            PATCH_NULL: patch_cs_cycplus1_s = '0;
+            PATCH_IF: patch_cs_cycplus1_s = patch_of_instr_in_if_reg_s[PATCH_WIDTH+`CS_WB_WIDTH + `CS_EX_WIDTH-1:PATCH_WIDTH];
+            PATCH_ID: patch_cs_cycplus1_s = patch_of_instr_in_id_reg_s[PATCH_WIDTH+`CS_WB_WIDTH + `CS_EX_WIDTH-1:PATCH_WIDTH];
+            PATCH_EX: patch_cs_cycplus1_s = patch_of_instr_in_ex_reg_s[PATCH_WIDTH+`CS_WB_WIDTH + `CS_EX_WIDTH-1:PATCH_WIDTH];
         endcase
-    end : patch_cs_to_ascon_generation
+    end : patch_cs_cycplus1_generation
+
+    always_comb begin : patch_cs_cycplus2_generation
+        case (sel_patch_i)
+            PATCH_NULL: patch_cs_cycplus2_s = '0;
+            PATCH_IF: patch_cs_cycplus2_s = patch_of_instr_in_if_reg_s[PATCH_WIDTH+2*`CS_WB_WIDTH + `CS_EX_WIDTH-1:PATCH_WIDTH+`CS_WB_WIDTH + `CS_EX_WIDTH];
+            PATCH_ID: patch_cs_cycplus2_s = patch_of_instr_in_id_reg_s[PATCH_WIDTH+2*`CS_WB_WIDTH + `CS_EX_WIDTH-1:PATCH_WIDTH+`CS_WB_WIDTH + `CS_EX_WIDTH];
+            PATCH_EX: patch_cs_cycplus2_s = patch_of_instr_in_ex_reg_s[PATCH_WIDTH+2*`CS_WB_WIDTH + `CS_EX_WIDTH-1:PATCH_WIDTH+`CS_WB_WIDTH + `CS_EX_WIDTH];
+        endcase
+    end : patch_cs_cycplus2_generation
 
 
     always_ff @(posedge clk_ascon_fast_i, negedge rst_ni) begin : patch_cs
         if (!rst_ni) begin
-            patch_cs_to_ascon_reg <= '0;
+            patch_cs_cycplus1_reg <= '0;
+            patch_cs_cycplus2_reg <= '0;
         end else begin
-            if (apply_patch_cs_s == 1'b1 && dec_alu_en_i == 1'b0) begin
-                patch_cs_to_ascon_reg <= patch_cs_to_ascon_reg;
+            if (apply_patch_cs_cycplus1_s == 1'b1 && dec_alu_en_i == 1'b0) begin
+                patch_cs_cycplus1_reg <= patch_cs_cycplus1_reg;
             end else begin
-                patch_cs_to_ascon_reg <= patch_cs_to_ascon_s;
+                patch_cs_cycplus1_reg <= patch_cs_cycplus1_s;
             end
+            patch_cs_cycplus2_reg_reg <= patch_cs_cycplus2_reg;
+            patch_cs_cycplus2_reg <= patch_cs_cycplus2_s;
         end
     end : patch_cs
 
     always_ff @(posedge clk_ascon_fast_i, negedge rst_ni) begin : apply_patch_cs
         if (!rst_ni) begin
-            apply_patch_cs_reg <= '0;
+            apply_patch_cs_cycplus1_reg <= '0;
+            apply_patch_cs_cycplus2_s <= '0;
         end else begin
             if (en_apply_patch_cs_destplus8_i == 1'b1 && dec_alu_en_i == 1'b0) begin
-                apply_patch_cs_reg <= 1'b1;
+                apply_patch_cs_cycplus1_reg <= 1'b1;
             end else begin
-                apply_patch_cs_reg <= 1'b0;
+                apply_patch_cs_cycplus1_reg <= 1'b0;
             end
+            apply_patch_cs_cycplus2_s <= apply_patch_cs_cycplus1_s;
         end
     end : apply_patch_cs
 
-    assign apply_patch_cs_s = apply_patch_cs_i || apply_patch_cs_reg;
+    assign apply_patch_cs_cycplus1_s = apply_patch_cs_i || apply_patch_cs_cycplus1_reg;
 
-    assign patch_s0_cs_to_ascon_s[63:`CS_EX_WIDTH+`CS_ID_WIDTH] = '0;
-    assign patch_s0_cs_to_ascon_s[`CS_EX_WIDTH+`CS_ID_WIDTH-1:`CS_ID_WIDTH] = (apply_patch_cs_s) ? patch_cs_to_ascon_reg : '0;
+
+
+    always_comb begin : patch_s0_cs_to_ascon_s_generation
+        if (apply_patch_cs_cycplus1_s) begin
+            patch_s0_cs_to_ascon_s[63:`CS_WB_WIDTH + `CS_EX_WIDTH+`CS_ID_WIDTH] = '0;
+            patch_s0_cs_to_ascon_s[`CS_WB_WIDTH + `CS_EX_WIDTH+`CS_ID_WIDTH-1:`CS_ID_WIDTH] = patch_cs_cycplus1_reg;
+        end else begin
+            if (apply_patch_cs_cycplus2_s) begin
+                patch_s0_cs_to_ascon_s[63:`CS_WB_WIDTH + `CS_EX_WIDTH+`CS_ID_WIDTH] = '0;
+                patch_s0_cs_to_ascon_s[`CS_WB_WIDTH + `CS_EX_WIDTH+`CS_ID_WIDTH-1:`CS_EX_WIDTH+`CS_ID_WIDTH] = patch_cs_cycplus2_reg_reg;
+                patch_s0_cs_to_ascon_s[`CS_EX_WIDTH+`CS_ID_WIDTH-1:`CS_ID_WIDTH] = '0;
+            end else begin
+                patch_s0_cs_to_ascon_s[63:`CS_ID_WIDTH] = '0;
+            end
+        end
 `ifdef CS_ID
-    assign patch_s0_cs_to_ascon_s[`CS_ID_WIDTH-1:0] = '0;
+        patch_s0_cs_to_ascon_s[`CS_ID_WIDTH-1:0] = '0;
 `endif
+    end : patch_s0_cs_to_ascon_s_generation
+
+
     assign state_patched[0] = state_not_patched[0] ^ patch_to_ascon_s[319:256] ^ patch_s0_cs_to_ascon_s;
 `else
     assign state_patched[0] = state_not_patched[0] ^ patch_to_ascon_s[319:256];
@@ -325,7 +362,7 @@ module ascon_datapath
 
 `ifdef CS
 `ifdef CS_EX
-    assign state_patch2cs = (apply_patch_i || apply_patch_cs_s) ? state_patched : state_not_patched;
+    assign state_patch2cs = (apply_patch_i || apply_patch_cs_cycplus1_s || apply_patch_cs_cycplus2_s) ? state_patched : state_not_patched;
 `else
     assign state_patch2cs = (apply_patch_i) ? state_patched : state_not_patched;
 `endif

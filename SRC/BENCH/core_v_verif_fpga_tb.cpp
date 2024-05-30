@@ -26,7 +26,6 @@ using namespace boost;
 #endif
 
 #ifndef CS
-#define CS 0
 #endif
 
 

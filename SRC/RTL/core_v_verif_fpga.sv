@@ -87,7 +87,7 @@ module core_v_verif_fpga
 
     // Control Signals: core to ascon_fsm
     logic [PATCH_MEM_ADDR_WIDTH-1:0] patch_addr_s;
-    logic [PATCH_WIDTH + `CS_EX_WIDTH - 1:0]          patch_s;
+    logic [PATCH_WIDTH + 2*`CS_WB_WIDTH + `CS_EX_WIDTH - 1:0]          patch_s;
 `ifdef CS
     logic [`CS_WIDTH-1:0] cs_vector_s;
 `endif
@@ -329,7 +329,7 @@ module core_v_verif_fpga
 `ifdef ENCRYPT
     patch_mem #(
         .ADDR_WIDTH   (PATCH_MEM_ADDR_WIDTH),
-        .PATCH_WIDTH  (PATCH_WIDTH + `CS_EX_WIDTH )
+        .PATCH_WIDTH  (PATCH_WIDTH + 2*`CS_WB_WIDTH + `CS_EX_WIDTH )
     ) patch_mem_i (
         .clk_i        (clk_core_slow_i),
         .patch_addr_i (patch_addr_s),
