@@ -1,7 +1,7 @@
 import os
 import sys
 
-from riscv_instruction import Instruction
+from riscv_instruction import Instruction, LOAD_INSTR, INSTR_TYPE
 from riscv_control_signals import Control_signals
 
 
@@ -90,6 +90,33 @@ class Code:
 
                 addr = int(instr_arg[0])
                 self.add_instr(addr, Instruction(*instr_arg))
+
+    def check_load_stall(self, instr, next_instr):
+        '''
+        Check if a load_stall will happen at execution time.
+        When a rs1/rs2 of an instruction is the same of a LW rd.
+
+        Parameters
+        ----------
+        instr : Instruction
+        next_instr : Instruction
+
+        Returns
+        ----------
+        load_stall : bool
+        '''
+        load_stall = False # Instructions without rs1 or rs2 cannot generate a load_stall after a LW.
+        if instr.inst in LOAD_INSTR:
+            if next_instr.inst in INSTR_TYPE["R"] + INSTR_TYPE["S"] + INSTR_TYPE["B"]: # Instruction with rs1 and rs2
+                if instr.rd == next_instr.rs1 or instr.rd == next_instr.rs2:
+                    load_stall = True
+            if next_instr.inst in INSTR_TYPE["I_arith"] + INSTR_TYPE["I_load_jalr"]: # Instruction with rs1 only
+                if instr.rd == next_instr.rs1:
+                    load_stall = True
+        return load_stall
+
+
+
 
     def get_predecessors(self):
         """
@@ -258,7 +285,12 @@ class Code:
                     if disc_type == 'b': #addr_patch -> addr_src-8
                         br_corr_deassert = {}
                         br_corr_deassert['id'] = self.instrs[addr_patch+8].cs_vector_dict['id'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
-                        br_corr_deassert['ex'] = self.instrs[addr_patch+8].cs_vector_dict['ex'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
+                        if 'ex' in self.cs.CS_VECTOR_ARCH.keys():
+                            br_corr_deassert['ex'] = self.instrs[addr_patch+8].cs_vector_dict['ex'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
+                        if 'wb' in self.cs.CS_VECTOR_ARCH.keys():
+                            #br_corr_deassert['wb'] = self.instrs[addr_patch+8].cs_vector_dict['wb'] & self.instrs[addr_patch+8].cs_vector_dict['ex']
+                            br_corr_deassert['wb'] = self.instrs[addr_patch+8].cs_vector_dict['wb'] ^ self.instrs[addr_disc].cs_vector_dict['if']
+                            #br_corr_deassert['wb'] = self.instrs[addr_dest].cs_vector_dict['wb'] ^ self.instrs[addr_disc].cs_vector_dict['if']
                         brplus4_mask = self.cs.cs_vector_dict_to_xored_int(br_corr_deassert)
 
                         sub_state_patch ^= brplus4_mask
@@ -270,7 +302,10 @@ class Code:
                     if disc_type in ['jal', 'jalr']:
                         jal_ex_correction = {}
                         jal_ex_correction['id'] = 0
-                        jal_ex_correction['ex'] = self.instrs[addr_src].cs_vector_dict['ex'] ^ self.instrs[addr_disc].cs_vector_dict['if'] #jal-4 ^ jal
+                        if 'ex' in self.cs.CS_VECTOR_ARCH.keys():
+                            jal_ex_correction['ex'] = self.instrs[addr_src].cs_vector_dict['ex'] ^ self.instrs[addr_disc].cs_vector_dict['if'] #jal-4 ^ jal
+                        if 'wb' in self.cs.CS_VECTOR_ARCH.keys():
+                            jal_ex_correction['wb'] = self.instrs[addr_src].cs_vector_dict['wb'] ^ self.instrs[addr_src].cs_vector_dict['ex'] #jal-4 ^ jal
                         sub_state_patch ^= self.cs.cs_vector_dict_to_xored_int(jal_ex_correction)
                         correction_str = f",{h(jal_ex_correction['ex']):>4}({zfint(self.instrs[addr_src].cs_vector_dict['ex'],2)}^{zfint(self.instrs[addr_disc].cs_vector_dict['if'],2)})"
 
@@ -279,18 +314,29 @@ class Code:
             #print(f"{hex(addr_patch)}({hex(self.instrs[addr_patch].cs_vector & 0x7f)}): {hex(addr_dest-4)}({hex(self.instrs[addr_dest-4].cs_vector & 0xff)}  {hex(((self.instrs[addr_patch].cs_vector & 0x7f) ^ self.instrs[addr_dest-4].cs_vector) & 0xff)[2:].zfill(2)}")
 
 
-            ##### PATCH FOR CYCLE AFTER THE ONE OF INSTRUCTION DISCONTINUITY EXECUTION #####
-            if self.cs_mode:
+            ##### PATCH FOR CYCLES AFTER THE ONE OF INSTRUCTION DISCONTINUITY EXECUTION #####
+            if self.cs_mode and ('wb' in self.cs.CS_VECTOR_ARCH.keys() or 'ex' in self.cs.CS_VECTOR_ARCH.keys()):
                 if addr_dest+4 not in self.instrs.keys():
-                    cs_ex_corr = "0" * self.cs.PATCH_CS_EX_HEX_WIDTH
+                    cs_corr = "0" * self.cs.PATCH_CS_HEX_WIDTH
                     correction_str += f"no dest+4"
                 elif disc_type in ['jal', 'jalr'] or self.instrs[addr_patch].type == 'B': # Instruction in EX is disc deasserted not dest-4
-                    cs_ex_corr_dict = {'ex': ((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK) ^ (self.instrs[addr_dest+4].cs_vector_dict['ex']))} # ex only because extra patch for cs in on ex only
-                    cs_ex_corr = hex(self.cs.cs_vector_dict_to_xored_int(cs_ex_corr_dict))[2:].zfill(self.cs.PATCH_CS_EX_HEX_WIDTH)
-                    correction_str += f",{cs_ex_corr}({zfint(self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK, 2)}^{zfint(self.instrs[addr_dest+4].cs_vector_dict['ex'],2)})"
+                    if 'wb' in self.cs.CS_VECTOR_ARCH.keys():
+                        #TODO: case (addr_dest+4) WB )= lw ??
+                        cs_corr_cycplus1_dict = {'wb': self.instrs[addr_dest+4].cs_vector_dict['wb'], 'ex': ((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK) ^ (self.instrs[addr_dest+4].cs_vector_dict['ex']))} # ex only because extra patch for cs in on ex only #TODO: 'wb': self.instrs[addr_dest+4].cs_vector_dict['wb'] ^ ... (cs_disc)
+                        if self.check_load_stall(self.instrs[addr_dest], self.instrs[addr_dest+4]):
+                            cs_corr_cycplus2_dict = {'wb': 0}
+                        else:
+                            cs_corr_cycplus2_dict = {'wb': self.instrs[addr_dest+8].cs_vector_dict['wb'] ^ self.instrs[addr_disc].cs_vector_dict['if']} # todo for branch dest+12 must be corrected teh same way ? (branch is still in the WB)
+                            #cs_corr_cycplus2_dict = {'wb': self.instrs[addr_dest+8].cs_vector_dict['wb'] ^ ((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK) ^ (self.instrs[addr_dest+4].cs_vector_dict['ex']))}
+                        cs_corr_int = (self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus2_dict) << (self.cs.WIDTH['wb'] + self.cs.WIDTH['ex'])) | self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus1_dict)
+                    else:
+                        cs_corr_cycplus1_dict = {'ex': ((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK) ^ (self.instrs[addr_dest+4].cs_vector_dict['ex']))}
+                        cs_corr_int = self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus1_dict)
+                    cs_corr = hex(cs_corr_int)[2:].zfill(self.cs.PATCH_CS_HEX_WIDTH)
+                    correction_str += f",{cs_corr}"#,cycplus1:{hex(self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus1_dict))},cycplus2:{hex(self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus2_dict))}" (load_stall:{self.check_load_stall(self.instrs[addr_dest], self.instrs[addr_dest+4])}, {hex(self.instrs[addr_dest+8].cs_vector_dict['wb'])},{hex((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK))}!={hex(self.instrs[addr_disc].cs_vector_dict['if'])}!={hex(self.instrs[addr_dest+4].cs_vector_dict['ex'])}"#({hex(self.cs.cs_vector_dict_to_xored_int({'wb': self.instrs[addr_disc].cs_vector_dict['if']}))}{zfint(self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK, 2)}^{zfint(self.instrs[addr_dest+4].cs_vector_dict['ex'],2)})"
                 else:
-                    cs_ex_corr = "0" * self.cs.PATCH_CS_EX_HEX_WIDTH
-                patch = cs_ex_corr + patch
+                    cs_corr = "0" * self.cs.PATCH_CS_HEX_WIDTH
+                patch = cs_corr + patch
 
             self.hex_patches_free[addr_patch >> 2] = False
             self.hex_patches[addr_patch >> 2] = patch
@@ -331,7 +377,7 @@ class Code:
             # dict of jalr when patches are in conflicts
             self.patches_to_be_redirected = {}
 
-            PATCH_WIDTH = 80 + self.cs.PATCH_CS_EX_HEX_WIDTH if self.cs_mode else 80
+            PATCH_WIDTH = 80 + self.cs.PATCH_CS_HEX_WIDTH if self.cs_mode else 80
             self.hex_patches = ['0' * PATCH_WIDTH] * len(self.instrs.keys())
             self.hex_patches_csv = ['    ,00000,00000,00000,00000,' + '0' * PATCH_WIDTH] * len(self.instrs.keys())
             self.hex_patches_free = [True] * len(self.instrs.keys())
@@ -408,7 +454,7 @@ class Code:
                     redirection_field += bin(self.patches_to_be_redirected[addr][s])[2:-2].zfill(WIDTH_ADDR)
                     redirection_field += bin(addr_redirected[s])[2:-2].zfill(WIDTH_ADDR)
                 if self.cs_mode:
-                    self.hex_patches[addr >> 2] = "0" * self.cs.PATCH_CS_EX_HEX_WIDTH + hex(int(REDIRECTION_TAG + redirection_field, 2))[2:]
+                    self.hex_patches[addr >> 2] = "0" * self.cs.PATCH_CS_HEX_WIDTH + hex(int(REDIRECTION_TAG + redirection_field, 2))[2:]
                 else:
                     self.hex_patches[addr >> 2] = hex(int(REDIRECTION_TAG + redirection_field, 2))[2:]
                 self.hex_patches_csv[addr >> 2] = f"jalr,{zfint(addr,5)},{zfint(addr,5)},REDIRECTION,{self.hex_patches[addr >> 2]}"

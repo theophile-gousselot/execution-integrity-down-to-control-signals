@@ -141,32 +141,6 @@ def find_sections_to_encrypt():
 
 
 
-###### RISC-V asm analysis ######
-def check_load_stall(instr, next_instr):
-    '''
-    Check if a load_stall will happen at execution time.
-    When a rs1/rs2 of an instruction is the same of a LW rd.
-
-    Parameters
-    ----------
-    instr : Instruction
-    next_instr : Instruction
-
-    Returns
-    ----------
-    load_stall : bool
-    '''
-    load_stall = False # Instructions without rs1 or rs2 cannot generate a load_stall after a LW.
-    if instr.inst in LOAD_INSTR:
-        if next_instr.inst in INSTR_TYPE["R"] + INSTR_TYPE["S"] + INSTR_TYPE["B"]: # Instruction with rs1 and rs2
-            if instr.rd == next_instr.rs1 or instr.rd == next_instr.rs2:
-                load_stall = True
-        if next_instr.inst in INSTR_TYPE["I_arith"] + INSTR_TYPE["I_load_jalr"]: # Instruction with rs1 only
-            if instr.rd == next_instr.rs1:
-                load_stall = True
-    return load_stall
-
-
 
 ###### Main ######
 def encrypt_elf():
@@ -270,21 +244,29 @@ def encrypt_elf():
             """
             #when ex_ready = 0 => id_ready = if_ready = id_valid = 0 => no decryption
             ex_ready = True
-            ex_valid = cs.extract_cs(cs_vector_dict['ex'], 'alu_en') | cs.extract_cs(cs_vector_dict['ex'], 'mult_int_en') 
+            ex_valid = True #cs.extract_cs(cs_vector_dict['ex'], 'alu_en') | cs.extract_cs(cs_vector_dict['ex'], 'mult_int_en') 
             #wb_ready is always, but it only depends on memory access
             wb_ready = True
+            load_stall = code.check_load_stall(code.instrs[addr_hex-8], code.instrs[addr_hex-4]) # load_stall -> id_invalid
+            id_ready = (1 ^ load_stall) & ex_ready
+            id_invalid = 1 ^ id_ready # update
+            if_ready = id_ready
+            if_valid = if_ready
+
 
 
             # Update CS_VECTOR_WB
             if ex_valid:
-                cs_vector_dict['wb'] = cs_vector_dict['ex']
+                if if_valid: # instruction in ID will be in EX when if_valid=0, and in WB when the next instruction is decrypted
+                    cs_vector_dict['wb'] = cs_vector_dict['ex']
+                else:
+                    cs_vector_dict['wb'] = cs_vector_dict['id']
+
             else:
                 if wb_ready:
                     cs_vector_dict['wb'] = ((cs_vector_dict['wb'] & cs.MASK_CS_VECTOR_EX_INVALID_WB_READY) | cs.CS_VECTOR_EX_INVALID_WB_READY)
 
             # Update CS_VECTOR_EX
-            id_invalid = check_load_stall(code.instrs[addr_hex-8], code.instrs[addr_hex-4]) # load_stall -> id_invalid
-
             if id_invalid:
                 if ex_ready:
                     cs_vector_dict['ex'] = (cs_vector_dict['ex'] & cs.MASK_CS_VECTOR_ID_INVALID_EX_READY) | cs.CS_VECTOR_ID_INVALID_EX_READY
@@ -317,7 +299,6 @@ def encrypt_elf():
             S[0] ^= cs_vector_xored_int
 
             other_lines_dbg += f"{'state_cs2cipher':<24}:{pc_pc_instr},{state2str(S)},"
-            other_lines_dbg += f"{hex(cs_vector_xored_int)[2:]},{hex(cs_vector_dict['if'])},{hex(cs_vector_dict['id'])},{hex(cs_vector_dict['ex'])},{is_instr_multicycle}\n"
 
             # PC(hex), PC(dec), instr, instr_cs_vector, cs_vector_used, is_instr_multicycle, state
             cs_vector_dict_str_dec, cs_vector_dict_str_hex = "", ""
@@ -327,6 +308,7 @@ def encrypt_elf():
                     cs_vector_dict_str_hex += f"-{hex(cs_vector_dict[stage])[2:]}"
             cs_vector_dict_str_dec, cs_vector_dict_str_hex = cs_vector_dict_str_dec[1:], cs_vector_dict_str_hex[1:]
 
+            other_lines_dbg += f"{hex(cs_vector_xored_int)[2:]},{cs_vector_dict_str_hex},{is_instr_multicycle},{load_stall}\n"
             ascon_states_dec +=f"{pc_pc_instr},{cs_decoder_instr},{cs_vector_dict_str_dec},{is_instr_multicycle},{','.join(map(str, S))}\n"
             ascon_states_hex +=f"{pc_pc_instr},{hex(cs_decoder_instr)[2:]},{cs_vector_dict_str_hex},{is_instr_multicycle},{state2str(S)}\n"
         else:

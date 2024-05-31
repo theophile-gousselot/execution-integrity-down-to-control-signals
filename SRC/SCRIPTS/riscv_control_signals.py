@@ -2,6 +2,9 @@ CS_VECTOR_ARCH_LIB = [{}]
 CS_VECTOR_ARCH_LIB.append({'id': ['alu_operator', 'alu_en'], 'ex': ['alu_operator', 'alu_en']})
 CS_VECTOR_ARCH_LIB.append({'id': ['alu_operator', 'alu_en', 'alu_op_a_mux_sel', 'regfile_we_id'], 'ex': ['alu_operator', 'alu_en', 'regfile_we_id']})
 CS_VECTOR_ARCH_LIB.append({'id': ['alu_operator', 'alu_en', 'alu_op_a_mux_sel', 'regfile_we_id'], 'ex': ['alu_operator', 'alu_en', 'regfile_we_id'], 'wb': ['regfile_we_id']})
+CS_VECTOR_ARCH_LIB.append({'id': ['regfile_we_id'], 'ex': ['regfile_we_id'], 'wb': ['regfile_we_id']})
+CS_VECTOR_ARCH_LIB.append({'id': ['alu_operator', 'alu_en', 'alu_op_a_mux_sel', 'regfile_we_id'], 'ex': ['alu_operator', 'alu_en', 'regfile_we_id', 'regfile_alu_we_id'], 'wb': ['regfile_we_id']})
+CS_VECTOR_ARCH_LIB.append({'id': ['regfile_alu_we_id'], 'ex': ['regfile_alu_we_id'], 'wb': ['regfile_we_id']})
 
 SIGNAL_DESCRIPTION = {}
 SIGNAL_DESCRIPTION['alu_bmask_a_mux_sel']          = {'width': 1, 'position_dec_tab': 119}
@@ -64,7 +67,7 @@ SIGNAL_DESCRIPTION['regc_mux']                     = {'width': 2, 'position_dec_
 SIGNAL_DESCRIPTION['regc_used_dec']                = {'width': 1, 'position_dec_tab': 14}
 SIGNAL_DESCRIPTION['regfile_alu_waddr_mux_sel']    = {'width': 1, 'position_dec_tab': 13}
 SIGNAL_DESCRIPTION['regfile_alu_we_dec_id']        = {'width': 1, 'position_dec_tab': 12}
-SIGNAL_DESCRIPTION['regfile_alu_we_id']            = {'width': 1, 'position_dec_tab': 11}
+SIGNAL_DESCRIPTION['regfile_alu_we_id']            = {'width': 1, 'position_dec_tab': 11, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0}
 SIGNAL_DESCRIPTION['regfile_fp_a']                 = {'width': 1, 'position_dec_tab': 10, 'reset_val': 0b0, 'ex_en':'regfile_we_id'}
 SIGNAL_DESCRIPTION['regfile_fp_b']                 = {'width': 1, 'position_dec_tab': 9}
 SIGNAL_DESCRIPTION['regfile_fp_c']                 = {'width': 1, 'position_dec_tab': 8}
@@ -113,10 +116,24 @@ class Control_signals:
         self.CS_VECTOR_ID_INVALID_EX_READY, self.MASK_CS_VECTOR_ID_INVALID_EX_READY = self.gen_mask_cs_vector_stage_invalid_next_stage_ready('id_invalid_ex_ready')
         self.CS_VECTOR_EX_INVALID_WB_READY, self.MASK_CS_VECTOR_EX_INVALID_WB_READY = self.gen_mask_cs_vector_stage_invalid_next_stage_ready('ex_invalid_wb_ready')
         self.CS_VECTOR_DESCRIPTION = self.gen_cs_vector_description(self.SIGNAL_SET)
+        self.WIDTH = self.count_all_stage_width()
 
-        self.PATCH_CS_EX_HEX_WIDTH = ((self.count_stage_width('ex')-1)//4) + 1
+        self.PATCH_CS_HEX_WIDTH = self.count_patch_cs_hex_width()
 
+    def count_patch_cs_hex_width(self):
+        width = 0
+        if 'wb' in self.CS_VECTOR_ARCH.keys():
+            width += 2*self.WIDTH['wb'] 
+        if 'ex' in self.CS_VECTOR_ARCH.keys():
+            width += self.WIDTH['ex'] 
+        width_hex = ((width - 1)//4) + 1
+        return(width_hex)
 
+    def count_all_stage_width(self):
+        width_dict = {}
+        for stage in self.CS_VECTOR_ARCH.keys():
+            width_dict[stage] = self.count_stage_width(stage)
+        return width_dict
 
     def extract(self, integer, position, width):
         return ((integer >> position) & ((1 << width) - 1))

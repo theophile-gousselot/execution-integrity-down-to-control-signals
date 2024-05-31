@@ -47,6 +47,15 @@
 `define CS_WB_WIDTH 1
 `endif
 
+`ifdef CS6
+`define CS 6
+`define CS_ID
+`define CS_ID_WIDTH 1
+`define CS_EX
+`define CS_EX_WIDTH 1
+`define CS_WB
+`define CS_WB_WIDTH 1
+`endif
 
 `ifdef CS_WB
 `define CS_PATCH
