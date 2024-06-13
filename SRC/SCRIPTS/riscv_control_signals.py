@@ -3,33 +3,37 @@ CS_VECTOR_ARCH_LIB.append({'id': ['alu_operator', 'alu_en'], 'ex': ['alu_operato
 CS_VECTOR_ARCH_LIB.append({'id': ['alu_operator', 'alu_en', 'alu_op_a_mux_sel', 'regfile_we_id'], 'ex': ['alu_operator', 'alu_en', 'regfile_we_id']})
 CS_VECTOR_ARCH_LIB.append({'id': ['alu_operator', 'alu_en', 'alu_op_a_mux_sel', 'regfile_we_id'], 'ex': ['alu_operator', 'alu_en', 'regfile_we_id'], 'wb': ['regfile_we_id']})
 CS_VECTOR_ARCH_LIB.append({'id': ['regfile_we_id'], 'ex': ['regfile_we_id'], 'wb': ['regfile_we_id']})
-CS_VECTOR_ARCH_LIB.append({'id': ['alu_operator', 'alu_en', 'alu_op_a_mux_sel', 'regfile_we_id'], 'ex': ['alu_operator', 'alu_en', 'regfile_we_id', 'regfile_alu_we_id'], 'wb': ['regfile_we_id']})
-CS_VECTOR_ARCH_LIB.append({'id': ['regfile_alu_we_id'], 'ex': ['regfile_alu_we_id'], 'wb': ['regfile_we_id']})
+CS_VECTOR_ARCH_LIB.append({'id': ['ctrl_transfer_target_mux_sel', 'ctrl_transfer_insn_in_dec', 'ctrl_transfer_insn_in_id', 'csr_status', 'csr_access', 'alu_bmask_b_mux_sel', 'alu_op_a_mux_sel', 'regfile_we_id'], 'ex': ['csr_access', 'alu_operator', 'alu_en', 'regfile_we_id'], 'wb': ['regfile_we_id']})
+CS_VECTOR_ARCH_LIB.append({'id': ['data_req_id'], 'ex': ['alu_en'], 'wb': ['regfile_we_id']})
+
+
+
+#problem with this one: CS_VECTOR_ARCH_LIB.append({'id': ['alu_operator', 'alu_en', 'alu_op_a_mux_sel', 'regfile_we_id'], 'ex': ['alu_operator', 'alu_en', 'regfile_we_id', 'regfile_alu_we_id'], 'wb': ['regfile_we_id']})
 
 SIGNAL_DESCRIPTION = {}
-SIGNAL_DESCRIPTION['alu_bmask_a_mux_sel']          = {'width': 1, 'position_dec_tab': 119}
-SIGNAL_DESCRIPTION['alu_bmask_b_mux_sel']          = {'width': 1, 'position_dec_tab': 118}
-SIGNAL_DESCRIPTION['alu_en']                       = {'width': 1, 'position_dec_tab': 117, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b1}
-SIGNAL_DESCRIPTION['alu_op_a_mux_sel']             = {'width': 3, 'position_dec_tab': 114, 'reset_val': 0b0}
-SIGNAL_DESCRIPTION['alu_op_b_mux_sel']             = {'width': 3, 'position_dec_tab': 111}
-SIGNAL_DESCRIPTION['alu_op_c_mux_sel']             = {'width': 2, 'position_dec_tab': 109}
-SIGNAL_DESCRIPTION['alu_operator']                 = {'width': 7, 'position_dec_tab': 102,  'reset_val': 0b11, 'id_invalid_ex_ready': 0b11, 'ex_en':'alu_en'}
-SIGNAL_DESCRIPTION['alu_vec_mode']                 = {'width': 2, 'position_dec_tab': 100}
-SIGNAL_DESCRIPTION['apu_en']                       = {'width': 1, 'position_dec_tab': 99}
-SIGNAL_DESCRIPTION['apu_lat']                      = {'width': 2, 'position_dec_tab': 97}
-SIGNAL_DESCRIPTION['apu_op']                       = {'width': 6, 'position_dec_tab': 91}
-SIGNAL_DESCRIPTION['atop_id']                      = {'width': 6, 'position_dec_tab': 85}
-SIGNAL_DESCRIPTION['bmask_a_mux']                  = {'width': 1, 'position_dec_tab': 84}
-SIGNAL_DESCRIPTION['bmask_b_mux']                  = {'width': 2, 'position_dec_tab': 82}
-SIGNAL_DESCRIPTION['csr_access']                   = {'width': 1, 'position_dec_tab': 81}
-SIGNAL_DESCRIPTION['csr_op']                       = {'width': 2, 'position_dec_tab': 79}
-SIGNAL_DESCRIPTION['csr_status']                   = {'width': 1, 'position_dec_tab': 78}
-SIGNAL_DESCRIPTION['ctrl_transfer_insn_in_dec']    = {'width': 2, 'position_dec_tab': 76}
-SIGNAL_DESCRIPTION['ctrl_transfer_insn_in_id']     = {'width': 2, 'position_dec_tab': 74}
-SIGNAL_DESCRIPTION['ctrl_transfer_target_mux_sel'] = {'width': 2, 'position_dec_tab': 72}
-SIGNAL_DESCRIPTION['data_load_event_id']           = {'width': 1, 'position_dec_tab': 71}
-SIGNAL_DESCRIPTION['data_reg_offset_id']           = {'width': 2, 'position_dec_tab': 69}
-SIGNAL_DESCRIPTION['data_req_id']                  = {'width': 1, 'position_dec_tab': 68}
+SIGNAL_DESCRIPTION['alu_bmask_a_mux_sel']          = {'width': 1, 'position_dec_tab': 119, 'stages': ['id'], 'reset_val': 0b1} # useful only if PULP_XPULP
+SIGNAL_DESCRIPTION['alu_bmask_b_mux_sel']          = {'width': 1, 'position_dec_tab': 118, 'stages': ['id'], 'reset_val': 0b1} # useful only if PULP_XPULP
+SIGNAL_DESCRIPTION['alu_en']                       = {'width': 1, 'position_dec_tab': 117, 'stages': ['id', 'ex'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b1}
+SIGNAL_DESCRIPTION['alu_op_a_mux_sel']             = {'width': 3, 'position_dec_tab': 114, 'stages': ['id'], 'reset_val': 0b0}
+SIGNAL_DESCRIPTION['alu_op_b_mux_sel']             = {'width': 3, 'position_dec_tab': 111, 'stages': ['id'], 'reset_val': 0b0}
+SIGNAL_DESCRIPTION['alu_op_c_mux_sel']             = {'width': 2, 'position_dec_tab': 109, 'stages': ['id'], 'reset_val': 0b0}
+SIGNAL_DESCRIPTION['alu_operator']                 = {'width': 7, 'position_dec_tab': 102, 'stages': ['id', 'ex'], 'reset_val': 0b11, 'id_invalid_ex_ready': 0b11, 'ex_en':'alu_en'}
+SIGNAL_DESCRIPTION['alu_vec_mode']                 = {'width': 2, 'position_dec_tab': 100} # useful only if FPU
+SIGNAL_DESCRIPTION['apu_en']                       = {'width': 1, 'position_dec_tab': 99} # useful only if FPU
+SIGNAL_DESCRIPTION['apu_lat']                      = {'width': 2, 'position_dec_tab': 97} # useful only if FPU
+SIGNAL_DESCRIPTION['apu_op']                       = {'width': 6, 'position_dec_tab': 91} # useful only if FPU
+SIGNAL_DESCRIPTION['atop_id']                      = {'width': 6, 'position_dec_tab': 85} # useful only if A (ATOMIC)
+SIGNAL_DESCRIPTION['bmask_a_mux']                  = {'width': 1, 'position_dec_tab': 84} # useful only if PULP_XPULP
+SIGNAL_DESCRIPTION['bmask_b_mux']                  = {'width': 2, 'position_dec_tab': 82} # useful only if PULP_XPULP
+SIGNAL_DESCRIPTION['csr_access']                   = {'width': 1, 'position_dec_tab': 81, 'stages': ['id', 'ex'], 'reset_val': 0b0}
+SIGNAL_DESCRIPTION['csr_op']                       = {'width': 2, 'position_dec_tab': 79, 'stages': ['id', 'ex'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0} #problem csr_status_i=1 => flush_ex => halt_id => id_valid = 0 => id_invalid_ex_ready (but in soft modelization id_invalid do not depend on other thing that load_stall...)
+SIGNAL_DESCRIPTION['csr_status']                   = {'width': 1, 'position_dec_tab': 78, 'stages': ['id'], 'reset_val': 0b0}
+SIGNAL_DESCRIPTION['ctrl_transfer_insn_in_dec']    = {'width': 2, 'position_dec_tab': 76, 'stages': ['id']}
+SIGNAL_DESCRIPTION['ctrl_transfer_insn_in_id']     = {'width': 2, 'position_dec_tab': 74, 'stages': ['id']}
+SIGNAL_DESCRIPTION['ctrl_transfer_target_mux_sel'] = {'width': 2, 'position_dec_tab': 72, 'stages': ['id'], 'reset_val': 0b01}
+SIGNAL_DESCRIPTION['data_load_event_id']           = {'width': 1, 'position_dec_tab': 71} # useful only if PULP_CLUSTER
+SIGNAL_DESCRIPTION['data_reg_offset_id']           = {'width': 2, 'position_dec_tab': 69} # cte to 0
+SIGNAL_DESCRIPTION['data_req_id']                  = {'width': 1, 'position_dec_tab': 68, 'stages': ['id', 'ex'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0}
 SIGNAL_DESCRIPTION['data_sign_ext_id']             = {'width': 2, 'position_dec_tab': 66}
 SIGNAL_DESCRIPTION['data_type_id']                 = {'width': 2, 'position_dec_tab': 64}
 SIGNAL_DESCRIPTION['data_we_id']                   = {'width': 1, 'position_dec_tab': 63}
@@ -56,7 +60,7 @@ SIGNAL_DESCRIPTION['mret_insn_dec']                = {'width': 1, 'position_dec_
 SIGNAL_DESCRIPTION['mult_dot_en']                  = {'width': 1, 'position_dec_tab': 30}
 SIGNAL_DESCRIPTION['mult_dot_signed']              = {'width': 2, 'position_dec_tab': 28}
 SIGNAL_DESCRIPTION['mult_imm_mux']                 = {'width': 1, 'position_dec_tab': 27}
-SIGNAL_DESCRIPTION['mult_int_en']                  = {'width': 1, 'position_dec_tab': 26, 'reset_val': 0b0}
+SIGNAL_DESCRIPTION['mult_int_en']                  = {'width': 1, 'position_dec_tab': 26, 'stages': ['id', 'ex'], 'reset_val': 0b0}
 SIGNAL_DESCRIPTION['mult_operator']                = {'width': 3, 'position_dec_tab': 23}
 SIGNAL_DESCRIPTION['mult_sel_subword']             = {'width': 1, 'position_dec_tab': 22}
 SIGNAL_DESCRIPTION['mult_signed_mode']             = {'width': 2, 'position_dec_tab': 20}
@@ -67,12 +71,12 @@ SIGNAL_DESCRIPTION['regc_mux']                     = {'width': 2, 'position_dec_
 SIGNAL_DESCRIPTION['regc_used_dec']                = {'width': 1, 'position_dec_tab': 14}
 SIGNAL_DESCRIPTION['regfile_alu_waddr_mux_sel']    = {'width': 1, 'position_dec_tab': 13}
 SIGNAL_DESCRIPTION['regfile_alu_we_dec_id']        = {'width': 1, 'position_dec_tab': 12}
-SIGNAL_DESCRIPTION['regfile_alu_we_id']            = {'width': 1, 'position_dec_tab': 11, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0}
-SIGNAL_DESCRIPTION['regfile_fp_a']                 = {'width': 1, 'position_dec_tab': 10, 'reset_val': 0b0, 'ex_en':'regfile_we_id'}
+SIGNAL_DESCRIPTION['regfile_alu_we_id']            = {'width': 1, 'position_dec_tab': 11, 'stages': ['id', 'ex'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0}
+SIGNAL_DESCRIPTION['regfile_fp_a']                 = {'width': 1, 'position_dec_tab': 10, 'stages': ['id'], 'reset_val': 0b0, 'ex_en':'regfile_we_id'}
 SIGNAL_DESCRIPTION['regfile_fp_b']                 = {'width': 1, 'position_dec_tab': 9}
 SIGNAL_DESCRIPTION['regfile_fp_c']                 = {'width': 1, 'position_dec_tab': 8}
 SIGNAL_DESCRIPTION['regfile_fp_d']                 = {'width': 1, 'position_dec_tab': 7}
-SIGNAL_DESCRIPTION['regfile_we_id']                = {'width': 1, 'position_dec_tab': 6, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'ex_invalid_wb_ready': 0b0}
+SIGNAL_DESCRIPTION['regfile_we_id']                = {'width': 1, 'position_dec_tab': 6, 'stages': ['id', 'ex', 'wb'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'ex_invalid_wb_ready': 0b0}
 SIGNAL_DESCRIPTION['scalar_replication']           = {'width': 1, 'position_dec_tab': 5}
 SIGNAL_DESCRIPTION['scalar_replication_c']         = {'width': 1, 'position_dec_tab': 4}
 SIGNAL_DESCRIPTION['uret_dec']                     = {'width': 1, 'position_dec_tab': 3}
@@ -81,8 +85,11 @@ SIGNAL_DESCRIPTION['wfi_insn_dec']                 = {'width': 1, 'position_dec_
 SIGNAL_DESCRIPTION['null']                         = {'width': 1, 'position_dec_tab': 0}
 
 
+SIGNAL_BUILD_AFTER_DECODER = ['branch_in_ex']
 
-DEASSERT_WE_AFFECTED_SIGNALS = ['alu_en', 'apu_en', 'mult_int_en', 'mult_dot_en', 'regfile_we_id', 'regfile_alu_we', 'data_req', 'hwlp_we', 'csr_op', 'ctrl_transfer_insn']
+
+
+DEASSERT_WE_AFFECTED_SIGNALS = ['alu_en', 'apu_en', 'mult_int_en', 'mult_dot_en', 'regfile_we_id', 'regfile_alu_we', 'data_req', 'hwlp_we', 'csr_op', 'ctrl_transfer_insn_in_id']
 
 #if not 'data_req_id'  thus:  data_load_event_ex_o <= 1'b0;
 
@@ -140,8 +147,13 @@ class Control_signals:
 
     def gen_signal_set(self):
         signal_set = []
-        for stage in self.CS_VECTOR_ARCH.values():
-            for cs in stage:
+        for stage in self.CS_VECTOR_ARCH.keys():
+            for cs in self.CS_VECTOR_ARCH[stage]:
+                # check signal reach this stage in microarchitecture (e.g., alu_operator is usefull in execute
+                # stage, thus it is accessible in decode and excute but not in write-back
+                if stage not in self.SIGNAL_DESCRIPTION[cs]['stages']: 
+                    raise ValueError(f'Invalid CS_VECTOR_ARCH, {cs} is not available in stage {stage}. Please edit CS_VECTOR_ARCH_LIB.')
+
                 if cs not in signal_set:
                     signal_set.append(cs)
 
@@ -172,7 +184,11 @@ class Control_signals:
     def gen_cs_vector_reset(self):
         cs_vector_reset = 0
         for cs in self.CS_VECTOR_DESCRIPTION:
-            cs_vector_reset |= self.CS_VECTOR_DESCRIPTION[cs]['reset_val'] << (self.CS_VECTOR_DESCRIPTION[cs]['position'])
+            if 'reset_val' in self.CS_VECTOR_DESCRIPTION[cs].keys():
+                reset_val = self.CS_VECTOR_DESCRIPTION[cs]['reset_val'] 
+            else:
+                reset_val = 0
+            cs_vector_reset |= reset_val << (self.CS_VECTOR_DESCRIPTION[cs]['position'])
         return(cs_vector_reset)
 
 

@@ -249,7 +249,9 @@ def encrypt_elf():
             wb_ready = True
             load_stall = code.check_load_stall(code.instrs[addr_hex-8], code.instrs[addr_hex-4]) # load_stall -> id_invalid
             id_ready = (1 ^ load_stall) & ex_ready
-            id_invalid = 1 ^ id_ready # update
+            csr_status = 0
+            halt_id = 1 ^ csr_status
+            id_invalid = 1 ^ id_ready# | halt_id # update
             if_ready = id_ready
             if_valid = if_ready
 
