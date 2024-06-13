@@ -40,7 +40,7 @@
 `ifdef CS5
 `define CS 5
 `define CS_ID
-`define CS_ID_WIDTH 12
+`define CS_ID_WIDTH 13
 `define CS_EX
 `define CS_EX_WIDTH 10
 `define CS_WB
