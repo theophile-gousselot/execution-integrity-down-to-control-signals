@@ -189,7 +189,9 @@ def encrypt_elf():
         is_instr_minus12_multicycle = 0
         print(f"cs.CS_VECTOR_ARCH:{cs.CS_VECTOR_ARCH}")
         print(f"cs.SIGNAL_SET:{cs.SIGNAL_SET}")
-        print(f"cs.CS_VECTOR_DESCRIPTION:{cs.CS_VECTOR_DESCRIPTION}")
+        print(f"cs.CS_VECTOR_DESCRIPTION:")
+        for cs_cs_vector in cs.CS_VECTOR_DESCRIPTION:
+            print(f"- {cs_cs_vector}:{cs.CS_VECTOR_DESCRIPTION[cs_cs_vector]}")
         print(f"cs.CS_VECTOR_WIDTH:{cs.CS_VECTOR_WIDTH}")
         print(f"cs.DEASSERT_WE_MASK:{bin(cs.DEASSERT_WE_MASK)[2:].zfill(cs.CS_VECTOR_WIDTH)}")
         print(f"cs.CS_VECTOR_RESET:{bin(cs.CS_VECTOR_RESET)[2:].zfill(cs.CS_VECTOR_WIDTH)}")
@@ -281,8 +283,9 @@ def encrypt_elf():
 
             else:
             # Update specific EX signals from ID according to the their enable signals. Look at 'ex_en' in SIGNAL_DESCRIPTION.
-                cs_vector_dict['ex'] = (cs_vector_dict['id'] & cs.make_mask_ex_en(cs_vector_dict['id'])) | \
-                                (cs_vector_dict['ex'] & (cs.CS_VECTOR_ALL_ONE ^ cs.make_mask_ex_en(cs_vector_dict['id'])))
+                mask_for_id, mask_for_reset = cs.make_mask_ex_en(cs_vector_dict['id'])
+                cs_vector_dict['ex'] = (cs_vector_dict['id'] & mask_for_id) | (cs.CS_VECTOR_RESET & mask_for_reset)
+                #cs_vector_dict['ex'] = (cs_vector_dict['id'] & cs.make_mask_ex_en(cs_vector_dict['id'])) | (cs_vector_dict['ex'] & (cs.CS_VECTOR_ALL_ONE ^ cs.make_mask_ex_en(cs_vector_dict['id'])))
 
 
             # Update CS_VECTOR_ID
