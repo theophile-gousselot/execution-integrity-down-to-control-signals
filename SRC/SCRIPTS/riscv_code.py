@@ -286,7 +286,8 @@ class Code:
                         br_corr_deassert = {}
                         br_corr_deassert['id'] = self.instrs[addr_patch+8].cs_vector_dict['id'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
                         if 'ex' in self.cs.CS_VECTOR_ARCH.keys():
-                            br_corr_deassert['ex'] = self.instrs[addr_patch+8].cs_vector_dict['ex'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
+                            br_corr_deassert['ex'] = self.instrs[addr_patch+8].cs_vector_dict['ex'] ^ self.cs.CS_VECTOR_RESET
+                            #br_corr_deassert['ex'] = self.instrs[addr_patch+8].cs_vector_dict['ex'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
                         if 'wb' in self.cs.CS_VECTOR_ARCH.keys():
                             #br_corr_deassert['wb'] = self.instrs[addr_patch+8].cs_vector_dict['wb'] & self.instrs[addr_patch+8].cs_vector_dict['ex']
                             br_corr_deassert['wb'] = self.instrs[addr_patch+8].cs_vector_dict['wb'] ^ self.instrs[addr_disc].cs_vector_dict['if']
@@ -322,15 +323,17 @@ class Code:
                 elif disc_type in ['jal', 'jalr'] or self.instrs[addr_patch].type == 'B': # Instruction in EX is disc deasserted not dest-4
                     if 'wb' in self.cs.CS_VECTOR_ARCH.keys():
                         #TODO: case (addr_dest+4) WB )= lw ??
-                        cs_corr_cycplus1_dict = {'wb': self.instrs[addr_dest+4].cs_vector_dict['wb'], 'ex': ((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK) ^ (self.instrs[addr_dest+4].cs_vector_dict['ex']))} # ex only because extra patch for cs in on ex only #TODO: 'wb': self.instrs[addr_dest+4].cs_vector_dict['wb'] ^ ... (cs_disc)
+                        cs_corr_cycplus1_dict = {'wb': self.instrs[addr_dest+4].cs_vector_dict['wb'], 'ex': (self.cs.CS_VECTOR_RESET) ^ (self.instrs[addr_dest+4].cs_vector_dict['ex'])} # ex only because extra patch for cs in on ex only #TODO: 'wb': self.instrs[addr_dest+4].cs_vector_dict['wb'] ^ ... (cs_disc)
+                        #cs_corr_cycplus1_dict = {'wb': self.instrs[addr_dest+4].cs_vector_dict['wb'], 'ex': ((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK) ^ (self.instrs[addr_dest+4].cs_vector_dict['ex']))} # ex only because extra patch for cs in on ex only #TODO: 'wb': self.instrs[addr_dest+4].cs_vector_dict['wb'] ^ ... (cs_disc)
                         if self.check_load_stall(self.instrs[addr_dest], self.instrs[addr_dest+4]):
                             cs_corr_cycplus2_dict = {'wb': 0}
                         else:
                             cs_corr_cycplus2_dict = {'wb': self.instrs[addr_dest+8].cs_vector_dict['wb'] ^ self.instrs[addr_disc].cs_vector_dict['if']} # todo for branch dest+12 must be corrected teh same way ? (branch is still in the WB)
                             #cs_corr_cycplus2_dict = {'wb': self.instrs[addr_dest+8].cs_vector_dict['wb'] ^ ((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK) ^ (self.instrs[addr_dest+4].cs_vector_dict['ex']))}
                         cs_corr_int = (self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus2_dict) << (self.cs.WIDTH['wb'] + self.cs.WIDTH['ex'])) | self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus1_dict)
-                    else:
-                        cs_corr_cycplus1_dict = {'ex': ((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK) ^ (self.instrs[addr_dest+4].cs_vector_dict['ex']))}
+                    else: #only ex
+                        cs_corr_cycplus1_dict = {'ex': (self.cs.CS_VECTOR_RESET) ^ (self.instrs[addr_dest+4].cs_vector_dict['ex'])}
+                        #cs_corr_cycplus1_dict = {'ex': ((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK) ^ (self.instrs[addr_dest+4].cs_vector_dict['ex']))}
                         cs_corr_int = self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus1_dict)
                     cs_corr = hex(cs_corr_int)[2:].zfill(self.cs.PATCH_CS_HEX_WIDTH)
                     correction_str += f",{cs_corr}"#,cycplus1:{hex(self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus1_dict))},cycplus2:{hex(self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus2_dict))}" (load_stall:{self.check_load_stall(self.instrs[addr_dest], self.instrs[addr_dest+4])}, {hex(self.instrs[addr_dest+8].cs_vector_dict['wb'])},{hex((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK))}!={hex(self.instrs[addr_disc].cs_vector_dict['if'])}!={hex(self.instrs[addr_dest+4].cs_vector_dict['ex'])}"#({hex(self.cs.cs_vector_dict_to_xored_int({'wb': self.instrs[addr_disc].cs_vector_dict['if']}))}{zfint(self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK, 2)}^{zfint(self.instrs[addr_dest+4].cs_vector_dict['ex'],2)})"
