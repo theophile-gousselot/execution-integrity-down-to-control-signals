@@ -256,6 +256,7 @@ def encrypt_elf():
             id_invalid = 1 ^ id_ready# | halt_id # update
             if_ready = id_ready
             if_valid = if_ready
+            deassert_we = (is_instr_minus4_multicycle == 1) | (prev_instr_ctrl_transfer in [0b01, 0b10])
 
 
 
@@ -278,8 +279,8 @@ def encrypt_elf():
                     cs_vector_dict['ex'] = cs_vector_dict['ex']
 
             # When instr at PC+4 of a multicycle instruction is decrypted, the multicycle instr is still in EX
-            elif is_instr_minus4_multicycle == 1:# and not is_prev_instr_disc:
-                cs_vector_dict['ex'] = cs_vector_dict['if']
+            elif is_instr_minus4_multicycle == 1: # combo: during "multi-cycle" execution, there is first a id invalid, then a deassert, and finally id is valid
+                cs_vector_dict['ex'] = cs_vector_dict['if'] & (cs.DEASSERT_WE_MASK | cs.CS_VECTOR_ID_INVALID_EX_READY) if deassert_we else cs_vector_dict['if']
 
             else:
             # Update specific EX signals from ID according to the their enable signals. Look at 'ex_en' in SIGNAL_DESCRIPTION.
@@ -289,7 +290,6 @@ def encrypt_elf():
 
 
             # Update CS_VECTOR_ID
-            deassert_we = (is_instr_minus4_multicycle == 1) | (prev_instr_ctrl_transfer in [0b01, 0b10])
             cs_vector_dict['id'] = cs_vector_dict['if'] & cs.DEASSERT_WE_MASK if deassert_we else cs_vector_dict['if']
 
 
