@@ -36,9 +36,9 @@
 `ifdef CS4
 `define CS 4
 `define CS_ID
-`define CS_ID_WIDTH 5
+`define CS_ID_WIDTH 7
 `define CS_EX
-`define CS_EX_WIDTH 1
+`define CS_EX_WIDTH 2
 `define CS_WB
 `define CS_WB_WIDTH 1
 `define CS_WB_EX
@@ -60,13 +60,13 @@
 `ifdef CS6
 `define CS 6
 `define CS_ID
-`define CS_ID_WIDTH 2
+`define CS_ID_WIDTH 1
 `define CS_EX
-`define CS_EX_WIDTH 2
+`define CS_EX_WIDTH 1
 `define CS_WB
-`define CS_WB_WIDTH 2
-`define CS_WB_LSU
-`define CS_WB_LSU_WIDTH 2
+`define CS_WB_WIDTH 1
+`define CS_WB_EX
+`define CS_WB_EX_WIDTH 1
 `endif
 
 
@@ -78,6 +78,20 @@
 `define CS_EX_WIDTH 8
 `define CS_WB
 `define CS_WB_WIDTH 6
+`define CS_WB_EX
+`define CS_WB_EX_WIDTH 1
+`define CS_WB_LSU
+`define CS_WB_LSU_WIDTH 5
+`endif
+
+`ifdef CS8
+`define CS 8
+`define CS_ID
+`define CS_ID_WIDTH 1
+`define CS_EX
+`define CS_EX_WIDTH 1
+`define CS_WB
+`define CS_WB_WIDTH 1
 `define CS_WB_EX
 `define CS_WB_EX_WIDTH 1
 `define CS_WB_LSU
