@@ -2,11 +2,14 @@ CS_VECTOR_ARCH_LIB = [{}]
 CS_VECTOR_ARCH_LIB.append({'id': ['alu_operator', 'alu_en'], 'ex': ['alu_operator', 'alu_en']})
 CS_VECTOR_ARCH_LIB.append({'id': ['mult_en', 'mult_operator', 'mult_signed_mode'], 'ex': ['mult_en', 'mult_operator', 'mult_signed_mode'], 'wb': ['regfile_we']})
 CS_VECTOR_ARCH_LIB.append({'id': ['alu_operator', 'alu_en', 'alu_op_a_mux_sel', 'alu_op_b_mux_sel', 'alu_op_c_mux_sel', 'regfile_we'], 'ex': ['alu_operator', 'alu_en', 'regfile_we'], 'wb': ['regfile_we']})
-CS_VECTOR_ARCH_LIB.append({'id': ['rega_used_dec', 'regb_used_dec', 'regc_mux', 'regc_used_dec'], 'ex': ['regfile_we'], 'wb': ['regfile_we']})
+CS_VECTOR_ARCH_LIB.append({'id': ['rega_used_dec', 'regb_used_dec', 'regc_mux', 'regc_used_dec', 'regfile_alu_we_dec', 'regfile_alu_we'], 'ex': ['regfile_we', 'regfile_alu_we'], 'wb': ['regfile_we']})
 CS_VECTOR_ARCH_LIB.append({'id': ['data_type', 'data_req', 'ctrl_transfer_target_mux_sel', 'ctrl_transfer_insn_in_dec', 'ctrl_transfer_insn_in_id', 'csr_status', 'csr_access', 'alu_bmask_b_mux_sel', 'alu_op_a_mux_sel', 'regfile_we'], 'ex': ['data_type', 'data_req', 'csr_access', 'alu_operator', 'alu_en', 'regfile_we'], 'wb': ['regfile_we']})
-CS_VECTOR_ARCH_LIB.append({'id': ['data_type'], 'ex': ['data_type'], 'wb': ['data_type']})
+CS_VECTOR_ARCH_LIB.append({'id': ['regfile_alu_we'], 'ex': ['regfile_alu_we'], 'wb': ['regfile_we']})
 CS_VECTOR_ARCH_LIB.append({'id': ['imm_a_mux_sel', 'imm_b_mux_sel', 'data_type', 'data_sign_ext', 'data_we', 'data_req', 'regfile_we'], 'ex': ['data_type', 'data_sign_ext', 'data_we', 'data_req', 'alu_en', 'regfile_we'], 'wb': ['regfile_we', 'data_type', 'data_sign_ext', 'data_we']})
+CS_VECTOR_ARCH_LIB.append({'id': ['alu_en'], 'ex': ['alu_en'], 'wb': ['regfile_we']})
+#ok: CS_VECTOR_ARCH_LIB.append({'id': ['alu_operator', 'alu_en', 'regfile_we'], 'ex': ['alu_operator', 'regfile_we'], 'wb': ['regfile_we']})
 #CS_VECTOR_ARCH_LIB.append({'id': ['data_type', 'data_sign_ext', 'data_req', 'ctrl_transfer_target_mux_sel', 'ctrl_transfer_insn_in_dec', 'ctrl_transfer_insn_in_id', 'csr_status', 'csr_access', 'alu_bmask_b_mux_sel', 'alu_op_a_mux_sel', 'regfile_we'], 'ex': ['data_req', 'csr_access', 'alu_operator', 'alu_en', 'regfile_we'], 'wb': ['regfile_we']})
+
 
 
 
@@ -71,19 +74,19 @@ SIGNAL_DESCRIPTION['rega_used_dec']                = {'width': 1, 'position_dec_
 SIGNAL_DESCRIPTION['regb_used_dec']                = {'width': 1, 'position_dec_tab': 17, 'stages': ['id'], 'reset_val': 0b0}
 SIGNAL_DESCRIPTION['regc_mux']                     = {'width': 2, 'position_dec_tab': 15, 'stages': ['id'], 'reset_val': 0b11}
 SIGNAL_DESCRIPTION['regc_used_dec']                = {'width': 1, 'position_dec_tab': 14, 'stages': ['id'], 'reset_val': 0b0}
-SIGNAL_DESCRIPTION['regfile_alu_waddr_mux_sel']    = {'width': 1, 'position_dec_tab': 13}
-SIGNAL_DESCRIPTION['regfile_alu_we_dec']        = {'width': 1, 'position_dec_tab': 12}
-SIGNAL_DESCRIPTION['regfile_alu_we']            = {'width': 1, 'position_dec_tab': 11, 'stages': ['id', 'ex'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0}
-SIGNAL_DESCRIPTION['regfile_fp_a']                 = {'width': 1, 'position_dec_tab': 10, 'stages': ['id'], 'reset_val': 0b0, 'ex_en':'regfile_we'}
-SIGNAL_DESCRIPTION['regfile_fp_b']                 = {'width': 1, 'position_dec_tab': 9}
-SIGNAL_DESCRIPTION['regfile_fp_c']                 = {'width': 1, 'position_dec_tab': 8}
-SIGNAL_DESCRIPTION['regfile_fp_d']                 = {'width': 1, 'position_dec_tab': 7}
-SIGNAL_DESCRIPTION['regfile_we']                = {'width': 1, 'position_dec_tab': 6, 'stages': ['id', 'ex', 'wb'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'ex_invalid_wb_ready': 0b0}
-SIGNAL_DESCRIPTION['scalar_replication']           = {'width': 1, 'position_dec_tab': 5}
-SIGNAL_DESCRIPTION['scalar_replication_c']         = {'width': 1, 'position_dec_tab': 4}
-SIGNAL_DESCRIPTION['uret_dec']                     = {'width': 1, 'position_dec_tab': 3}
-SIGNAL_DESCRIPTION['uret_insn_dec']                = {'width': 1, 'position_dec_tab': 2}
-SIGNAL_DESCRIPTION['wfi_insn_dec']                 = {'width': 1, 'position_dec_tab': 1}
+SIGNAL_DESCRIPTION['regfile_alu_waddr_mux_sel']    = {'width': 1, 'position_dec_tab': 13, 'stages': ['id'], 'reset_val': 0b1} # cte to 1 # useful only if PULP_XPULP
+SIGNAL_DESCRIPTION['regfile_alu_we_dec']        = {'width': 1, 'position_dec_tab': 12, 'stages': ['id'], 'reset_val': 0b0} # (same as regfile_alu_we, but propagated only to controller) alu we to detect load_stall
+SIGNAL_DESCRIPTION['regfile_alu_we']            = {'width': 1, 'position_dec_tab': 11, 'stages': ['id', 'ex'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0} # regfile_alu_we 
+SIGNAL_DESCRIPTION['regfile_fp_a']                 = {'width': 1, 'position_dec_tab': 10} # useful only if FPU
+SIGNAL_DESCRIPTION['regfile_fp_b']                 = {'width': 1, 'position_dec_tab': 9} # useful only if FPU
+SIGNAL_DESCRIPTION['regfile_fp_c']                 = {'width': 1, 'position_dec_tab': 8} # useful only if FPU
+SIGNAL_DESCRIPTION['regfile_fp_d']                 = {'width': 1, 'position_dec_tab': 7} # useful only if FPU
+SIGNAL_DESCRIPTION['regfile_we']                   = {'width': 1, 'position_dec_tab': 6, 'stages': ['id', 'ex', 'wb'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'ex_invalid_wb_ready': 0b0} # regfile_mem_we -> we_a
+SIGNAL_DESCRIPTION['scalar_replication']           = {'width': 1, 'position_dec_tab': 5} # useful only if FPU
+SIGNAL_DESCRIPTION['scalar_replication_c']         = {'width': 1, 'position_dec_tab': 4} # useful only if FPU
+SIGNAL_DESCRIPTION['uret_dec']                     = {'width': 1, 'position_dec_tab': 3} # useful only if uret
+SIGNAL_DESCRIPTION['uret_insn_dec']                = {'width': 1, 'position_dec_tab': 2} # useful only if uret
+SIGNAL_DESCRIPTION['wfi_insn_dec']                 = {'width': 1, 'position_dec_tab': 1} # wfi
 SIGNAL_DESCRIPTION['null']                         = {'width': 1, 'position_dec_tab': 0}
 
 
@@ -94,6 +97,7 @@ SIGNAL_BUILD_AFTER_DECODER = ['branch_in_ex']
 DEASSERT_WE_AFFECTED_SIGNALS = ['alu_en', 'apu_en', 'mult_en', 'mult_dot_en', 'regfile_we', 'regfile_alu_we', 'data_req', 'hwlp_we', 'csr_op', 'ctrl_transfer_insn_in_id']
 
 #if not 'data_req_id'  thus:  data_load_event_ex_o <= 1'b0;
+
 
 EN_AFFECTED_SIGNALS = {
     'alu_en': ['alu_operator', 'alu_operand_a', 'alu_operand_b', 'alu_operand_c',
