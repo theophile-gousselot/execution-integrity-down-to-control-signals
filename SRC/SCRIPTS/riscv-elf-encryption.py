@@ -183,6 +183,9 @@ def encrypt_elf():
         cs_vector_dict['id'] = cs.CS_VECTOR_RESET
         cs_vector_dict['ex'] = cs.CS_VECTOR_RESET
         cs_vector_dict['wb'] = cs.CS_VECTOR_RESET
+        is_instr_div = 0
+        is_instr_minus4_div = 0
+        is_instr_minus8_div = 0
         is_instr_multicycle = 0
         is_instr_minus4_multicycle = 0
         is_instr_minus8_multicycle = 0
@@ -234,6 +237,10 @@ def encrypt_elf():
             is_instr_minus4_multicycle = is_instr_multicycle
             is_instr_multicycle = cs_decoder[instr2fct7_3_opcode(instr)]['is_multicycle']
 
+            is_instr_minus8_div = is_instr_minus4_div
+            is_instr_minus4_div = is_instr_div
+            is_instr_div = cs_decoder[instr2fct7_3_opcode(instr)]['is_div']
+
             prev_instr_ctrl_transfer = cs_decoder[instr2fct7_3_opcode(instr_minus4)]['ctrl_transfer']
 
 
@@ -263,13 +270,18 @@ def encrypt_elf():
             # Update CS_VECTOR_WB
             if ex_valid:
                 if if_valid: # instruction in ID will be in EX when if_valid=0, and in WB when the next instruction is decrypted
-                    cs_vector_dict['wb'] = cs_vector_dict['ex']
+                    #cs_vector_dict['wb'] = cs_vector_dict['ex']
+                    mask_for_ex, mask_for_reset = cs.make_mask_ex_en(cs_vector_dict['ex'])
+                    cs_vector_dict['wb'] = (cs_vector_dict['ex'] & mask_for_ex) | (cs.CS_VECTOR_RESET & mask_for_reset)
                 else:
                     cs_vector_dict['wb'] = cs_vector_dict['id']
 
             else:
                 if wb_ready:
                     cs_vector_dict['wb'] = ((cs_vector_dict['wb'] & cs.MASK_CS_VECTOR_EX_INVALID_WB_READY) | cs.CS_VECTOR_EX_INVALID_WB_READY)
+           # if addr_hex == 0xe30:
+            if is_instr_minus8_div == 1:
+                cs_vector_dict['wb'] = cs.CS_VECTOR_RESET
 
             # Update CS_VECTOR_EX
             if id_invalid:
@@ -314,8 +326,8 @@ def encrypt_elf():
             cs_vector_dict_str_dec, cs_vector_dict_str_hex = cs_vector_dict_str_dec[1:], cs_vector_dict_str_hex[1:]
 
             other_lines_dbg += f"{hex(cs_vector_xored_int)[2:]},{cs_vector_dict_str_hex},{is_instr_multicycle},{load_stall}\n"
-            ascon_states_dec +=f"{pc_pc_instr},{cs_decoder_instr},{cs_vector_dict_str_dec},{is_instr_multicycle},{','.join(map(str, S))}\n"
-            ascon_states_hex +=f"{pc_pc_instr},{hex(cs_decoder_instr)[2:]},{cs_vector_dict_str_hex},{is_instr_multicycle},{state2str(S)}\n"
+            ascon_states_dec += f"{pc_pc_instr},{cs_decoder_instr},{cs_vector_dict_str_dec},{is_instr_multicycle},{','.join(map(str, S))}\n"
+            ascon_states_hex += f"{pc_pc_instr},{hex(cs_decoder_instr)[2:]},{cs_vector_dict_str_hex},{is_instr_multicycle},{state2str(S)}\n"
         else:
             # PC(hex), PC(dec), instr, state
             ascon_states_dec +=f"{pc_pc_instr},{','.join(map(str, S))}\n"

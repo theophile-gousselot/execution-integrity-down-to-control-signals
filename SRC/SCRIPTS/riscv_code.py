@@ -239,7 +239,7 @@ class Code:
                     self.instrs[int(addr_dec)].state = list( map(int, list(state.split(",", 4))))
                     self.instrs[int(addr_dec)].is_multicycle = is_multicycle == "1"
                     self.instrs[int(addr_dec)].cs_vector = int(cs_vector)
-                    self.instrs[int(addr_dec)].cs_vector_dict = dict(zip([stage for stage in ['if', 'id', 'ex', 'wb'] if stage in list(self.cs.CS_VECTOR_ARCH.keys()) + ['if']], list(map(int, list(cs_vector_str.split('-'))))))
+                    self.instrs[int(addr_dec)].cs_vector_dict = dict(zip(['if', 'id', 'ex', 'wb'], list(map(int, list(cs_vector_str.split('-'))))))
                 else:
                     addr_hex, addr_dec, instr, state = list(state_l.split(",", 3))
                     self.instrs[int(addr_dec)].state = list(map(int, list(state.split(",", 4))))
@@ -284,31 +284,38 @@ class Code:
                     # cs_vector bits to mask to itself (as it is already in the patch through cs2cipher.
                     if disc_type == 'b': #addr_patch -> addr_src-8
                         br_corr_deassert = {}
-                        br_corr_deassert['id'] = self.instrs[addr_patch+8].cs_vector_dict['id'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
+                        if 'id' in self.cs.CS_VECTOR_ARCH.keys():
+                            br_corr_deassert['id'] = self.instrs[addr_patch+8].cs_vector_dict['id'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
                         if 'ex' in self.cs.CS_VECTOR_ARCH.keys():
                             br_corr_deassert['ex'] = self.instrs[addr_patch+8].cs_vector_dict['ex'] ^ self.cs.CS_VECTOR_RESET
                             #br_corr_deassert['ex'] = self.instrs[addr_patch+8].cs_vector_dict['ex'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
+                            correction_str += f",EX:{h(br_corr_deassert['ex'])}({h(self.instrs[addr_patch+8].cs_vector_dict['ex'])},{h(self.cs.CS_VECTOR_RESET)})"
                         if 'wb' in self.cs.CS_VECTOR_ARCH.keys():
                             #br_corr_deassert['wb'] = self.instrs[addr_patch+8].cs_vector_dict['wb'] & self.instrs[addr_patch+8].cs_vector_dict['ex']
                             br_corr_deassert['wb'] = self.instrs[addr_patch+8].cs_vector_dict['wb'] ^ self.instrs[addr_disc].cs_vector_dict['if']
                             #br_corr_deassert['wb'] = self.instrs[addr_dest].cs_vector_dict['wb'] ^ self.instrs[addr_disc].cs_vector_dict['if']
+                            correction_str += f",WB:{h(br_corr_deassert['wb'])} ({h(self.instrs[addr_patch+8].cs_vector_dict['wb'])}, {h(self.instrs[addr_patch+8].cs_vector_dict['if'])})"
                         brplus4_mask = self.cs.cs_vector_dict_to_xored_int(br_corr_deassert)
 
                         sub_state_patch ^= brplus4_mask
-                        correction_str = f",{h(brplus4_mask)} ({h(br_corr_deassert['ex'])} {h(br_corr_deassert['id'])}  mask={h(self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)})"
+                        #correction_str = f",{h(brplus4_mask)} ({h(br_corr_deassert['ex'])} {h(br_corr_deassert['id'])}  mask={h(self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)})"
 
                     # Destination of a jump is decrypted after the state get from jal decryption xor with patch, and CS from 
                     # jal in the execute (not jal-4) AND in the decode (deasserted). Therefore, the execute cs_vector
                     # must be replaced in the patch from the cs_vector of the instruction at JAL-4 to JAL cs_vector
                     if disc_type in ['jal', 'jalr']:
                         jal_ex_correction = {}
-                        jal_ex_correction['id'] = 0
+                        if 'id' in self.cs.CS_VECTOR_ARCH.keys():
+                            jal_ex_correction['id'] = 0
                         if 'ex' in self.cs.CS_VECTOR_ARCH.keys():
                             jal_ex_correction['ex'] = self.instrs[addr_src].cs_vector_dict['ex'] ^ self.instrs[addr_disc].cs_vector_dict['if'] #jal-4 ^ jal
+                            correction_str += f",EX:{h(jal_ex_correction['ex'])}({h(self.instrs[addr_src].cs_vector_dict['ex'])},{h(self.instrs[addr_disc].cs_vector_dict['if'])})"
                         if 'wb' in self.cs.CS_VECTOR_ARCH.keys():
                             jal_ex_correction['wb'] = self.instrs[addr_src].cs_vector_dict['wb'] ^ self.instrs[addr_src].cs_vector_dict['ex'] #jal-4 ^ jal
+                            correction_str += f",WB:{h(jal_ex_correction['wb'])} ({h(self.instrs[addr_src].cs_vector_dict['wb'])}, {h(self.instrs[addr_src].cs_vector_dict['ex'])})"
                         sub_state_patch ^= self.cs.cs_vector_dict_to_xored_int(jal_ex_correction)
-                        correction_str = f",{h(jal_ex_correction['ex']):>4}({zfint(self.instrs[addr_src].cs_vector_dict['ex'],2)}^{zfint(self.instrs[addr_disc].cs_vector_dict['if'],2)})"
+                        #correction_str = f",{h(jal_ex_correction['ex']):>4}({zfint(self.instrs[addr_src].cs_vector_dict['ex'],2)}^{zfint(self.instrs[addr_disc].cs_vector_dict['if'],2)})"
+ 
 
                 patch += hex(sub_state_patch)[2:].zfill(16)
 
@@ -328,7 +335,7 @@ class Code:
                         if self.check_load_stall(self.instrs[addr_dest], self.instrs[addr_dest+4]):
                             cs_corr_cycplus2_dict = {'wb': 0}
                         else:
-                            cs_corr_cycplus2_dict = {'wb': self.instrs[addr_dest+8].cs_vector_dict['wb'] ^ self.instrs[addr_disc].cs_vector_dict['if']} # todo for branch dest+12 must be corrected teh same way ? (branch is still in the WB)
+                            cs_corr_cycplus2_dict = {'wb': self.instrs[addr_dest+8].cs_vector_dict['wb'] ^ (self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK)} # todo for branch dest+12 must be corrected teh same way ? (branch is still in the WB)
                             #cs_corr_cycplus2_dict = {'wb': self.instrs[addr_dest+8].cs_vector_dict['wb'] ^ ((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK) ^ (self.instrs[addr_dest+4].cs_vector_dict['ex']))}
                         cs_corr_int = (self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus2_dict) << (self.cs.WIDTH['wb'] + self.cs.WIDTH['ex'])) | self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus1_dict)
                     else: #only ex
@@ -336,7 +343,7 @@ class Code:
                         #cs_corr_cycplus1_dict = {'ex': ((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK) ^ (self.instrs[addr_dest+4].cs_vector_dict['ex']))}
                         cs_corr_int = self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus1_dict)
                     cs_corr = hex(cs_corr_int)[2:].zfill(self.cs.PATCH_CS_HEX_WIDTH)
-                    correction_str += f",{cs_corr}"#,cycplus1:{hex(self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus1_dict))},cycplus2:{hex(self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus2_dict))}" (load_stall:{self.check_load_stall(self.instrs[addr_dest], self.instrs[addr_dest+4])}, {hex(self.instrs[addr_dest+8].cs_vector_dict['wb'])},{hex((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK))}!={hex(self.instrs[addr_disc].cs_vector_dict['if'])}!={hex(self.instrs[addr_dest+4].cs_vector_dict['ex'])}"#({hex(self.cs.cs_vector_dict_to_xored_int({'wb': self.instrs[addr_disc].cs_vector_dict['if']}))}{zfint(self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK, 2)}^{zfint(self.instrs[addr_dest+4].cs_vector_dict['ex'],2)})"
+                    correction_str += f""#,{cs_corr}"#,cycplus1:{hex(self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus1_dict))},cycplus2:{hex(self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus2_dict))}" (load_stall:{self.check_load_stall(self.instrs[addr_dest], self.instrs[addr_dest+4])}, {hex(self.instrs[addr_dest+8].cs_vector_dict['wb'])},{hex((self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK))}!={hex(self.instrs[addr_disc].cs_vector_dict['if'])}!={hex(self.instrs[addr_dest+4].cs_vector_dict['ex'])}"#({hex(self.cs.cs_vector_dict_to_xored_int({'wb': self.instrs[addr_disc].cs_vector_dict['if']}))}{zfint(self.instrs[addr_disc].cs_vector_dict['if'] & self.cs.DEASSERT_WE_MASK, 2)}^{zfint(self.instrs[addr_dest+4].cs_vector_dict['ex'],2)})"
                 else:
                     cs_corr = "0" * self.cs.PATCH_CS_HEX_WIDTH
                 patch = cs_corr + patch
