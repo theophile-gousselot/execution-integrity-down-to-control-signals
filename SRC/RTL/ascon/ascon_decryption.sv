@@ -20,9 +20,9 @@ module ascon_decryption
 `ifdef CS
     input logic [`CS_WIDTH-1:0] cs_vector_i,
 `endif
-`ifdef CS_EX
-    input logic          dec_alu_en_i,
-`endif
+//`ifdef CS_EX
+//    input logic          dec_alu_en_i,
+//`endif
 
 
     input logic          fifo_push_i,
@@ -58,7 +58,7 @@ module ascon_decryption
     logic        clk_ascon_fast_cnt_init_s;
     logic        clk_ascon_fast_cnt_en_s;
     logic        apply_patch_s;
-`ifdef CS_EX
+`ifdef CS_PATCH
     logic        apply_patch_cs_s;
     logic        en_apply_patch_cs_destplus8_s;
 `endif
@@ -79,7 +79,7 @@ module ascon_decryption
         .sel_previous_instr_addr_en_o (sel_previous_instr_addr_en_s),
         .clk_ascon_fast_cnt_init_o  (clk_ascon_fast_cnt_init_s),
         .clk_ascon_fast_cnt_en_o    (clk_ascon_fast_cnt_en_s),
-`ifdef CS_EX
+`ifdef CS_PATCH
         .apply_patch_cs_o           (apply_patch_cs_s),
         .en_apply_patch_cs_destplus8_o(en_apply_patch_cs_destplus8_s),
 `endif
@@ -102,9 +102,9 @@ module ascon_decryption
 `ifdef CS
         .cs_vector_i                (cs_vector_i),
 `endif
-`ifdef CS_EX
-        .dec_alu_en_i               (dec_alu_en_i),
-`endif
+//`ifdef CS_EX
+//        .dec_alu_en_i               (dec_alu_en_i),
+//`endif
 
 
         .fifo_push_i               (fifo_push_i),
@@ -124,7 +124,7 @@ module ascon_decryption
         .sel_previous_instr_addr_en_i (sel_previous_instr_addr_en_s),
         .clk_ascon_fast_cnt_init_i (clk_ascon_fast_cnt_init_s),
         .clk_ascon_fast_cnt_en_i   (clk_ascon_fast_cnt_en_s),
-`ifdef CS_EX
+`ifdef CS_PATCH
         .apply_patch_cs_i          (apply_patch_cs_s),
         .en_apply_patch_cs_destplus8_i(en_apply_patch_cs_destplus8_s),
 `endif

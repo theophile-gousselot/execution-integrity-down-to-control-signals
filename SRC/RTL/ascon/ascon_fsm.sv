@@ -21,7 +21,7 @@ module ascon_fsm
     output logic        sel_previous_instr_addr_en_o,
     output logic        clk_ascon_fast_cnt_init_o,
     output logic        clk_ascon_fast_cnt_en_o,
-`ifdef CS_EX
+`ifdef CS_PATCH
     output logic        apply_patch_cs_o,
     output logic        en_apply_patch_cs_destplus8_o,
 `endif
@@ -42,7 +42,7 @@ module ascon_fsm
 
     ascon_fsm_states state_s, next_state_s;
 
-`ifdef CS_EX
+`ifdef CS_PATCH
     logic apply_patch_cs_s;
     logic en_apply_patch_cs_destplus8_s;
 `endif
@@ -177,7 +177,7 @@ module ascon_fsm
         clk_ascon_fast_cnt_init_o = 1'b0;
         clk_ascon_fast_cnt_en_o   = 1'b1;
         apply_patch_o             = 1'b0;
-`ifdef CS_EX
+`ifdef CS_PATCH
         apply_patch_cs_s          = 1'b0;
         en_apply_patch_cs_destplus8_s = 1'b0;
 `endif
@@ -192,7 +192,7 @@ module ascon_fsm
             JAL_TAKEN: begin
                 sel_patch_o               = PATCH_ID;
                 apply_patch_o             = 1'b1;
-`ifdef CS_EX
+`ifdef CS_PATCH
                 apply_patch_cs_s          = 1'b1;
 `endif
             end
@@ -200,7 +200,7 @@ module ascon_fsm
             JALR_TAKEN: begin
                 sel_patch_o               = PATCH_IF;
                 apply_patch_o             = 1'b1;
-`ifdef CS_EX
+`ifdef CS_PATCH
                 apply_patch_cs_s          = 1'b1;
 `endif
             end
@@ -209,7 +209,7 @@ module ascon_fsm
                 sel_patch_o               = PATCH_IF;
                 apply_patch_o             = 1'b1;
                 sel_previous_instr_addr_en_o = 1'b1;
-`ifdef CS_EX
+`ifdef CS_PATCH
                 apply_patch_cs_s          = 1'b1;
 `endif
             end
@@ -217,7 +217,7 @@ module ascon_fsm
             BRANCH_TAKEN: begin
                 sel_patch_o               = PATCH_EX;
                 apply_patch_o             = 1'b1;
-`ifdef CS_EX
+`ifdef CS_PATCH
                 apply_patch_cs_s          = 1'b1;
                 en_apply_patch_cs_destplus8_s = 1'b1;
 `endif
@@ -230,7 +230,7 @@ module ascon_fsm
         end
     end : fsm_ouputs_generation
 
-`ifdef CS_EX
+`ifdef CS_PATCH
     always_ff @(posedge clk_core_slow_i or negedge rst_ni) begin : apply_cs_patch_delay_one_cycle
         if (!rst_ni) begin
             apply_patch_cs_o <= 1'b0;
