@@ -110,7 +110,7 @@ rm_none= $(shell echo "$(1)" | sed 's=_none==g' || true)
 
 VCD= _none _vcd
 CF= 1 2 3 6
-CS= 1 2 3 4 5 6 7 8
+CS= 1 2 3 4 5 6 7 8 9
 
 
 _ENC_CF= $(addprefix _encrypted_cf, $(CF))    							# _encrypted_cf1 _encrypted_cf2 ...
