@@ -27,6 +27,7 @@ You can generate `explicit_target_names.mk` by executing `./configure.py`, which
 In that case tape `make -f explicit_target_names.mk <tab>`.
 
 ### Behavioral simulation only: Verilator
+#### Instruction integrity (without Control signal integrity)
 1. Simulate execution of `fibonacci`, without encryption and save PC/instr in Fetch at every cycle.
 ``` bash
 make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_save_ref.log
@@ -76,6 +77,14 @@ make -f explicit_target_names.mk <tab>
 ```
 
 8. Every time a simulation is performed, a line is added in `OBJ/LOG/overview.log`, after step **5**, `overview.log` looks like table in [Results](#results)
+
+#### Instruction and Control signal integrity
+1. Get statistics about control signal association, run `python3` in `SRC/SCRIPTS`:
+``` bash
+from riscv_control_signals import Control_signals
+cs = Control_signals(1)
+cs.stats_on_cs()
+```
 
 
 ### FPGA Flow : Vivado/Questa
