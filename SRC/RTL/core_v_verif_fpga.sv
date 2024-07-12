@@ -91,9 +91,9 @@ module core_v_verif_fpga
 `ifdef CS
     logic [`CS_WIDTH-1:0] cs_vector_s;
 `endif
-`ifdef CS_EX
-    logic dec_alu_en_s;
-`endif
+//`ifdef CS_EX
+//    logic dec_alu_en_s;
+//`endif
 `endif
 
 
@@ -194,9 +194,9 @@ module core_v_verif_fpga
 `ifdef CS
         .cs_vector_o                (cs_vector_s),
 `endif
-`ifdef CS_EX
-	    .dec_alu_en_o               (dec_alu_en_s),
-`endif
+//`ifdef CS_EX
+//	    .dec_alu_en_o               (dec_alu_en_s),
+//`endif
 
         .pulp_clock_en_i            ('1),
         .scan_cg_en_i               ('0),
@@ -262,9 +262,9 @@ module core_v_verif_fpga
 `ifdef CS
         .cs_vector_i                (cs_vector_s),
 `endif
-`ifdef CS_EX
-        .dec_alu_en_i               (dec_alu_en_s),
-`endif
+//`ifdef CS_EX
+//        .dec_alu_en_i               (dec_alu_en_s),
+//`endif
 
         .fifo_push_i                (fifo_push_s),
         .fifo_pop_i                 (fifo_pop_s),
