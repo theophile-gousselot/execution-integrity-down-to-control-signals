@@ -35,8 +35,9 @@ SRC_BSP_DIR	 		:= $(SRC_DIR)/PROGRAM_TOOLS/BSP
 BSP_RESULT_FILES	:= $(patsubst %,$(SRC_BSP_DIR)/%,crt0.o handlers.o syscalls.o vectors.o libcv-verif.a)
 
 SRC_RTL				:= $(shell cat ./SRC/RTL/rtl.flist)
-SRC_RTL_ENCRYPTED	:= $(shell cat ./SRC/RTL/rtl_encrypted.flist) SRC/RTL/macro_def.sv
+SRC_RTL_ENCRYPTED	:= $(shell cat ./SRC/RTL/rtl_encrypted.flist) 
 SRC_TB_FILE			:= $(SV_BENCH_DIR)/core_v_verif_fpga_tb.cpp
+SRC_OBJ_RTL			:= $(addprefix OBJ/RTL/, ex_cs_assign.sv id_cs_assign.sv macro_def.sv wb_from_ex_cs_assign.sv wb_from_lsu_cs_assign.sv wb_merge_cs_assign.sv)
 
 TB_CPP_NAME			:= core_v_verif_fpga
 
@@ -87,6 +88,8 @@ cs = $(shell echo "$(1)" | sed -n 's=^.*_cs\([0-9]\).*$$=_cs\1=p' || true)
 #cs_flags_hw = $(shell echo "$(1)" | grep -q "_cs" && echo "$(call cs_id_hw,$(1)) $(call cs_ex_hw,$(1))" || true)
 #cs_sw = $(shell echo "$(1)" | sed -E -n 's=^.*_cs(-id|)(-ex|).*$$=cs\1\2=p')
 #cs_flags_sw = $(shell echo "$(1)" | grep -q "_cs" && echo "--control_signals=$(call cs_sw,$(1))" || true)
+
+if_cs = $(shell echo "$(1)" | grep -q "_cs" && echo "$(2)" || true)
 
 vcd = $(shell echo "$(1)" | grep -q "_vcd\|\.vcd" && echo "_vcd" || true)
 vcd_flags = $(shell echo "$(1)" | grep -q "_vcd" && echo "--trace --trace-depth 8 -CFLAGS '-D VCD'" || true)
@@ -272,7 +275,7 @@ OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv : \
 #OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf3_cs1/Vcore_v_verif_fpga \
 #OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6_cs1/Vcore_v_verif_fpga : 
 $(VERILATOR_EXE_TARGETS) : \
-		$(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE)
+		$(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE) $$(call if_cs,$$@,$(SRC_OBJ_RTL))
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
 	verilator \
@@ -281,7 +284,7 @@ $(VERILATOR_EXE_TARGETS) : \
 		$(call cs_flags_hw,$@) \
 		-CFLAGS "-D MAX_SIM_TIME=$(MAX_SIM_TIME)" \
 	   	--Mdir $(OBJ_VERI_DIR)/$(TB_CPP_NAME)$(call encrypted,$@)$(call cf,$@)$(call cs,$@)$(call vcd,$@) \
-		-ISRC/RTL/ \
+		-IOBJ/RTL/ \
 	   	--cc -sv --exe \
 	   	--top-module $(TB_CPP_NAME) ../../$(SRC_TB_FILE) \
 	   	-f SRC/RTL/rtl_encrypted.flist
@@ -291,6 +294,8 @@ $(VERILATOR_EXE_TARGETS) : \
 		-f V$(TB_CPP_NAME).mk \
 		V$(TB_CPP_NAME)
 
+$(SRC_OBJ_RTL) : SRC/SCRIPTS/riscv_control_signals.py
+	(cd SRC/SCRIPTS && python3 -c "from riscv_control_signals import Macro_sv; Macro_sv()")
 
 
 ##        _                _
