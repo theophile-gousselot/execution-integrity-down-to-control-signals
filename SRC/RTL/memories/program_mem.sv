@@ -1,6 +1,8 @@
 `timescale 1ns / 1ps
 
+`ifdef ENCRYPT
 `include "macro_def.sv"
+`endif
 
 module program_mem
 #(parameter
