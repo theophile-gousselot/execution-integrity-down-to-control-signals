@@ -37,7 +37,6 @@ BSP_RESULT_FILES	:= $(patsubst %,$(SRC_BSP_DIR)/%,crt0.o handlers.o syscalls.o v
 SRC_RTL				:= $(shell cat ./SRC/RTL/rtl.flist)
 SRC_RTL_ENCRYPTED	:= $(shell cat ./SRC/RTL/rtl_encrypted.flist) 
 SRC_TB_FILE			:= $(SV_BENCH_DIR)/core_v_verif_fpga_tb.cpp
-SRC_OBJ_RTL			:= $(addprefix OBJ/RTL/, ex_cs_assign.sv id_cs_assign.sv macro_def.sv wb_from_ex_cs_assign.sv wb_from_lsu_cs_assign.sv wb_merge_cs_assign.sv)
 
 TB_CPP_NAME			:= core_v_verif_fpga
 
@@ -275,7 +274,7 @@ OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv : \
 #OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf3_cs1/Vcore_v_verif_fpga \
 #OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6_cs1/Vcore_v_verif_fpga : 
 $(VERILATOR_EXE_TARGETS) : \
-		$(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE) $$(call if_cs,$$@,$(SRC_OBJ_RTL))
+		$(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE) $$(call if_cs,$$@,OBJ/RTL/.rtl_timestamp)
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
 	verilator \
@@ -294,8 +293,10 @@ $(VERILATOR_EXE_TARGETS) : \
 		-f V$(TB_CPP_NAME).mk \
 		V$(TB_CPP_NAME)
 
-$(SRC_OBJ_RTL) : SRC/SCRIPTS/riscv_control_signals.py
+OBJ/RTL/.rtl_timestamp : SRC/SCRIPTS/riscv_control_signals.py
+	@echo "\n===> $@"
 	(cd SRC/SCRIPTS && python3 -c "from riscv_control_signals import Macro_sv; Macro_sv()")
+	touch $@
 
 
 ##        _                _
