@@ -8,7 +8,7 @@ This script encrypts sections of an elf file (fct: encrypt_elf()). The algorithm
 import os
 import subprocess
 import argparse
-from ascon_fct import ascon_initialize, ascon_process_one_encryption, ascon_permutation, bytes_to_int, reverse_bytes, int_to_bytes, state2str, instr2fct7_3_opcode
+from ascon_fct import ascon_initialize, ascon_process_one_encryption, ascon_permutation, bytes_to_int, reverse_bytes, int_to_bytes, state2str
 from riscv_code import Code, zfint
 from riscv_instruction import *
 from riscv_control_signals import Control_signals
@@ -49,7 +49,6 @@ else:
 ###### Paths ######
 ELF_PATH = args.elf_path
 OBJ_PATH = os.path.dirname(ELF_PATH)
-CS_PATH = f"SRC/PROGRAM_TOOLS/CONTROL_SIGNALS/control_signals.csv"
 STATES_DEC_CSV_PATH = f"{ELF_PATH[:-4]}_states_dec.csv"
 STATES_HEX_CSV_PATH = f"{ELF_PATH[:-4]}_states_hex.csv"
 STATES_HEX_DBG_CSV_PATH = f"{ELF_PATH[:-4]}_states_hex_debug.csv"
@@ -174,7 +173,6 @@ def encrypt_elf():
     # fct7_3_opcode to control signal decoding table
     if CS_MODE:
         cs = Control_signals(args.cs_vector_arch_id)
-        cs_decoder = cs.read_decoding_table(CS_PATH)
         instr_minus4 = 0x7
 
         cs_vector_dict = {}
@@ -230,18 +228,19 @@ def encrypt_elf():
 
         if CS_MODE:
             # Extract info from cs_decoder 
-            cs_decoder_instr = cs.decode_tab_to_cs_vector(cs_decoder[instr2fct7_3_opcode(instr)]['cs_vector'])
-            #log(f"#{hex(addr_hex)},{code.instrs[addr_hex].inst},{hex(cs_decoder_instr)},{hex(instr2fct7_3_opcode(instr))},{hex(cs_decoder[instr2fct7_3_opcode(instr)]['cs_vector'])}")
+            cs_decoder_instr = cs.decode_tab_to_cs_vector(instr)
+            instr_metadata = cs.decode_tab_to_instr_metadata(instr)
+            instr_minus4_metadata = cs.decode_tab_to_instr_metadata(instr_minus4)
 
             is_instr_minus8_multicycle = is_instr_minus4_multicycle
             is_instr_minus4_multicycle = is_instr_multicycle
-            is_instr_multicycle = cs_decoder[instr2fct7_3_opcode(instr)]['is_multicycle']
+            is_instr_multicycle = instr_metadata['is_multicycle']
 
             is_instr_minus8_div = is_instr_minus4_div
             is_instr_minus4_div = is_instr_div
-            is_instr_div = cs_decoder[instr2fct7_3_opcode(instr)]['is_div']
+            is_instr_div = instr_metadata['is_div']
 
-            prev_instr_ctrl_transfer = cs_decoder[instr2fct7_3_opcode(instr_minus4)]['ctrl_transfer']
+            prev_instr_ctrl_transfer = instr_minus4_metadata['ctrl_transfer']
 
 
             """
@@ -304,13 +303,13 @@ def encrypt_elf():
             # Update CS_VECTOR_ID
             cs_vector_dict['id'] = cs_vector_dict['if'] & cs.DEASSERT_WE_MASK if deassert_we else cs_vector_dict['if']
 
-
-            cs_vector_xored_int = cs.cs_vector_dict_to_xored_int(cs_vector_dict)
-
             instr_minus4 = instr
             cs_vector_dict['if'] = cs_decoder_instr
+
+            cs_vector_xored_int = cs.cs_vector_dict_to_xored_int(cs_vector_dict)
             if (cs_vector_xored_int >> 32) != 0:
                 raise ValueError(f"Error, cs_vector should fit on 32 bits")
+
 
             # XOR CONTROL_SIGNALS WITH STATE
             S[0] ^= cs_vector_xored_int
