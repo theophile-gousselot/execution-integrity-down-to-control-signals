@@ -151,10 +151,6 @@ def ascon_permutation_inv(S, rounds=1, debugperm=False):
             printwords(S, "substitution layer:")
 
 
-# === helper functions ===
-
-def instr2fct7_3_opcode(instr):
-    return (((instr >> 25) << 8) | (((instr >> 12) & 0b111) << 5) | ((instr >> 2) & 0b11111))
 
 # === Generate number
 def get_random_bytes(num):
