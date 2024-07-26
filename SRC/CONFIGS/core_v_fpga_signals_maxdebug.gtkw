@@ -32,7 +32,7 @@ TOP.rst_i
 -
 -TOP SIGNALS
 @22
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.cs_vector_i[25:0]
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.cs_vector_i*
 @200
 -
 -CV32E40P
@@ -149,18 +149,18 @@ TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.apply_patch_cs_i
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.apply_patch_cs_cycplus1_reg
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.apply_patch_cs_cycplus1_s
 @22
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_cs_cycplus1_reg[13:0]
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_cs_cycplus1_reg*
 @28
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.apply_patch_cs_cycplus2_s
 @22
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_cs_cycplus2_reg_reg[5:0]
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_cs_cycplus2_reg_reg*
 @28
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.sel_addr_redirected_i
 @22
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_to_ascon_s[319:0]
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_if_reg_s[339:0]
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_id_reg_s[339:0]
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_ex_reg_s[339:0]
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_if_reg_s*
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_id_reg_s*
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_ex_reg_s*
 @200
 -
 [pattern_trace] 1

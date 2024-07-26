@@ -276,6 +276,7 @@ class Code:
 
                 ##### PATCH FOR CYCLE AT INSTRUCTION DISCONTINUITY EXECUTION #####
                 if self.cs_mode and i == 0:
+                    correction_str += f",Ssrc:{h(state1)},Sdest:{h(state2)}"
 
 
                     # When a branch is in EXECUTE, even if instr in DECODE is not a multicycle instruction, 
@@ -307,6 +308,7 @@ class Code:
                         jal_ex_correction = {}
                         if 'id' in self.cs.CS_VECTOR_ARCH.keys():
                             jal_ex_correction['id'] = 0
+
                         if 'ex' in self.cs.CS_VECTOR_ARCH.keys():
                             jal_ex_correction['ex'] = self.instrs[addr_src].cs_vector_dict['ex'] ^ self.instrs[addr_disc].cs_vector_dict['if'] #jal-4 ^ jal
                             correction_str += f",EX:{h(jal_ex_correction['ex'])}({h(self.instrs[addr_src].cs_vector_dict['ex'])},{h(self.instrs[addr_disc].cs_vector_dict['if'])})"

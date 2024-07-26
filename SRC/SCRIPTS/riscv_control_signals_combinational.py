@@ -13,6 +13,14 @@ IMMB_VU = 0b0111
 IMMB_SHUF = 0b1000
 IMMB_CLIP = 0b1001
 
+BRANCH_NONE = 0b00
+BRANCH_JAL = 0b01
+BRANCH_JALR = 0b10
+BRANCH_COND = 0b11 # conditional branches
+
+
+def extract_cs(cs_vector, cs, CS_VECTOR_DESCRIPTION):
+    return ((cs_vector >> CS_VECTOR_DESCRIPTION[cs]['position']) & ((1 << CS_VECTOR_DESCRIPTION[cs]['width']) - 1))
 
 def instr2fct7_3_opcode(instr):
     return (((instr >> 25) << 8) | (((instr >> 12) & 0b111) << 5) | ((instr >> 2) & 0b11111))
@@ -47,8 +55,37 @@ imm_shuffleb_type = lambda instr : sel(instr, 28, 27) << 24  | sel(instr, 24, 23
 imm_shuffle_type = lambda instr : imm_shuffleb_type
 
 
-def imm_a(instr, extract_cs_from_decoder_lut):
-    imm_a_mux_sel = extract_cs_from_decoder_lut(instr2fct7_3_opcode(instr), 'imm_a_mux_sel')
+def regfile_alu_waddr(instr):
+    return sel(instr, 11, 7)
+
+def regfile_mem_waddr(instr):
+    return sel(instr, 11, 7)
+
+def regfile_addr_ra(instr):
+    return sel(instr, 19, 15)
+
+def regfile_addr_rb(instr):
+    return sel(instr, 24, 20)
+
+def regfile_addr_rc(instr):
+    raise ValueError(f'Error, FPU not supported regfile_addr_rc is not used and is constant to 0')
+
+def branch_in_ex(instr, current_cs_vector_from_decoder, cs_vector_dict, CS_VECTOR_DESCRIPTION):
+    ctrl_transfer_insn_in_id = extract_cs(current_cs_vector_from_decoder, 'ctrl_transfer_insn_in_id', CS_VECTOR_DESCRIPTION)
+    if ctrl_transfer_insn_in_id == BRANCH_COND:
+        branch_in_ex = 1
+    elif ctrl_transfer_insn_in_id in [BRANCH_NONE, BRANCH_JAL, BRANCH_JALR]:
+        branch_in_ex = 0
+    else:
+        raise ValueError(f'Error, ctrl_transfer_insn_in_id should be 2 bit ! Not {ctrl_transfer_insn_in_id}.')
+    return branch_in_ex
+
+def imm_a(instr, current_cs_vector_from_decoder, cs_vector_dict, CS_VECTOR_DESCRIPTION):
+    """
+    current_cs_vector_from_decoder: cs_vector of the current instr from decoder
+    cs_vector_dict: cs_vector of if:PC-4, id:PC-8, ex:PC-12, wb:PC-16
+    """
+    imm_a_mux_sel = extract_cs(current_cs_vector_from_decoder, 'imm_a_mux_sel', CS_VECTOR_DESCRIPTION)
     if imm_a_mux_sel == IMMA_ZERO:
         imm_a = 0
     elif imm_a_mux_sel == IMMA_Z:
@@ -57,8 +94,8 @@ def imm_a(instr, extract_cs_from_decoder_lut):
         raise ValueError(f'Error, imm_a_mux_sel should be a bit ! Not {imm_a_mux_sel}.')
     return imm_a
 
-def imm_b(instr, extract_cs_from_decoder_lut):
-    imm_b_mux_sel = extract_cs_from_decoder_lut(instr2fct7_3_opcode(instr), 'imm_b_mux_sel')
+def imm_b(instr, current_cs_vector_from_decoder, cs_vector_dict, CS_VECTOR_DESCRIPTION):
+    imm_b_mux_sel = extract_cs(current_cs_vector_from_decoder, 'imm_b_mux_sel', CS_VECTOR_DESCRIPTION)
 
     if imm_b_mux_sel == IMMB_I:
         imm_b = imm_i_type(instr)

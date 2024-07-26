@@ -228,7 +228,7 @@ def encrypt_elf():
 
         if CS_MODE:
             # Extract info from cs_decoder 
-            cs_decoder_instr = cs.decode_tab_to_cs_vector(instr)
+            cs_decoder_instr = cs.instr_to_cs_vector(instr, cs_vector_dict)
             instr_metadata = cs.decode_tab_to_instr_metadata(instr)
             instr_minus4_metadata = cs.decode_tab_to_instr_metadata(instr_minus4)
 

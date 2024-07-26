@@ -1,4 +1,9 @@
 
+
+I shoud do this:
+- image of CFG: Dhrystone CFG (Control Flow Graph) first and last instruction nodes are at the right
+
+
 ## Getting Started
 
 
@@ -79,8 +84,10 @@ make -f explicit_target_names.mk <tab>
 8. Every time a simulation is performed, a line is added in `OBJ/LOG/overview.log`, after step **5**, `overview.log` looks like table in [Results](#results)
 
 #### Instruction and Control signal integrity
-1. Get statistics about control signal association, run `python3` in `SRC/SCRIPTS`:
+1. Get statistics about control signal association, run `python3` in the main `core-v-verif-fpga` folder:
 ``` bash
+import sys
+sys.path.insert(1, 'SRC/SCRIPTS')
 from riscv_control_signals import Control_signals
 cs = Control_signals(1)
 cs.stats_on_cs()
