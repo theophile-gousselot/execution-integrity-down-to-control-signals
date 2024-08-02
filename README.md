@@ -2,6 +2,7 @@
 
 I shoud do this:
 - image of CFG: Dhrystone CFG (Control Flow Graph) first and last instruction nodes are at the right
+- include cfi_riscv_equation in repo! to explains python codes
 
 
 ## Getting Started
