@@ -26,41 +26,44 @@ else:
     CS_VECTOR_ARCH_LIB.append({'id': ['rega_used_dec', 'regb_used_dec', 'regc_mux', 'regc_used_dec', 'regfile_alu_we_dec', 'regfile_alu_we', 'regfile_mem_we', 'csr_status', 'csr_access'], 'ex': ['regfile_mem_we', 'regfile_alu_we', 'csr_access'], 'wb': ['regfile_mem_we']})
     CS_VECTOR_ARCH_LIB.append({'id': ['data_type', 'data_sign_ext', 'data_we', 'data_req'], 'ex': ['data_type', 'data_sign_ext', 'data_we', 'data_req'], 'wb': ['data_type', 'data_sign_ext', 'data_we']})
 
-    CS_VECTOR_ARCH_LIB.append({'id': ['imm_b']})
-    CS_VECTOR_ARCH_LIB.append({'id': ['branch_in_ex']})
+    # to be inserted CS_VECTOR_ARCH_LIB.append({'id': ['imm_b']})
+    CS_VECTOR_ARCH_LIB.append({'id': ['alu_operator'], 'ex': ['alu_operator']})
+    # to be inserted CS_VECTOR_ARCH_LIB.append({'id': ['branch_in_ex'], 'ex': ['branch_in_ex']})
+    CS_VECTOR_ARCH_LIB.append({'id': ['regfile_mem_we'], 'ex': ['regfile_mem_we']})
     CS_VECTOR_ARCH_LIB.append({'id': ['regfile_addr_ra', 'regfile_addr_rb', 'regfile_alu_waddr'], 'ex': ['regfile_alu_waddr']})
     CS_VECTOR_ARCH_LIB.append({'ex': ['regfile_mem_waddr']})
-    CS_VECTOR_ARCH_LIB.append({'id': ['regfile_mem_waddr']})
+    CS_VECTOR_ARCH_LIB.append({'ex': ['alu_operator']})
 
 
 
 GEN_INCLUDE_IN_CV32E40P_SV_FILES = ['id_from_decoder', 'id_from_id', 'ex', 'wb_from_ex', 'wb_from_lsu']
 VALID_SRC = ['instr_in_decoder', 'instr_in_id', 'cs_in_id']
 
+
 SIGNAL_DESCRIPTION = {}
 SIGNAL_DESCRIPTION['alu_bmask_a_mux_sel']          = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 119, 'stages': ['id'], 'reset_val': 0b1} # useful only if PULP_XPULP
 SIGNAL_DESCRIPTION['alu_bmask_b_mux_sel']          = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 118, 'stages': ['id'], 'reset_val': 0b1} # useful only if PULP_XPULP
-SIGNAL_DESCRIPTION['alu_en']                       = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 117, 'stages': ['id', 'ex'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b1, 'sv_names': {'id_from_decoder': 'alu_en_o', 'ex': 'alu_en_ex'}}
+SIGNAL_DESCRIPTION['alu_en']                       = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 117, 'stages': ['id', 'ex'], 'we_signals': True, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b1, 'sv_names': {'id_from_decoder': 'alu_en_o', 'ex': 'alu_en_ex'}}
 SIGNAL_DESCRIPTION['alu_op_a_mux_sel']             = {'used': True, 'src': 'instr_in_decoder', 'width': 3, 'position_dec_tab': 114, 'stages': ['id'], 'reset_val': 0b0, 'sv_names': {'id_from_decoder': 'alu_op_a_mux_sel_o'}}
 SIGNAL_DESCRIPTION['alu_op_b_mux_sel']             = {'used': True, 'src': 'instr_in_decoder', 'width': 3, 'position_dec_tab': 111, 'stages': ['id'], 'reset_val': 0b0, 'sv_names': {'id_from_decoder': 'alu_op_b_mux_sel_o'}}
 SIGNAL_DESCRIPTION['alu_op_c_mux_sel']             = {'used': True, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 109, 'stages': ['id'], 'reset_val': 0b0, 'sv_names': {'id_from_decoder': 'alu_op_c_mux_sel_o'}}
 SIGNAL_DESCRIPTION['alu_operator']                 = {'used': True, 'src': 'instr_in_decoder', 'width': 7, 'position_dec_tab': 102, 'stages': ['id', 'ex'], 'reset_val': 0b11, 'id_invalid_ex_ready': 0b11, 'depends': ['alu_en'], 'ex_en':'alu_en', 'sv_names': {'id_from_decoder': 'alu_operator_o', 'ex': 'alu_operator_ex'}}
 SIGNAL_DESCRIPTION['alu_vec_mode']                 = {'used': False, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 100} # useful only if FPU
-SIGNAL_DESCRIPTION['apu_en']                       = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 99} # useful only if FPU
+SIGNAL_DESCRIPTION['apu_en']                       = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 99, 'we_signals': True} # useful only if FPU
 SIGNAL_DESCRIPTION['apu_lat']                      = {'used': False, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 97} # useful only if FPU
 SIGNAL_DESCRIPTION['apu_op']                       = {'used': False, 'src': 'instr_in_decoder', 'width': 6, 'position_dec_tab': 91} # useful only if FPU
 SIGNAL_DESCRIPTION['atop']                         = {'used': False, 'src': 'instr_in_decoder', 'width': 6, 'position_dec_tab': 85} # useful only if A (ATOMIC)
 SIGNAL_DESCRIPTION['bmask_a_mux']                  = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 84} # useful only if PULP_XPULP
 SIGNAL_DESCRIPTION['bmask_b_mux']                  = {'used': False, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 82} # useful only if PULP_XPULP
 SIGNAL_DESCRIPTION['csr_access']                   = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 81, 'stages': ['id', 'ex'], 'reset_val': 0b0, 'sv_names': {'id_from_decoder': 'csr_access_o', 'ex': 'csr_access_ex'}}
-SIGNAL_DESCRIPTION['csr_op']                       = {'used': False, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 79, 'stages': ['id', 'ex'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0} #problem csr_status_i                                                                                                                                                                                                  = 1                      = > flush_ex = > halt_id = > id_valid = 0 = > id_invalid_ex_ready (but in soft modelization id_invalid do not depend on other thing that load_stall...)
+SIGNAL_DESCRIPTION['csr_op']                       = {'used': False, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 79, 'stages': ['id', 'ex'], 'we_signals': True, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0} #problem csr_status_i                                                                                                                                                                                                  = 1                      = > flush_ex = > halt_id = > id_valid = 0 = > id_invalid_ex_ready (but in soft modelization id_invalid do not depend on other thing that load_stall...)
 SIGNAL_DESCRIPTION['csr_status']                   = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 78, 'stages': ['id'], 'reset_val': 0b0, 'sv_names': {'id_from_decoder': 'csr_status_o'}}
 SIGNAL_DESCRIPTION['ctrl_transfer_insn_in_dec']    = {'used': True, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 76, 'stages': ['id'], 'sv_names': {'id_from_decoder': 'ctrl_transfer_insn_in_dec_o'}}
-SIGNAL_DESCRIPTION['ctrl_transfer_insn_in_id']     = {'used': True, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 74, 'stages': ['id'], 'sv_names': {'id_from_decoder': 'ctrl_transfer_insn_in_id_o'}}
+SIGNAL_DESCRIPTION['ctrl_transfer_insn_in_id']     = {'used': True, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 74, 'stages': ['id'], 'we_signals': True, 'sv_names': {'id_from_decoder': 'ctrl_transfer_insn_in_id_o'}}
 SIGNAL_DESCRIPTION['ctrl_transfer_target_mux_sel'] = {'used': True, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 72, 'stages': ['id'], 'reset_val': 0b01, 'sv_names': {'id_from_decoder': 'ctrl_transfer_target_mux_sel_o'}}
 SIGNAL_DESCRIPTION['data_load_event']              = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 71} # useful only if PULP_CLUSTER
 SIGNAL_DESCRIPTION['data_reg_offset']              = {'used': False, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 69} # cte to 0
-SIGNAL_DESCRIPTION['data_req']                     = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 68, 'stages': ['id', 'ex'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'sv_names': {'id_from_decoder': 'data_req_o', 'ex': 'data_req_ex'}}
+SIGNAL_DESCRIPTION['data_req']                     = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 68, 'stages': ['id', 'ex'], 'we_signals': True, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'sv_names': {'id_from_decoder': 'data_req_o', 'ex': 'data_req_ex'}}
 SIGNAL_DESCRIPTION['data_sign_ext']                = {'used': True, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 66, 'stages': ['id', 'ex', 'wb'], 'reset_val': 0b0, 'depends': ['data_req'], 'ex_en': 'data_req', 'wb_en': 'data_req', 'id_invalid_ex_ready': 0b0, 'sv_names': {'id_from_decoder': 'data_sign_extension_o', 'ex': 'data_sign_ext_ex', 'wb_from_lsu': 'data_sign_ext_q'}}
 SIGNAL_DESCRIPTION['data_type']                    = {'used': True, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 64, 'stages': ['id', 'ex', 'wb'], 'reset_val': 0b0, 'depends': ['data_req'], 'ex_en': 'data_req', 'wb_en': 'data_req', 'id_invalid_ex_ready': 0b0, 'sv_names': {'id_from_decoder': 'data_type_o', 'ex': 'data_type_ex', 'wb_from_lsu': 'data_type_q'}}
 SIGNAL_DESCRIPTION['data_we']                      = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 63, 'stages': ['id', 'ex', 'wb'], 'reset_val': 0b0, 'depends': ['data_req'], 'ex_en': 'data_req', 'wb_en': 'data_req', 'id_invalid_ex_ready': 0b0, 'sv_names': {'id_from_decoder': 'data_we_o', 'ex': 'data_we_ex', 'wb_from_lsu': 'data_we_q'}}
@@ -84,10 +87,10 @@ SIGNAL_DESCRIPTION['is_clpx']                      = {'used': False, 'src': 'ins
 SIGNAL_DESCRIPTION['is_subrot']                    = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 33} # cte to 0
 SIGNAL_DESCRIPTION['mret_dec']                     = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 32} # useful only if debug mode
 SIGNAL_DESCRIPTION['mret_insn_dec']                = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 31} # useful only if debug mode
-SIGNAL_DESCRIPTION['mult_dot_en']                  = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 30} # useful only if PULP_XPULP
+SIGNAL_DESCRIPTION['mult_dot_en']                  = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 30, 'we_signals': True} # useful only if PULP_XPULP
 SIGNAL_DESCRIPTION['mult_dot_signed']              = {'used': False, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 28} # useful only if PULP_XPULP
 SIGNAL_DESCRIPTION['mult_imm_mux']                 = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 27, 'stages': ['id'], 'reset_val': 0b0} # useful only if PULP_XPULP
-SIGNAL_DESCRIPTION['mult_en']                      = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 26, 'stages': ['id', 'ex'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'sv_names': {'id_from_decoder': 'mult_int_en_o', 'ex': 'mult_en_ex'}}
+SIGNAL_DESCRIPTION['mult_en']                      = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 26, 'stages': ['id', 'ex'], 'we_signals': True, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'sv_names': {'id_from_decoder': 'mult_int_en_o', 'ex': 'mult_en_ex'}}
 SIGNAL_DESCRIPTION['mult_operator']                = {'used': True, 'src': 'instr_in_decoder', 'width': 3, 'position_dec_tab': 23, 'stages': ['id', 'ex'], 'reset_val': 0b10, 'id_invalid_ex_ready': 0b10, 'depends': ['mult_en'], 'ex_en':'mult_en', 'sv_names': {'id_from_decoder': 'mult_operator_o', 'ex': 'mult_operator_ex'}}
 SIGNAL_DESCRIPTION['mult_sel_subword']             = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 22} # useful only if PULP_XPULP
 SIGNAL_DESCRIPTION['mult_signed_mode']             = {'used': True, 'src': 'instr_in_decoder', 'width': 2, 'position_dec_tab': 20, 'stages': ['id', 'ex'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'depends': ['mult_en'], 'ex_en':'mult_en', 'sv_names': {'id_from_decoder': 'mult_signed_mode_o', 'ex': 'mult_signed_mode_ex'}}
@@ -98,12 +101,12 @@ SIGNAL_DESCRIPTION['regc_mux']                     = {'used': False, 'src': 'ins
 SIGNAL_DESCRIPTION['regc_used_dec']                = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 14, 'stages': ['id'], 'reset_val': 0b0, 'sv_names': {'id_from_decoder': 'regc_used_o'}}
 SIGNAL_DESCRIPTION['regfile_alu_waddr_mux_sel']    = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 13, 'stages': ['id'], 'reset_val': 0b1} # cte to 1 # useful only if PULP_XPULP
 SIGNAL_DESCRIPTION['regfile_alu_we_dec']           = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 12, 'stages': ['id'], 'reset_val': 0b0, 'sv_names': {'id_from_decoder': 'regfile_alu_we_dec_o'}} # (same as regfile_alu_we, but propagated only to controller) alu we to detect load_stall
-SIGNAL_DESCRIPTION['regfile_alu_we']               = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 11, 'stages': ['id', 'ex'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'sv_names': {'id_from_decoder': 'regfile_alu_we_o', 'ex': 'regfile_alu_we_ex'}}
+SIGNAL_DESCRIPTION['regfile_alu_we']               = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 11, 'stages': ['id', 'ex'], 'we_signals': True, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'sv_names': {'id_from_decoder': 'regfile_alu_we_o', 'ex': 'regfile_alu_we_ex'}}
 SIGNAL_DESCRIPTION['regfile_fp_a']                 = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 10} # useful only if FPU
 SIGNAL_DESCRIPTION['regfile_fp_b']                 = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 9} # useful only if FPU
 SIGNAL_DESCRIPTION['regfile_fp_c']                 = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 8} # useful only if FPU
 SIGNAL_DESCRIPTION['regfile_fp_d']                 = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 7} # useful only if FPU
-SIGNAL_DESCRIPTION['regfile_mem_we']               = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 6, 'stages': ['id', 'ex', 'wb'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'ex_invalid_wb_ready': 0b0, 'sv_names': {'id_from_decoder': 'regfile_mem_we_o', 'ex': 'regfile_we_ex', 'wb_from_ex': 'regfile_we_lsu'}} # regfile_mem_we -> we_a
+SIGNAL_DESCRIPTION['regfile_mem_we']               = {'used': True, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 6, 'stages': ['id', 'ex', 'wb'], 'we_signals': True, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'ex_invalid_wb_ready': 0b0, 'sv_names': {'id_from_decoder': 'regfile_mem_we_o', 'ex': 'regfile_we_ex', 'wb_from_ex': 'regfile_we_lsu'}} # regfile_mem_we -> we_a
 SIGNAL_DESCRIPTION['scalar_replication']           = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 5} # useful only if FPU
 SIGNAL_DESCRIPTION['scalar_replication_c']         = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 4} # useful only if FPU
 SIGNAL_DESCRIPTION['uret_dec']                     = {'used': False, 'src': 'instr_in_decoder', 'width': 1, 'position_dec_tab': 3} # useful only if uret
@@ -117,37 +120,11 @@ SIGNAL_DESCRIPTION['regfile_mem_waddr']            = {'used': True, 'src': 'inst
 SIGNAL_DESCRIPTION['regfile_addr_ra']              = {'used': True, 'src': 'instr_in_id', 'width': 6, 'stages': ['id'], 'reset_val': 0b0, 'sv_names': {'id_from_id': 'regfile_addr_ra_id'}} # Register Source
 SIGNAL_DESCRIPTION['regfile_addr_rb']              = {'used': True, 'src': 'instr_in_id', 'width': 6, 'stages': ['id'], 'reset_val': 0b0, 'sv_names': {'id_from_id': 'regfile_addr_rb_id'}} # Register Source
 SIGNAL_DESCRIPTION['regfile_addr_rc']              = {'used': False, 'src': 'instr_in_id', 'width': 6, 'stages': ['id'], 'reset_val': 0b0, 'sv_names': {'id_from_id': 'regfile_addr_rc_id'}} # useful only if FPU
-SIGNAL_DESCRIPTION['branch_in_ex']                 = {'used': True, 'src': 'cs_in_id', 'width': 1, 'stages': ['id', 'ex'], 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'depends': ['ctrl_transfer_insn_in_id'], 'sv_names': {'id_from_id': 'branch_in_ex_id', 'ex': 'branch_in_ex'}}
+SIGNAL_DESCRIPTION['branch_in_ex']                 = {'used': True, 'src': 'cs_in_id', 'width': 1, 'stages': ['id', 'ex'], 'we_signals': True, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'depends': ['ctrl_transfer_insn_in_id'], 'sv_names': {'id_from_id': 'branch_in_ex_id', 'ex': 'branch_in_ex'}}
 
 
 
 # todo said that 'regfile_alu_waddr' is 5 width then assign cs_vector_o = {regfile_alu_waddr[4:0]}
-
-
-SIGNAL_BUILD_AFTER_DECODER = ['branch_in_ex']
-
-
-
-DEASSERT_WE_AFFECTED_SIGNALS = ['alu_en', 'apu_en', 'mult_en', 'mult_dot_en', 'regfile_mem_we', 'regfile_alu_we', 'data_req', 'hwlp_we', 'csr_op', 'ctrl_transfer_insn_in_id']
-
-#if not 'data_req_id'  thus:  data_load_event_ex_o <= 1'b0;
-
-
-EN_AFFECTED_SIGNALS = {
-    'alu_en': ['alu_operator', 'alu_operand_a', 'alu_operand_b', 'alu_operand_c',
-               'bmask_a', 'bmask_b', 'imm_vec_ext', 'alu_vec_mode',
-               'is_clpx', 'alu_clpx_shift', 'is_subrot'],
-    'mult_en': ['mult_operator', 'mult_sel_subword', 'mult_signed_mode',
-                    'alu_operand_a', 'alu_operand_b', 'alu_operand_c', 'mult_imm'],
-    'mult_dot_en': ['mult_operator', 'mult_dot_signed', 'alu_operand_a', 'alu_operand_b',
-                    'alu_operand_c', 'is_clpx', 'clpx_shift_ex_o', 'clpx_img_ex_o'],
-    'apu_en': ['apu_op', 'apu_lat', 'apu_operands', 'apu_flags', 'apu_waddr'],
-    'regfile_mem_we': ['regfile_waddr'],
-    'regfile_alu_we': ['regfile_alu_waddr'],
-    'data_req': ['data_we', 'data_type', 'data_sign_ext',
-                    'data_reg_offset', 'data_load_event', 'atop']}
-
-
 
 
 CS_PATH = f"SRC/PROGRAM_TOOLS/CONTROL_SIGNALS/control_signals.csv"
@@ -386,7 +363,7 @@ class Control_signals:
     def gen_deassert_we_mask(self):
         mask = 0
         for cs in self.CS_VECTOR_DESCRIPTION:
-            if cs not in DEASSERT_WE_AFFECTED_SIGNALS:
+            if 'we_signals' not in self.CS_VECTOR_DESCRIPTION[cs] or not self.CS_VECTOR_DESCRIPTION[cs]['we_signals']:
                 mask |= ((1 << self.CS_VECTOR_DESCRIPTION[cs]['width']) - 1) << self.CS_VECTOR_DESCRIPTION[cs]['position']
         return mask
 
