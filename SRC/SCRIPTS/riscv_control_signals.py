@@ -26,14 +26,11 @@ else:
     CS_VECTOR_ARCH_LIB.append({'id': ['rega_used_dec', 'regb_used_dec', 'regc_mux', 'regc_used_dec', 'regfile_alu_we_dec', 'regfile_alu_we', 'regfile_mem_we', 'csr_status', 'csr_access'], 'ex': ['regfile_mem_we', 'regfile_alu_we', 'csr_access'], 'wb': ['regfile_mem_we']})
     CS_VECTOR_ARCH_LIB.append({'id': ['data_type', 'data_sign_ext', 'data_we', 'data_req'], 'ex': ['data_type', 'data_sign_ext', 'data_we', 'data_req'], 'wb': ['data_type', 'data_sign_ext', 'data_we']})
 
-    # to be inserted CS_VECTOR_ARCH_LIB.append({'id': ['imm_b']})
-    CS_VECTOR_ARCH_LIB.append({'id': ['alu_operator'], 'ex': ['alu_operator']})
-    # to be inserted CS_VECTOR_ARCH_LIB.append({'id': ['branch_in_ex'], 'ex': ['branch_in_ex']})
-    CS_VECTOR_ARCH_LIB.append({'id': ['regfile_mem_we'], 'ex': ['regfile_mem_we']})
+    CS_VECTOR_ARCH_LIB.append({'id': ['imm_b']})
+    CS_VECTOR_ARCH_LIB.append({'id': ['branch_in_ex'], 'ex': ['branch_in_ex']})
     CS_VECTOR_ARCH_LIB.append({'id': ['regfile_addr_ra', 'regfile_addr_rb', 'regfile_alu_waddr'], 'ex': ['regfile_alu_waddr']})
-    CS_VECTOR_ARCH_LIB.append({'ex': ['regfile_mem_waddr']})
+    CS_VECTOR_ARCH_LIB.append({'wb': ['regfile_mem_waddr']})
     CS_VECTOR_ARCH_LIB.append({'ex': ['alu_operator']})
-
 
 
 GEN_INCLUDE_IN_CV32E40P_SV_FILES = ['id_from_decoder', 'id_from_id', 'ex', 'wb_from_ex', 'wb_from_lsu']

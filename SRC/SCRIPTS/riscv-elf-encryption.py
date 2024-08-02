@@ -265,6 +265,7 @@ def encrypt_elf():
             deassert_we = is_instr_minus4_multicycle == 1
 
 
+
             # Update CS_VECTOR_WB
             if ex_valid:
                 if if_valid: # instruction in ID will be in EX when if_valid=0, and in WB when the next instruction is decrypted
@@ -277,6 +278,7 @@ def encrypt_elf():
             else:
                 if wb_ready:
                     cs_vector_dict['wb'] = ((cs_vector_dict['wb'] & cs.MASK_CS_VECTOR_EX_INVALID_WB_READY) | cs.CS_VECTOR_EX_INVALID_WB_READY)
+
            # if addr_hex == 0xe30:
             if is_instr_minus8_div == 1:
                 cs_vector_dict['wb'] = cs.CS_VECTOR_RESET
