@@ -41,7 +41,8 @@ INSTR_TYPE['R'] = [
 
 INSTR_MULT_EN = ['mul', 'mulh', 'mulhsu', 'mulhu']
 DISC_INSTR = ['jalr', 'jal', 'beq', 'bne', 'blt', 'bge', 'bltu', 'bgeu']
-LOAD_INSTR = ['lb', 'lh', 'lw', 'lbu', 'lhu', 'jalr']
+LOAD_INSTR = ['lb', 'lh', 'lw', 'lbu', 'lhu']
+#LOAD_INSTR = ['lb', 'lh', 'lw', 'lbu', 'lhu', 'jalr']
 
 
 class Instruction:

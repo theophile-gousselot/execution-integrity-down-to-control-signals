@@ -262,8 +262,7 @@ def encrypt_elf():
             id_invalid = 1 ^ id_ready# | halt_id # update
             if_ready = id_ready
             if_valid = if_ready
-            deassert_we = (is_instr_minus4_multicycle == 1) | (prev_instr_ctrl_transfer in [0b01, 0b10])
-
+            deassert_we = is_instr_minus4_multicycle == 1
 
 
             # Update CS_VECTOR_WB
