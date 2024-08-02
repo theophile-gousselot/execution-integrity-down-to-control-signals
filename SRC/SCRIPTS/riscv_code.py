@@ -279,23 +279,25 @@ class Code:
                     correction_str += f",Ssrc:{h(state1)},Sdest:{h(state2)}"
 
 
-                    # When a branch is in EXECUTE, even if instr in DECODE is not a multicycle instruction, 
-                    # the signal we_deassert will be raised! Therefore, if the instr in DECODE was multicycle
-                    # CS was already masked: nothing to do. However, if not, as mask is applied by xoring 
-                    # cs_vector bits to mask to itself (as it is already in the patch through cs2cipher.
-                    if disc_type == 'b': #addr_patch -> addr_src-8
+                    # When a branch is taken the signal we_deassert will be raised!
+                    if disc_type == 'b':
                         br_corr_deassert = {}
                         if 'id' in self.cs.CS_VECTOR_ARCH.keys():
-                            br_corr_deassert['id'] = self.instrs[addr_patch+8].cs_vector_dict['id'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
+                            # WE signals are deasserted when branch is teken (in ex), not the case in linear execution.
+                            # state1 used is the one when branch is not taken, therefore WE siganls are not deasserted.
+                            # This is why, a correction term must be applied. For more info, read: cfi_riscv_equation.pdf (secition Patch at cycplus0: correction)
+                            br_corr_deassert['id'] = self.instrs[addr_src].cs_vector_dict['id'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
+                            correction_str += f",ID:{h(br_corr_deassert['id'])} ({h(self.instrs[addr_src].cs_vector_dict['id'])} & {h(self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)})"
                         if 'ex' in self.cs.CS_VECTOR_ARCH.keys():
-                            br_corr_deassert['ex'] = self.instrs[addr_patch+8].cs_vector_dict['ex'] ^ self.cs.CS_VECTOR_RESET
-                            #br_corr_deassert['ex'] = self.instrs[addr_patch+8].cs_vector_dict['ex'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
-                            correction_str += f",EX:{h(br_corr_deassert['ex'])}({h(self.instrs[addr_patch+8].cs_vector_dict['ex'])},{h(self.cs.CS_VECTOR_RESET)})"
+                            # WE signals are deasserted, they are equal to 0. Others signals are reset to default value.
+                            # For more info, read: cfi_riscv_equation.pdf (secition Patch at cycplus0: correction)
+                            br_corr_deassert['ex'] = self.instrs[addr_src].cs_vector_dict['ex'] ^ (self.cs.CS_VECTOR_RESET & self.cs.DEASSERT_WE_MASK)
+                            correction_str += f",EX:{h(br_corr_deassert['ex'])}({h(self.instrs[addr_src].cs_vector_dict['ex'])} ^ {h(self.cs.CS_VECTOR_RESET & self.cs.DEASSERT_WE_MASK)})"
+
                         if 'wb' in self.cs.CS_VECTOR_ARCH.keys():
-                            #br_corr_deassert['wb'] = self.instrs[addr_patch+8].cs_vector_dict['wb'] & self.instrs[addr_patch+8].cs_vector_dict['ex']
-                            br_corr_deassert['wb'] = self.instrs[addr_patch+8].cs_vector_dict['wb'] ^ self.instrs[addr_disc].cs_vector_dict['if']
-                            #br_corr_deassert['wb'] = self.instrs[addr_dest].cs_vector_dict['wb'] ^ self.instrs[addr_disc].cs_vector_dict['if']
-                            correction_str += f",WB:{h(br_corr_deassert['wb'])} ({h(self.instrs[addr_patch+8].cs_vector_dict['wb'])}, {h(self.instrs[addr_patch+8].cs_vector_dict['if'])})"
+                            # TO BE JUSTIFY
+                            br_corr_deassert['wb'] = self.instrs[addr_src].cs_vector_dict['wb'] ^ self.instrs[addr_src].cs_vector_dict['ex']
+                            correction_str += f",WB:{h(br_corr_deassert['wb'])} ({h(self.instrs[addr_src].cs_vector_dict['wb'])}, {h(self.instrs[addr_src].cs_vector_dict['if'])})"
                         brplus4_mask = self.cs.cs_vector_dict_to_xored_int(br_corr_deassert)
 
                         sub_state_patch ^= brplus4_mask
@@ -307,10 +309,14 @@ class Code:
                     if disc_type in ['jal', 'jalr']:
                         jal_ex_correction = {}
                         if 'id' in self.cs.CS_VECTOR_ARCH.keys():
-                            jal_ex_correction['id'] = 0
+                            # WE signals are deasserted when jump is in ex, not the case in linear execution.
+                            # state1 used is the one when branch is not taken, therefore WE siganls are not deasserted.
+                            # This is why, a correction term must be applied. For more info, read: cfi_riscv_equation.pdf (secition Patch at cycplus0: correction)
+                            jal_ex_correction['id'] = self.instrs[addr_src].cs_vector_dict['id'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
 
                         if 'ex' in self.cs.CS_VECTOR_ARCH.keys():
-                            jal_ex_correction['ex'] = self.instrs[addr_src].cs_vector_dict['ex'] ^ self.instrs[addr_disc].cs_vector_dict['if'] #jal-4 ^ jal
+                            jal_ex_correction['ex'] = self.instrs[addr_src].cs_vector_dict['ex'] ^ self.instrs[addr_src+4].cs_vector_dict['ex'] #jal-4 ^ jal
+                            #jal_ex_correction['ex'] = self.instrs[addr_src].cs_vector_dict['ex'] ^ self.instrs[addr_disc].cs_vector_dict['if'] #jal-4 ^ jal
                             correction_str += f",EX:{h(jal_ex_correction['ex'])}({h(self.instrs[addr_src].cs_vector_dict['ex'])},{h(self.instrs[addr_disc].cs_vector_dict['if'])})"
                         if 'wb' in self.cs.CS_VECTOR_ARCH.keys():
                             jal_ex_correction['wb'] = self.instrs[addr_src].cs_vector_dict['wb'] ^ self.instrs[addr_src].cs_vector_dict['ex'] #jal-4 ^ jal
