@@ -371,8 +371,7 @@ class Code:
                             cs_corr_cycplus1_dict['wb'] = self.instrs[addr_dest+4].cs_vector_dict['wb'] ^ self.instrs[addr_disc+8].cs_vector_dict['ex']
 
                         if self.check_load_stall(self.instrs[addr_dest], self.instrs[addr_dest+4]):
-                            # TODO 
-                            cs_corr_cycplus2_dict = {'wb': self.instrs[addr_dest+8].cs_vector_dict['wb'] ^ self.cs.CS_VECTOR_RESET}
+                            cs_corr_cycplus2_dict = {'wb': 0}
 
                         else:
                             cs_corr_cycplus2_dict = {'wb': self.instrs[addr_dest+8].cs_vector_dict['wb'] ^ self.cs.CS_VECTOR_RESET}
@@ -393,7 +392,7 @@ class Code:
 
 
                         if self.check_load_stall(self.instrs[addr_dest], self.instrs[addr_dest+4]):
-                            cs_corr_cycplus2_dict = {'wb': self.instrs[addr_dest+8].cs_vector_dict['wb'] ^ self.cs.CS_VECTOR_RESET}
+                            cs_corr_cycplus2_dict = {'wb': 0}
                         else:
                             cs_corr_cycplus2_dict = {'wb': self.instrs[addr_dest+8].cs_vector_dict['wb'] ^ self.cs.CS_VECTOR_RESET}
                         cs_corr_int = (self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus2_dict) << (self.cs.WIDTH['wb'] + self.cs.WIDTH['ex'])) | self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus1_dict)
