@@ -261,6 +261,10 @@ core-v-verif-fpga
 ```
 
 ## Core_v_verif_fpga design
+
+### Compession extension
+The compression instructions are not supported. The file `cv32e40p_compressed_decoder.sv` was edited to remove decoding of compress instructions.
+A compress instruction is consider illegal. You should define C_EXTENSION if you intent to execute compress instructions.
 ### ASCON decryption
 
 #### Control signals
