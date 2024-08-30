@@ -30,7 +30,7 @@ else:
     CS_VECTOR_ARCH_LIB.append({'id': ['branch_in_ex'], 'ex': ['branch_in_ex']})
     CS_VECTOR_ARCH_LIB.append({'id': ['regfile_addr_ra', 'regfile_addr_rb', 'regfile_alu_waddr'], 'ex': ['regfile_alu_waddr']})
     CS_VECTOR_ARCH_LIB.append({'wb': ['regfile_mem_waddr']})
-    CS_VECTOR_ARCH_LIB.append({'ex': ['alu_operator']})
+    CS_VECTOR_ARCH_LIB.append({'id': ['regfile_mem_waddr'], 'ex': ['regfile_mem_waddr'], 'wb': ['regfile_mem_waddr']})
 
 
 GEN_INCLUDE_IN_CV32E40P_SV_FILES = ['id_from_decoder', 'id_from_id', 'ex', 'wb_from_ex', 'wb_from_lsu']

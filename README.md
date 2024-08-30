@@ -3,8 +3,8 @@
 I shoud do this:
 - image of CFG: Dhrystone CFG (Control Flow Graph) first and last instruction nodes are at the right
 - include cfi_riscv_equation in repo! to explains python codes
-
-
+- refer to https://docs.openhwgroup.org/projects/cv32e40p-user-manual/en/latest/pipeline.html#single-and-multi-cycle-instructions to explains cycle penalties
+- give the code for the methods to comput riscv valid ratio
 ## Getting Started
 
 
@@ -94,6 +94,17 @@ cs = Control_signals(1)
 cs.stats_on_cs()
 ```
 
+
+2. get statis on Embench programs and patch
+```
+python3 ./program_analysis.py
+```
+
+3. Software fix to respect limitation of 12 successors of jalr if on of them is a br/jal
+Qrduino and picojpeg do not respect the limitation because of multiple calls to setmask, 
+We insert after compilation, assembling but before link, nop at the place a branch/jal destination of the concerned jalr.
+qrduino_fix
+picojpeg_fix
 
 ### FPGA Flow : Vivado/Questa
 
@@ -204,6 +215,16 @@ source SRC/SCRIPTS/only_program_bitstream.tcl
 
 
 
+# Reproduce paper results
+
+## Percentage of never-sequential instructions (jal/jalr)
+```
+python3 program_analysis.py
+Program: lines |      br      |      jal     |     jalr
+[...]
+AVERAGE:  4297 |   380(0.088) |   144(0.034) |   490(0.114)
+```
+There are 0.148 (0.034+0.114), i.e., 14.8% of jal/jalr in Embench programs compiled with -Os
 
 
 

@@ -364,7 +364,7 @@ class Code:
                         # At addr_dest+4 decryption, there is CS_VECTOR_RESET in EX
                         cs_corr_cycplus1_dict = {'ex': self.instrs[addr_dest+4].cs_vector_dict['ex'] ^ self.cs.CS_VECTOR_RESET}
                         correction_str_cycplus1_ex = f",EX:{h(self.instrs[addr_dest+4].cs_vector_dict['ex'])} ^ {h(self.cs.CS_VECTOR_RESET)}"
-                        correction_str += f"no dest+4"
+                        correction_str += f",CYCPLUS1={correction_str_cycplus1_ex}"
 
                         if self.check_load_stall(self.instrs[addr_dest+4], self.instrs[addr_dest+8]):
                             # There is no self.instrs[addr_disc+8].cs_vector_dict['ex'] in wb any more (it move away at the cycle of load_stall)
@@ -372,8 +372,8 @@ class Code:
                             correction_str_cycplus1_wb = f",WB:{h(self.instrs[addr_dest+4].cs_vector_dict['wb'])} ^ {h(self.cs.CS_VECTOR_RESET)}"
                         else:
 
-                            # TODO UNDERSTAND THIS ONE from chi_riscv_equation (MAYBE THERE IS NO NEED OF if check_load_stall(...
-                            cs_corr_cycplus1_dict['wb'] = self.instrs[addr_dest+4].cs_vector_dict['wb'] ^ self.instrs[addr_disc+8].cs_vector_dict['ex']
+                            # TODO UNDERSTAND THIS ONE from cfi_riscv_equation (MAYBE THERE IS NO NEED OF if check_load_stall(...
+                            cs_corr_cycplus1_dict['wb'] = self.instrs[addr_dest+4].cs_vector_dict['wb'] ^ self.instrs[addr_disc+8].cs_vector_dict['ex'] # keep this line only
                             correction_str_cycplus1_wb = f",WB:{h(self.instrs[addr_dest+4].cs_vector_dict['wb'])} ^ {h(self.instrs[addr_disc+8].cs_vector_dict['ex'])}"
 
                         # At addr_dest+8 decryption, there is CS_VECTOR_RESET in WB
@@ -385,7 +385,7 @@ class Code:
                         cs_corr_int = (self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus2_dict) << (self.cs.WIDTH['wb'] + self.cs.WIDTH['ex'])) | self.cs.cs_vector_dict_to_xored_int(cs_corr_cycplus1_dict)
 
 
-                    elif 'ex' in self.cs.CS_VECTOR_ARCH.keys():
+                    elif 'ex' in self.cs.CS_VECTOR_ARCH.keys(): # merge me with 24 lines above?
                         cs_corr_cycplus1_dict = {'ex': self.instrs[addr_dest+4].cs_vector_dict['ex'] ^ self.cs.CS_VECTOR_RESET}
                         correction_str_cycplus1_ex = f",EX:{h(self.instrs[addr_dest+4].cs_vector_dict['ex'])} ^ {h(self.cs.CS_VECTOR_RESET)}"
                         correction_str += f",CYCPLUS1={correction_str_cycplus1_ex}"
