@@ -1,6 +1,7 @@
 
 
 I shoud do this:
+- insert correct link to the article
 - image of CFG: Dhrystone CFG (Control Flow Graph) first and last instruction nodes are at the right
 - include cfi_riscv_equation in repo! to explains python codes
 - refer to https://docs.openhwgroup.org/projects/cv32e40p-user-manual/en/latest/pipeline.html#single-and-multi-cycle-instructions to explains cycle penalties
@@ -86,6 +87,9 @@ make -f explicit_target_names.mk <tab>
 
 #### Instruction and Control signal integrity
 1. Get statistics about control signal association, run `python3` in the main `core-v-verif-fpga` folder:
+``` bash
+python3 SRC/SCRIPTS/control_signal_analysis.py
+``` 
 ``` bash
 import sys
 sys.path.insert(1, 'SRC/SCRIPTS')

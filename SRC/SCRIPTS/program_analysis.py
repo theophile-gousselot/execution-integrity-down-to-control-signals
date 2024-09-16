@@ -12,10 +12,10 @@ def cnt_to_format(cnt):
     for key in cnt.keys():
             if key != 'line':
                     line.append(cnt[key])
-                    line.append(cnt[key]/cnt['line'])
+                    line.append(cnt[key]/cnt['line']*PER_CENT)
     return line
 
-
+PER_CENT=100
 
 def programs_analysis():
     file_dict = dict(zip(sorted(os.listdir(folder_path)), [os.path.join(folder_path, f) + "/PROGRAM_COMPILED/program.itb" for f in sorted(os.listdir(folder_path))]))
@@ -49,14 +49,14 @@ def programs_analysis():
                 elif intersection([' beq ' , ' bne ' , ' blt ' , ' bge ' , ' bltu ' , ' bgeu '], line) != []:
                     cnt['br'] +=1
 
-        print("{:>15}: {:>5.0f}".format(program, cnt['line']) + " | {:>5.0f}({:0.3f}) | {:>5.0f}({:0.3f}) | {:>5.0f}({:0.3f})".format(*cnt_to_format(cnt)))
-
+        print("{:>15}: {:>5.0f}".format(program, cnt['line']) + " | {:>5.0f} (+{:2.1f}) | {:>5.0f} (+{:2.1f}) | {:>5.0f} (+{:2.1f})".format(*cnt_to_format(cnt)))
+ 
         for key in cnt_tot.keys():
             cnt_tot[key] += cnt[key]
 
     for key in cnt_tot.keys():
         cnt_tot[key] /= nb_programs
-    print("{:>15}: {:>5.0f}".format("AVERAGE", cnt_tot['line']) + " | {:>5.0f}({:0.3f}) | {:>5.0f}({:0.3f}) | {:>5.0f}({:0.3f})".format(*cnt_to_format(cnt_tot)))
+    print("{:>15}: {:>5.0f}".format("AVERAGE", cnt_tot['line']) + " | {:>5.0f} (+{:2.1f}) | {:>5.0f} (+{:2.1f}) | {:>5.0f} (+{:2.1f})".format(*cnt_to_format(cnt_tot)))
 
 
 
@@ -88,14 +88,14 @@ def patch_analysis():
             if line[2:5] == "fff":
                 cnt['redir']+=1
 
-        print("{:>15}: {:>5.0f} | {:>5.0f}({:.3f}) | {:>5.0f}({:.3f})".format(program, cnt['line'], cnt['patch'], cnt['patch']/cnt['line'],cnt['redir'],cnt['redir']/cnt['line']))
+        print("{:>15}: {:>5.0f} | {:>5.0f} (+{:2.1f}) | {:>5.0f} (+{:2.1f})".format(program, cnt['line'], cnt['patch'], cnt['patch']/cnt['line']*PER_CENT,cnt['redir'],cnt['redir']/cnt['line']*PER_CENT))
 
         for key in cnt_tot.keys():
             cnt_tot[key] += cnt[key]
 
     for key in cnt_tot.keys():
         cnt_tot[key] /= nb_programs
-    print("{:>15}: {:>5.0f} | {:>5.0f}({:.3f}) | {:>5.0f}({:.3f})\n".format("AVERAGE", cnt_tot['line'], cnt_tot['patch'], cnt_tot['patch']/cnt_tot['line'],cnt_tot['redir'],cnt_tot['redir']/cnt_tot['line']))
+    print("{:>15}: {:>5.0f} | {:>5.0f} (+{:2.1f}) | {:>5.0f} (+{:2.1f})\n".format("AVERAGE", cnt_tot['line'], cnt_tot['patch'], cnt_tot['patch']/cnt_tot['line']*PER_CENT,cnt_tot['redir'],cnt_tot['redir']/cnt_tot['line']*PER_CENT))
 
 
 programs_analysis()
