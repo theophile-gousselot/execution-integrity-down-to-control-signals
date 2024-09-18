@@ -58,13 +58,14 @@ make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_encrypted_cf1_verif.log
 
 4. Simulate execution of `fibonacci`, **with encryption and association of control signals**, compare PC/instr in Fetch at every cycle with previously saved reference, generate reference if not exist.
 ``` bash
-make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_encrypted_cf1_cs_verif.log
+make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_encrypted_cf1_cs1_verif.log
 ```
 
 5. Execute previous command for all programs with a for loop. You may run `watch -n1 tail -n 40 OBJ/LOG/overview.log` in another terminal to follow campaign execution.
 ``` bash
 for program in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename ${program})/SIM/LOG/program_encrypted_verif.log; done
 for cf in 1 2 3 6; do for a in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename $a)/SIM/LOG/program_encrypted_cf${cf}_verif.log; done; done
+for cf in 1 2 3 6; do for cs in 1 2 3 4 5 6 7 8 9; do for a in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename $a)/SIM/LOG/program_encrypted_cf${cf}_cs${cs}_verif.log; done; done; done
 ```
 or
 ``` bash
@@ -86,22 +87,15 @@ make -f explicit_target_names.mk <tab>
 8. Every time a simulation is performed, a line is added in `OBJ/LOG/overview.log`, after step **5**, `overview.log` looks like table in [Results](#results)
 
 #### Instruction and Control signal integrity
-1. Get statistics about control signal association, run `python3` in the main `core-v-verif-fpga` folder:
+1. Get statistics about control signal association, run in the main `core-v-verif-fpga` folder:
 ``` bash
 python3 SRC/SCRIPTS/control_signal_analysis.py
 ``` 
-``` bash
-import sys
-sys.path.insert(1, 'SRC/SCRIPTS')
-from riscv_control_signals import Control_signals
-cs = Control_signals(1)
-cs.stats_on_cs()
-```
 
 
-2. get statis on Embench programs and patch
+2. Get statistics on Embench programs and patch
 ```
-python3 ./program_analysis.py
+python3 SRC/SCRIPTS/control_signal_analysis.py
 ```
 
 3. Software fix to respect limitation of 12 successors of jalr if on of them is a br/jal

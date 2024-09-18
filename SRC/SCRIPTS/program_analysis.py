@@ -1,6 +1,6 @@
 import os
 
-folder_path = '../../OBJ/PROGRAMS'
+folder_path = 'OBJ/PROGRAMS'
 
 def intersection(lst1, lst2):
     lst3 = [value for value in lst1 if value in lst2]
