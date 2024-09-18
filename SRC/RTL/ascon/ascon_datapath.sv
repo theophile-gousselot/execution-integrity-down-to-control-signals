@@ -389,14 +389,16 @@ module ascon_datapath
 `else
 `ifdef CS_CYCPLUS1
     assign patch_s0_cs_to_ascon_s = patch_s0_cs_ex_to_ascon_s;
-`else
-    assign patch_s0_cs_to_ascon_s = '0;
 `endif
 `endif
 
 
 
+`ifdef CS
     assign state_patched[0] = state_not_patched[0] ^ patch_to_ascon_s[319:256] ^ patch_s0_cs_to_ascon_s;
+`else
+    assign state_patched[0] = state_not_patched[0] ^ patch_to_ascon_s[319:256];
+`endif
     assign state_patched[1] = state_not_patched[1] ^ patch_to_ascon_s[255:192];
     assign state_patched[2] = state_not_patched[2] ^ patch_to_ascon_s[191:128];
     assign state_patched[3] = state_not_patched[3] ^ patch_to_ascon_s[127:64];
