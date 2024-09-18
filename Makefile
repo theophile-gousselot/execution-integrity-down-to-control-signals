@@ -209,8 +209,9 @@ $(VERI_SIMU_VERIF_TARGETS) : \
 	$(OBJ_VERI_DIR)/$(TB_CPP_NAME)$(call encrypted,$@)$(call cf,$@)$(call cs,$@)$(call vcd,$@)/V$(TB_CPP_NAME) $(call program,$@) --verif
 
 
-#.PRECIOUS: OBJ/PROGRAMS/%/SIM/LOG/program_save_ref.log
-#OBJ/PROGRAMS/%/SIM/LOG/program_save_ref.log : OBJ/PROGRAMS/%/SIM/REF/ref_decode_pc_instr_patch.csv
+.PRECIOUS: OBJ/PROGRAMS/%/SIM/LOG/program_save_ref.log
+OBJ/PROGRAMS/%/SIM/LOG/program_save_ref.log :
+	make OBJ/PROGRAMS/$(call program,$@)/SIM/REF/ref_decode_pc_instr_patch.csv
 
 
 #==== SAVE REF ====#
@@ -274,7 +275,7 @@ OBJ/PROGRAMS/%/SIM/REF/program_trace_signals.csv : \
 #OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf3_cs1/Vcore_v_verif_fpga \
 #OBJ/VERILATOR_OBJ_DIR/core_v_verif_fpga_encrypted_vcd_cf6_cs1/Vcore_v_verif_fpga : 
 $(VERILATOR_EXE_TARGETS) : \
-		$(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE) $$(call if_cs,$$@,OBJ/RTL/.rtl_timestamp)
+		$(CV_CORE_PKG) $(SRC_RTL_ENCRYPTED) $(SRC_TB_FILE) OBJ/RTL/.rtl_timestamp
 	@echo "\n===> $@"
 	mkdir -p $(dir $@)
 	verilator \
@@ -398,7 +399,7 @@ $(MEM_TARGETS) : \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program.objdump \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program$$(call encrypted,$$@)$$(call cs,$$@).hex 
 	@echo "\n===> $@"
-	$< OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs,$@).hex 
+	python3 $< OBJ/PROGRAMS/$*/PROGRAM_COMPILED/program$(call encrypted,$@)$(call cs,$@).hex 
 	touch $@
 
 #==== GENERATE PATCH MEM FILE ====#
@@ -409,7 +410,7 @@ $(MEM_PATCHES_TARGETS) : \
 		$(SOFT_SCRIPTS) \
 		OBJ/PROGRAMS/%/PROGRAM_COMPILED/program$$(call encrypted,$$@)$$(call cs,$$@).elf
 	@echo "\n===> $@"
-	$(SCRIPT_DIR)/riscv-elf-generate-patches.py OBJ/PROGRAMS/$*/SIM/REF OBJ/PROGRAMS/$*/PROGRAM_COMPILED $(call cs_flags_sw,$@)
+	python3 $(SCRIPT_DIR)/riscv-elf-generate-patches.py OBJ/PROGRAMS/$*/SIM/REF OBJ/PROGRAMS/$*/PROGRAM_COMPILED $(call cs_flags_sw,$@)
 
 
 
@@ -432,7 +433,7 @@ $(ELF_ENC_TARGETS) : \
 		$(SOFT_SCRIPTS)
 	@echo "\n===> $@"
 	cp $< $@
-	$(SCRIPT_DIR)/riscv-elf-encryption.py $@ $(PB_ROUNDS_PY_FLAG) $(call cs_flags_sw,$@)
+	python3 $(SCRIPT_DIR)/riscv-elf-encryption.py $@ $(PB_ROUNDS_PY_FLAG) $(call cs_flags_sw,$@)
 
 
 
@@ -449,7 +450,7 @@ OBJ/PROGRAMS/%/PROGRAM_COMPILED/program_jalr_successors.csv :
 	make OBJ/PROGRAMS/$*/SIM/REF/program_trace_signals.csv 
 	make SRC/SCRIPTS/riscv-get-jalr-successors-from-extracted-signals.py
 	@echo "\n===> $@"
-	$(SCRIPT_DIR)/riscv-get-jalr-successors-from-extracted-signals.py  OBJ/PROGRAMS/$*/SIM/REF/program_trace_signals.csv $@
+	python3 $(SCRIPT_DIR)/riscv-get-jalr-successors-from-extracted-signals.py  OBJ/PROGRAMS/$*/SIM/REF/program_trace_signals.csv $@
 	
 
 #==== GENERATE READELF FILE ====#
@@ -530,5 +531,5 @@ clean_large_vcd :
 
 .PHONY : clean
 clean :
-	rm explicit_target_names.mk
+	rm -f explicit_target_names.mk
 	rm -rf $(OBJ_DIR)
