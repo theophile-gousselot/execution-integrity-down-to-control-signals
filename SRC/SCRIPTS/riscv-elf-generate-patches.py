@@ -9,7 +9,6 @@ Patches are wroten in <program>_encrypted_patches.mem file.
 import os
 import sys
 import argparse
-import networkx as nx
 import matplotlib.pyplot as plt
 from riscv_code import Code
 
