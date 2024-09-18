@@ -306,7 +306,7 @@ module ascon_datapath
 
 
 `ifdef CS_CYCPLUS1
-    always_ff @(posedge clk_ascon_fast_i, negedge rst_ni) begin : patch_cs_ex
+    always_ff @(posedge clk_core_slow_i, negedge rst_ni) begin : patch_cs_ex
         if (!rst_ni) begin
             patch_cs_cycplus1_reg <= '0;
         end else begin
@@ -320,7 +320,7 @@ module ascon_datapath
 `endif
 
 `ifdef CS_CYCPLUS2
-    always_ff @(posedge clk_ascon_fast_i, negedge rst_ni) begin : patch_cs_wb
+    always_ff @(posedge clk_core_slow_i, negedge rst_ni) begin : patch_cs_wb
         if (!rst_ni) begin
             patch_cs_cycplus2_reg <= '0;
         end else begin
@@ -335,7 +335,7 @@ module ascon_datapath
 `endif
 
 `ifdef CS_CYCPLUS2
-    always_ff @(posedge clk_ascon_fast_i, negedge rst_ni) begin : apply_patch_cs_wb
+    always_ff @(posedge clk_core_slow_i, negedge rst_ni) begin : apply_patch_cs_wb
         if (!rst_ni) begin
             apply_patch_cs_cycplus2_s <= '0;
         end else begin
