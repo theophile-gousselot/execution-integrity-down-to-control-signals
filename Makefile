@@ -307,6 +307,11 @@ OBJ/RTL/.rtl_timestamp : SRC/SCRIPTS/riscv_control_signals.py
 ##   \_/ |_| \_/ \__,_|\__,_|\___/
 ##
 
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_% : $(CV_CORE_PKG) $(SRC_RTL) $(SRC_TB_FILE) \
+		SRC/SCRIPTS/create_projects.tcl \
+		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_timestamp
+	@echo "\n===> $@"
+	vivado -mode batch -source SRC/SCRIPTS/create_projects.tcl -tclargs core_v_verif_fpga_$*
 
 
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%/.simulate_behav_log_timestamp : OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%
@@ -329,7 +334,7 @@ OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%/.simulate_log_timestamp : OBJ/VIVADO_OBJ_
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf1/.simulate_behav_log_timestamp \
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf2/.simulate_behav_log_timestamp \
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf3/.simulate_behav_log_timestamp \
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6/.simulate_behav_log_timestamp :
+OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6/.simulate_behav_log_timestamp : \
 		OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted$$(call cf,$$@)
 	@echo "\n===> $@"
 	vivado -mode batch OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).xpr -source ./SRC/SCRIPTS/set_questa_dir_for_5simulations.tcl
@@ -350,12 +355,6 @@ OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf6/.simulate_log_timestamp :
 	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).sim/sim_1/impl/func/questa -c
 	SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_$*_encrypted$(call cf,$@)/core_v_verif_fpga_$*_encrypted$(call cf,$@).sim/sim_1/impl/timing/questa -c
 	touch $@
-
-OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_% : $(CV_CORE_PKG) $(SRC_RTL) $(SRC_TB_FILE) \
-		SRC/SCRIPTS/create_projects.tcl \
-		OBJ/PROGRAMS/%/PROGRAM_COMPILED/.mem_timestamp
-	@echo "\n===> $@"
-	vivado -mode batch -source SRC/SCRIPTS/create_projects.tcl -tclargs core_v_verif_fpga_$*
 
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf1 \
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_%_encrypted_cf2 \

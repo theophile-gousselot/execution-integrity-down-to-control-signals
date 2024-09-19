@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-`include "macro_def.sv"
+`include "macro_def.vh"
 
 module patch_mem
 #(
@@ -33,7 +33,37 @@ module patch_mem
 	    $readmemh({program_path,"_encrypted_patches.mem"}, mem);
 `endif
 `else
+`ifdef CS
+`ifdef CS1
+	    $readmemh("program_encrypted_cs1_patches.mem", mem);
+`endif
+`ifdef CS2
+	    $readmemh("program_encrypted_cs2_patches.mem", mem);
+`endif
+`ifdef CS3
+	    $readmemh("program_encrypted_cs3_patches.mem", mem);
+`endif
+`ifdef CS4
+	    $readmemh("program_encrypted_cs4_patches.mem", mem);
+`endif
+`ifdef CS5
+	    $readmemh("program_encrypted_cs5_patches.mem", mem);
+`endif
+`ifdef CS6
+	    $readmemh("program_encrypted_cs6_patches.mem", mem);
+`endif
+`ifdef CS7
+	    $readmemh("program_encrypted_cs7_patches.mem", mem);
+`endif
+`ifdef CS8
+	    $readmemh("program_encrypted_cs8_patches.mem", mem);
+`endif
+`ifdef CS9
+	    $readmemh("program_encrypted_cs9_patches.mem", mem);
+`endif
+`else
 	    $readmemh("program_encrypted_patches.mem", mem);
+`endif
 `endif
     end
 

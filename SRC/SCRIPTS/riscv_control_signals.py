@@ -229,7 +229,7 @@ class Macro_sv:
             self.write_file_if_not_exist_or_diff(file_path, cs_assign_str[sv_file])
         self.write_file_if_not_exist_or_diff(f"../../OBJ/RTL/wb_merge_cs_assign.sv", cs_assign_wb_merge_from_ex_and_lsu_str)
         self.write_file_if_not_exist_or_diff(f"../../OBJ/RTL/id_merge_cs_assign.sv", cs_assign_id_merge_from_decoder_and_id_str)
-        self.write_file_if_not_exist_or_diff(f"../../OBJ/RTL/macro_def.sv", macro_def_str)
+        self.write_file_if_not_exist_or_diff(f"../../OBJ/RTL/macro_def.vh", macro_def_str)
 
 
 

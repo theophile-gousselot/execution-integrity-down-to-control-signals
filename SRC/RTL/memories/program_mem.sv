@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 `ifdef ENCRYPT
-`include "macro_def.sv"
+`include "macro_def.vh"
 `endif
 
 module program_mem
@@ -93,10 +93,67 @@ module program_mem
 `else
 
 `ifdef ENCRYPT
+`ifdef CS
+`ifdef CS1
+	$readmemh("program_encrypted_cs1_0.mem", ram0);
+	$readmemh("program_encrypted_cs1_1.mem", ram1);
+	$readmemh("program_encrypted_cs1_2.mem", ram2);
+	$readmemh("program_encrypted_cs1_3.mem", ram3);
+`endif
+`ifdef CS2
+	$readmemh("program_encrypted_cs2_0.mem", ram0);
+	$readmemh("program_encrypted_cs2_1.mem", ram1);
+	$readmemh("program_encrypted_cs2_2.mem", ram2);
+	$readmemh("program_encrypted_cs2_3.mem", ram3);
+`endif
+`ifdef CS3
+	$readmemh("program_encrypted_cs3_0.mem", ram0);
+	$readmemh("program_encrypted_cs3_1.mem", ram1);
+	$readmemh("program_encrypted_cs3_2.mem", ram2);
+	$readmemh("program_encrypted_cs3_3.mem", ram3);
+`endif
+`ifdef CS4
+	$readmemh("program_encrypted_cs4_0.mem", ram0);
+	$readmemh("program_encrypted_cs4_1.mem", ram1);
+	$readmemh("program_encrypted_cs4_2.mem", ram2);
+	$readmemh("program_encrypted_cs4_3.mem", ram3);
+`endif
+`ifdef CS5
+	$readmemh("program_encrypted_cs5_0.mem", ram0);
+	$readmemh("program_encrypted_cs5_1.mem", ram1);
+	$readmemh("program_encrypted_cs5_2.mem", ram2);
+	$readmemh("program_encrypted_cs5_3.mem", ram3);
+`endif
+`ifdef CS6
+	$readmemh("program_encrypted_cs6_0.mem", ram0);
+	$readmemh("program_encrypted_cs6_1.mem", ram1);
+	$readmemh("program_encrypted_cs6_2.mem", ram2);
+	$readmemh("program_encrypted_cs6_3.mem", ram3);
+`endif
+`ifdef CS7
+	$readmemh("program_encrypted_cs7_0.mem", ram0);
+	$readmemh("program_encrypted_cs7_1.mem", ram1);
+	$readmemh("program_encrypted_cs7_2.mem", ram2);
+	$readmemh("program_encrypted_cs7_3.mem", ram3);
+`endif
+`ifdef CS8
+	$readmemh("program_encrypted_cs8_0.mem", ram0);
+	$readmemh("program_encrypted_cs8_1.mem", ram1);
+	$readmemh("program_encrypted_cs8_2.mem", ram2);
+	$readmemh("program_encrypted_cs8_3.mem", ram3);
+`endif
+`ifdef CS9
+	$readmemh("program_encrypted_cs9_0.mem", ram0);
+	$readmemh("program_encrypted_cs9_1.mem", ram1);
+	$readmemh("program_encrypted_cs9_2.mem", ram2);
+	$readmemh("program_encrypted_cs9_3.mem", ram3);
+`endif
+`else
 	$readmemh("program_encrypted_0.mem", ram0);
 	$readmemh("program_encrypted_1.mem", ram1);
 	$readmemh("program_encrypted_2.mem", ram2);
 	$readmemh("program_encrypted_3.mem", ram3);
+`endif
 `else
 	$readmemh("program_0.mem", ram0);
 	$readmemh("program_1.mem", ram1);

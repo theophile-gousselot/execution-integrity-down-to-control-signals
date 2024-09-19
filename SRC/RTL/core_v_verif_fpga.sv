@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 `ifdef ENCRYPT
-`include "macro_def.sv"
+`include "macro_def.vh"
 `endif
 
 module core_v_verif_fpga

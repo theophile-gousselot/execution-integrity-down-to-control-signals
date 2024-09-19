@@ -111,15 +111,18 @@ picojpeg_fix
 
 9. Create, synthesis and implement vivado project of core_v_verif_fpga , without encryption, with fibonacci program load in memory.
 ``` bash
-make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci/
+make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci
 ```
 
 
-9. Launch behavioral simulation with questa of vivado project of core_v_verif_fpga, without encryption, with fibonacci program load in memory.
+9. a Launch behavioral simulation with questa of vivado project of core_v_verif_fpga, without encryption, with fibonacci program load in memory.
 ``` bash
 make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci/.simulate_behav_log.timestamp
 ```
-
+9. b otherwise, script can be launched from vivado console
+``` bash
+source ./SRC/SCRIPTS/set_questa_dir_for_5simulations.tcl
+```
 
 9. Compilation, elaboration and simulation logs are available in this folder:
 ``` bash

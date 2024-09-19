@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-`include "macro_def.sv"
+`include "macro_def.vh"
 
 module ascon_datapath
     import cv32e40p_pkg::*;

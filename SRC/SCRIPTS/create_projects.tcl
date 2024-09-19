@@ -20,6 +20,22 @@ if { $ENCRYPT } {
 } else {
 	set CF 1
 }
+
+if { $ENCRYPT } {
+    if { [regexp {_cs[0-9]} ${PROJECT_NAME} ] } {
+        set CS [regsub -all {.*_cs([0-9]).*} ${PROJECT_NAME} {\1}]
+	} else {
+		set CS 0
+    }
+} else {
+	set CS 0
+}
+
+
+
+
+
+
 set PROJECT_PATH "OBJ/VIVADO_OBJ_DIR/${PROJECT_NAME}" 
 
 puts "Create project: ${PROJECT_NAME}"
@@ -59,18 +75,28 @@ if { $ENCRYPT } {
 
 	set HW_PERMUTATION_N [expr { 6 / ${CF}}]
     puts $macro_file "`define HW_PERMUTATION_N ${HW_PERMUTATION_N}"
+    puts $macro_file "`define CS${CS}"
     flush $macro_file
     close $macro_file
     add_files ${PROJECT_PATH}/${PROJECT_NAME}.srcs/sources_1/new/define_macro.vh
     set_property is_global_include true [get_files  ${PROJECT_PATH}/${PROJECT_NAME}.srcs/sources_1/new/define_macro.vh]
+
 }
 
 if { $ENCRYPT } {
-    import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_0.mem
-    import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_1.mem
-    import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_2.mem
-    import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_3.mem
-    import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_patches.mem
+	if {$CS == 0} {
+		import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_0.mem
+		import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_1.mem
+		import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_2.mem
+		import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_3.mem
+		import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_patches.mem
+	} else {
+		import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_cs${CS}_0.mem
+		import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_cs${CS}_1.mem
+		import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_cs${CS}_2.mem
+		import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_cs${CS}_3.mem
+		import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_encrypted_cs${CS}_patches.mem
+	}
 } else {
     import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_0.mem
     import_files -fileset sources_1 -norecurse ./OBJ/PROGRAMS/${PROGRAM_NAME}/PROGRAM_COMPILED/program_1.mem
@@ -80,6 +106,19 @@ if { $ENCRYPT } {
 foreach file_path $rtl_files {
     import_files -fileset sources_1 -norecurse ${file_path}
 }
+if { $ENCRYPT } {
+	import_files -fileset sources_1 -norecurse ./OBJ/RTL/macro_def.vh
+    set_property is_global_include true [get_files  ${PROJECT_PATH}/${PROJECT_NAME}.srcs/sources_1/imports/RTL/macro_def.vh]
+	import_files -fileset sources_1 -norecurse ./OBJ/RTL/ex_cs_assign.sv
+	import_files -fileset sources_1 -norecurse ./OBJ/RTL/id_from_decoder_cs_assign.sv
+	import_files -fileset sources_1 -norecurse ./OBJ/RTL/id_from_id_cs_assign.sv
+	import_files -fileset sources_1 -norecurse ./OBJ/RTL/id_merge_cs_assign.sv
+	import_files -fileset sources_1 -norecurse ./OBJ/RTL/wb_from_ex_cs_assign.sv
+	import_files -fileset sources_1 -norecurse ./OBJ/RTL/wb_from_lsu_cs_assign.sv
+	import_files -fileset sources_1 -norecurse ./OBJ/RTL/wb_merge_cs_assign.sv
+}
+# instead of the previous lines... set_property include_dirs OBJ/RTL [current_fileset]
+
 
 
 import_files -fileset sources_1 -norecurse ./SRC/RTL/core_v_verif_fpga_top.sv
