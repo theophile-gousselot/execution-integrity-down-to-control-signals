@@ -107,17 +107,8 @@ foreach file_path $rtl_files {
     import_files -fileset sources_1 -norecurse ${file_path}
 }
 if { $ENCRYPT } {
-	import_files -fileset sources_1 -norecurse ./OBJ/RTL/macro_def.vh
-    set_property is_global_include true [get_files  ${PROJECT_PATH}/${PROJECT_NAME}.srcs/sources_1/imports/RTL/macro_def.vh]
-	import_files -fileset sources_1 -norecurse ./OBJ/RTL/ex_cs_assign.sv
-	import_files -fileset sources_1 -norecurse ./OBJ/RTL/id_from_decoder_cs_assign.sv
-	import_files -fileset sources_1 -norecurse ./OBJ/RTL/id_from_id_cs_assign.sv
-	import_files -fileset sources_1 -norecurse ./OBJ/RTL/id_merge_cs_assign.sv
-	import_files -fileset sources_1 -norecurse ./OBJ/RTL/wb_from_ex_cs_assign.sv
-	import_files -fileset sources_1 -norecurse ./OBJ/RTL/wb_from_lsu_cs_assign.sv
-	import_files -fileset sources_1 -norecurse ./OBJ/RTL/wb_merge_cs_assign.sv
+	set_property include_dirs OBJ/RTL [current_fileset]
 }
-# instead of the previous lines... set_property include_dirs OBJ/RTL [current_fileset]
 
 
 

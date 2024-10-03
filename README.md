@@ -212,7 +212,7 @@ set argv "OBJ/VIVADO_OBJ_DIR/BIT/core_v_verif_fpga_verifypin-0_encrypted_cf6.bit
 source SRC/SCRIPTS/only_program_bitstream.tcl 
 ```
 
-10. On FPGA, led should be like described in [leds](leds)
+10. On FPGA, led should be like described in [leds](leds) to validate the execution. (Just a comparison of the final address)
 
 
 
@@ -303,7 +303,7 @@ If the encrypted design is used:
 - led_o[0:3] **U16/T16/T15/T14** = instr_addr_s[15:12] ^ instr_addr_s[11:8] ^ instr_addr_s[7:4] ^ {instr_addr_s[3:2], 2'b00};
 
 Every program end by executing a *jump to itself* instruction (last instruction of `<_exit>`) encoded by *0000006f*. The last instr_addr_s is at PC+8 of the *jump to itself* instruction.
-
+For example, if the *jump to itself* instruction is at address *b04* like in `b04:	0000006f          	jal	x0,b04`, the final *instr_addr_s* is *bàc*. Therefore, the leds shold display 7: b^0^c = 7.
 
 #### Example of successfull program encryption execution: Wikisort
 <p align="center">
