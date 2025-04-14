@@ -27,7 +27,8 @@ else:
     CS_VECTOR_ARCH_LIB.append({'id': ['data_type', 'data_sign_ext', 'data_we', 'data_req'], 'ex': ['data_type', 'data_sign_ext', 'data_we', 'data_req'], 'wb': ['data_type', 'data_sign_ext', 'data_we']})
 
     CS_VECTOR_ARCH_LIB.append({'id': ['imm_b']})
-    CS_VECTOR_ARCH_LIB.append({'id': ['branch_in_ex'], 'ex': ['branch_in_ex']})
+    CS_VECTOR_ARCH_LIB.append({'id': ['imm_a_mux_sel', 'alu_op_a_mux_sel'], 'ex': ['alu_operator', 'branch_in_ex', 'regfile_alu_waddr'], 'wb': ['regfile_mem_we', 'regfile_mem_waddr', 'data_type']})
+    #CS_VECTOR_ARCH_LIB.append({'id': ['branch_in_ex'], 'ex': ['branch_in_ex']})
     CS_VECTOR_ARCH_LIB.append({'id': ['regfile_addr_ra', 'regfile_addr_rb', 'regfile_alu_waddr'], 'ex': ['regfile_alu_waddr']})
     CS_VECTOR_ARCH_LIB.append({'wb': ['regfile_mem_waddr']})
     CS_VECTOR_ARCH_LIB.append({'id': ['regfile_mem_waddr'], 'ex': ['regfile_mem_waddr'], 'wb': ['regfile_mem_waddr']})

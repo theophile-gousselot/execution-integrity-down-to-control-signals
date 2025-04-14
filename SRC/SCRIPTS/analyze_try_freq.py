@@ -119,7 +119,7 @@ def get_hierarchical_utilization(utilization_rpt_p):
     hierarchical_utilization_d = {}
     last_parents = [""]*10
 
-    while "+-----------------------------------" not in utilization_s_l[i]:
+    while "+-----------------------------" not in utilization_s_l[i]:
         utilization_l = utilization_s_l[i].split("|")
         depth = count_depth(utilization_l[1])
         utilization_l = [x.replace(" ","") for x in utilization_l]
@@ -148,11 +148,14 @@ def plot_top(impl_d, clk_factor):
     fcore_plt_l = list(impl_d.keys())
     fcore_plt_l.sort()
 
+    txt_log = ""
     lut_plt_l, ff_plt_l, wns_plt_l = [], [], []
     for fcore in fcore_plt_l:
         lut_plt_l.append(impl_d[fcore]["lut"])
         ff_plt_l.append(impl_d[fcore]["ff"])
         wns_plt_l.append(impl_d[fcore]["wns"])
+        txt_log += f"{round(fcore):<2}, {impl_d[fcore]['lut']:>5}, {impl_d[fcore]['ff']:>5}, {impl_d[fcore]['wns']:>000.3f}\n"
+
 
     # Plot setup
     fig, (ax1 , ax2)= plt.subplots(2, 1, figsize=(16*1.2, 9*1.2))
@@ -185,6 +188,8 @@ def plot_top(impl_d, clk_factor):
             os.mkdir(f"{args.try_freq_p}/plot")
         extra_name = f"__Synth-{synth_strat.replace(' ','-')}_Impl-{impl_strat.replace(' ','-')}" if args.parameters else ""
         plt.savefig(f"{args.try_freq_p}/plot/{name}_plot__WNS__FF-top__LUT-top__CLK-FACTOR-{clk_factor}{extra_name}.pdf")
+        with open(f"{args.try_freq_p}/plot/{name}_plot__WNS__FF-top__LUT-top__CLK-FACTOR-{clk_factor}{extra_name}.log", "w") as file:
+            file.write(txt_log) 
 
 def bar_all_instances(impl_d, clk_factor):
     fcore_plt_l = list(impl_d.keys())
