@@ -1,13 +1,4 @@
-
-
-I shoud do this:
-- insert correct link to the article
-- image of CFG: Dhrystone CFG (Control Flow Graph) first and last instruction nodes are at the right
-- include cfi_riscv_equation in repo! to explains python codes
-- refer to https://docs.openhwgroup.org/projects/cv32e40p-user-manual/en/latest/pipeline.html#single-and-multi-cycle-instructions to explains cycle penalties
-- give the code for the methods to comput riscv valid ratio
 ## Getting Started
-
 
 ### Prerequisites
 #### RISC-V Toolchain
@@ -19,7 +10,7 @@ ln -s <path/to/corev> /opt/corev
 ```
 
 #### Verilator: simulator
-4. Install Verilator by following the [Git Quick Install](https://veripool.org/guide/latest/install.html#git-quick-install). **Be carefull to select the tag v4.220** by running `git checkout v2.220` before running `autoconf`.
+3. Install Verilator by following the [Git Quick Install](https://veripool.org/guide/latest/install.html#git-quick-install). **Be carefull to select the tag v4.220** by running `git checkout v2.220` before running `autoconf`.
 
 #### GTKwave: wave viewer
 4. Verilator simulation can generated waveform (.vcd format). It is recommended to use GTKwave to view waveform.
@@ -56,12 +47,12 @@ gtkwave OBJ/PROGRAMS/fibonacci/SIM/VCD/program.vcd SRC/CONFIGS/core_v_fpga_signa
 make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_encrypted_cf1_verif.log
 ```
 
-4. Simulate execution of `fibonacci`, **with encryption and association of control signals**, compare PC/instr in Fetch at every cycle with previously saved reference, generate reference if not exist.
+5. Simulate execution of `fibonacci`, **with encryption and association of control signals**, compare PC/instr in Fetch at every cycle with previously saved reference, generate reference if not exist.
 ``` bash
 make OBJ/PROGRAMS/fibonacci/SIM/LOG/program_encrypted_cf1_cs1_verif.log
 ```
 
-5. Execute previous command for all programs with a for loop. You may run `watch -n1 tail -n 40 OBJ/LOG/overview.log` in another terminal to follow campaign execution.
+6. Execute previous command for all programs with a for loop. You may run `watch -n1 tail -n 40 OBJ/LOG/overview.log` in another terminal to follow campaign execution.
 ``` bash
 for program in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename ${program})/SIM/LOG/program_encrypted_verif.log; done
 for cf in 1 2 3 6; do for a in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename $a)/SIM/LOG/program_encrypted_cf${cf}_verif.log; done; done
@@ -74,18 +65,18 @@ PROGRAMS_REDUCED=("cubic" "dhrystone" "sglib-combined" "slre" "st" "statemate" "
 for program in ${PROGRAMS_REDUCED} ; do make OBJ/PROGRAMS/$(basename ${program})/SIM/LOG/program_encrypted_verif.log; done
 ```
 
-6. Every time a simulation is performed, a log file is generated :
+7. Every time a simulation is performed, a log file is generated :
     - `OBJ/PROGRAMS/<program_name>/SIM/LOG/<program_name>_save_ref.log`
     - `OBJ/PROGRAMS/<program_name>/SIM/LOG/<program_name>_verif.log`
     - `OBJ/PROGRAMS/<program_name>/SIM/LOG/<program_name>_encrypted_verif.log`
 
-7. Explicit target names can be generated.
+8. Explicit target names can be generated.
 ``` bash
 python3 ./configure.py
 make -f explicit_target_names.mk <tab>
 ```
 
-8. Every time a simulation is performed, a line is added in `OBJ/LOG/overview.log`, after step **5**, `overview.log` looks like table in [Results](#results)
+9. Every time a simulation is performed, a line is added in `OBJ/LOG/overview.log`, after step **5**, `overview.log` looks like table in [Results](#results)
 
 #### Instruction and Control signal integrity
 1. Get statistics about control signal association, run in the main `core-v-verif-fpga` folder:
@@ -99,15 +90,8 @@ python3 SRC/SCRIPTS/control_signal_analysis.py
 python3 SRC/SCRIPTS/program_analysis.py
 ```
 
-2. Custom control signal selection
-order od control signal in `cs_vector` is imposed by `assign cs_vector_id_o = {cs_vector_id_from_decoder_s, cs_vector_id_from_id_s};`. look at systemverilog generated in `OBJ/RTL`
-
-3. Software fix to respect limitation of 12 successors of jalr if on of them is a br/jal
-Qrduino and picojpeg do not respect the limitation because of multiple calls to setmask, 
-We insert after compilation, assembling but before link, nop at the place a branch/jal destination of the concerned jalr.
-qrduino_fix
-picojpeg_fix
-
+3. Custom control signal selection
+Order of control signal in `cs_vector` is imposed by `assign cs_vector_id_o = {cs_vector_id_from_decoder_s, cs_vector_id_from_id_s};`. look at systemverilog generated in `OBJ/RTL`
 
 
 
@@ -116,34 +100,34 @@ picojpeg_fix
 #### Synthesis, Implementation, Write Bitstream and Simulation
 
 
-9. Create, synthesis and implement vivado project of core_v_verif_fpga , without encryption, with fibonacci program load in memory.
+1. Create, synthesis and implement vivado project of core_v_verif_fpga , without encryption, with fibonacci program load in memory.
 ``` bash
 make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci
 ```
 
 
-9. a Launch behavioral simulation with questa of vivado project of core_v_verif_fpga, without encryption, with fibonacci program load in memory.
+2. (a) Launch behavioral simulation with questa of vivado project of core_v_verif_fpga, without encryption, with fibonacci program load in memory.
 ``` bash
 make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci/.simulate_behav_log.timestamp
 ```
-9. b otherwise, script can be launched from vivado console
+2. (b) otherwise, script can be launched from vivado console
 ``` bash
 source ./SRC/SCRIPTS/set_questa_dir_for_5simulations.tcl
 ```
 
-9. Compilation, elaboration and simulation logs are available in this folder:
+3. Compilation, elaboration and simulation logs are available in this folder:
 ``` bash
 OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf2/core_v_verif_fpga_fibonacci_encrypted_cf1.sim/sim_1/behav/questa/
 ```
 
 
-9. Delay of all simulations launched can be measured with:
+4. Delay of all simulations launched can be measured with:
 ``` bash
 ./SRC/SCRIPTS/time_for_sim.sh [Optional <path_to_folders>]
 ./SRC/SCRIPTS/time_for_sim.sh OBJ/VIVADO_OBJ_DIR/ 
 ```
 
-9. To save waveforms in any questa folder, type these commands in VSIM terminal.
+5. To save waveforms in any questa folder, type these commands in VSIM terminal.
 ``` bash
 restart
 vcd file <vcd_file_name>
@@ -155,12 +139,12 @@ run all
 </p>
 <p style="text-align: center; font-style: italic;">Example of vcd generation in questa.</p>
 
-9. Launch behavioral, functionnal and timing after synthesis, functionnal and timing after implementation simulations with questa of vivado project of core_v_verif_fpga, without encryption, with fibonacci program load in memory.
+6. Launch behavioral, functionnal and timing after synthesis, functionnal and timing after implementation simulations with questa of vivado project of core_v_verif_fpga, without encryption, with fibonacci program load in memory.
 ``` bash
 make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci/.simulate_log.timestamp
 ```
 
-9. You can rerun a previous simulation by running. Add option "-c" to run questa in command line.
+7. You can rerun a previous simulation by running. Add option "-c" to run questa in command line.
 ``` bash
 ./SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf2/core_v_verif_fpga_fibonacci_encrypted_cf1.sim/sim_1/behav/questa/ -c
 ./SRC/SCRIPTS/launch_questa_simulation.sh OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf2/core_v_verif_fpga_fibonacci_encrypted_cf1.sim/sim_1/behav/questa/
@@ -168,7 +152,7 @@ make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci/.simulate_log.timestamp
 ```
 
 
-9. Launch behavioral, functionnal and timing after synthesis, functionnal and timing after implementation simulations with questa of vivado project of core_v_verif_fpga, with encryption (CF=1), with fibonacci program load in memory.
+8. Launch behavioral, functionnal and timing after synthesis, functionnal and timing after implementation simulations with questa of vivado project of core_v_verif_fpga, with encryption (CF=1), with fibonacci program load in memory.
 ``` bash
 make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf1/.simulate_log.timestamp
 ```
@@ -178,7 +162,7 @@ make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf1/.simulate_log.
 make OBJ/VIVADO_OBJ_DIR/core_v_verif_fpga_fibonacci_encrypted_cf6/.simulate_log.timestamp
 ```
 
-9. Find maximal frequency of a design. All checkpoints, reports for specific frequency are saved in `OBJ/VIVADO_OBJ_DIR/<project_name>/<project_name>i.try_freq/try_freq__<YYYY-MM-DD>__<hh-mm-ss>`. The procedure `proc TryFreq {fmin fmax step nb_hw_perm}` is in `./SRC/SCRIPTS/try_frequencies_2clks.tcl`. 
+10. Find maximal frequency of a design. All checkpoints, reports for specific frequency are saved in `OBJ/VIVADO_OBJ_DIR/<project_name>/<project_name>i.try_freq/try_freq__<YYYY-MM-DD>__<hh-mm-ss>`. The procedure `proc TryFreq {fmin fmax step nb_hw_perm}` is in `./SRC/SCRIPTS/try_frequencies_2clks.tcl`. 
 ``` bash
 vivado -mode tcl
 open_project <path_to_xpr>
@@ -198,20 +182,16 @@ try_freq__<YYYY-MM-DD>__<hh-mm-ss>
 ```
 
 
-10. Display graph. Apply `analyze_try_freq` with the path to try_freq folder. 3 plots are generated in ` ../../OBJ/VIVADO_OBJ_DIR/./core_v_verif_fpga_verifypin-0_encrypted_cf3_cs1/core_v_verif_fpga_verifypin-0_encrypted_cf3_cs1.try_freq/try_freq__2025-01-31__15-36-30/plot`. 
+11. Display graph. Apply `analyze_try_freq` with the path to try_freq folder. 3 plots are generated in ` ../../OBJ/VIVADO_OBJ_DIR/./core_v_verif_fpga_verifypin-0_encrypted_cf3_cs1/core_v_verif_fpga_verifypin-0_encrypted_cf3_cs1.try_freq/try_freq__2025-01-31__15-36-30/plot`. 
 ```
 python3 ./analyze_try_freq.py -p -a -t -s ../../OBJ/VIVADO_OBJ_DIR/./core_v_verif_fpga_verifypin-0_encrypted_cf3_cs1/core_v_verif_fpga_verifypin-0_encrypted_cf3_cs1.try_freq/try_freq__2025-01-31__15-36-30
 ```
 
 
-11. 
-```
-report_power -name 1 -file core_v_verif_fpga_verifypin-0_encrypted_cf3_freq_14-99993_45-00045_power.rpt
-```
 
 #### Bitstream download
 
-9. To collect every bitstream file, (from `core-v-verif-fpga` folder):
+1. To collect every bitstream file, (from `core-v-verif-fpga` folder):
 ``` bash
 cd core-v-verif-fpga
 mkdir -p OBJ/VIVADO_OBJ_DIR/BIT
@@ -219,13 +199,16 @@ foreach b in $(find . -name "core_v_verif_fpga_top.bit" | sort); do echo "Copy 
 
 ```
 
-10. To load bitstreams into FPGA: (depending on the board/FPGA used adapt tcl scripts)
+2. To load bitstreams into FPGA: (depending on the board/FPGA used adapt tcl scripts)
 ``` bash
-vivado -mode tcl -nolog -nojournal -source program_bitstream.tcl -tclargs core_v_verif_fpga_wikisort_encrypted_cf1_cs1.bit
+cd ./SRC/SCRIPTS/
+vivado -mode tcl -nolog -nojournal -source ./SRC/SCRIPTS/program_bitstream.tcl -tclargs <path_to_bitstream>
+vivado -mode tcl -nolog -nojournal -source ./SRC/SCRIPTS/program_bitstream.tcl -tclargs core_v_verif_fpga_wikisort_encrypted_cf1_cs1.bit
 ```
 
+3. With `only_program_bitstream.tcl` you can run another bitstream.
 ``` bash
-vivado -mode tcl
+vivado -mode tcli only_program_bitstream.tcl
 set argv "OBJ/VIVADO_OBJ_DIR/BIT/core_v_verif_fpga_verifypin-0_encrypted_cf1.bit"
 source SRC/SCRIPTS/program_bitstream.tcl 
 set argv "OBJ/VIVADO_OBJ_DIR/BIT/core_v_verif_fpga_verifypin-0_encrypted_cf6.bit"
@@ -246,208 +229,6 @@ Program: lines |      br      |      jal     |     jalr
 AVERAGE:  4297 |   380(0.088) |   144(0.034) |   490(0.114)
 ```
 There are 0.148 (0.034+0.114), i.e., 14.8% of jal/jalr in Embench programs compiled with -Os
-
-
-## Statistics for programs
-
-Run : with i `CFLAGS := -Os -static -mabi=ilp32 -march=rv32im -Wall -pedantic` and `CFLAGS := -Os -g -static -mabi=ilp32 -march=rv32im -Wall -pedantic` are equivalent :
-```
-~/th/g/core-v-verif-fpga cs_integration_ex-stage +1 !2 ?10 > python3 SRC/SCRIPTS/program_analysis.py                                                       gousselot@vienne 04:09:22 PM
-# PROGRAM ANALYSIS
-        Program: lines |    br |   jal |  jalr
-          crc32:  3359 |   340 (+10.1) |   148 (+4.4) |   390 (+11.6)
-          cubic: 12124 |   838 (+6.9) |   186 (+1.5) |  1342 (+11.1)
-      dhrystone:  3689 |   404 (+11.0) |   142 (+3.8) |   405 (+11.0)
-            edn:  2486 |   245 (+9.9) |   115 (+4.6) |   248 (+10.0)
-      fibonacci:  3210 |   328 (+10.2) |   128 (+4.0) |   391 (+12.2)
-      huffbench:  3958 |   368 (+9.3) |   151 (+3.8) |   427 (+10.8)
-    matmult-int:  2223 |   240 (+10.8) |   112 (+5.0) |   243 (+10.9)
-         md5sum:  3611 |   358 (+9.9) |   149 (+4.1) |   400 (+11.1)
-         minver:  4483 |   421 (+9.4) |   147 (+3.3) |   641 (+14.3)
-         mont64:  2354 |   247 (+10.5) |   108 (+4.6) |   249 (+10.6)
-          nbody:  4449 |   404 (+9.1) |   132 (+3.0) |   549 (+12.3)
-     nettle-aes:  2905 |   252 (+8.7) |   109 (+3.8) |   255 (+8.8)
-  nettle-sha256:  3640 |   250 (+6.9) |   109 (+3.0) |   246 (+6.8)
-       nsichneu:  6464 |   228 (+3.5) |   104 (+1.6) |   864 (+13.4)
-       picojpeg:  6132 |   602 (+9.8) |   175 (+2.9) |   581 (+9.5)
-     primecount:  3371 |   340 (+10.1) |   148 (+4.4) |   395 (+11.7)
-        qrduino:  5346 |   489 (+9.1) |   162 (+3.0) |   540 (+10.1)
- sglib-combined:  5274 |   513 (+9.7) |   232 (+4.4) |   679 (+12.9)
-           slre:  4237 |   406 (+9.6) |   159 (+3.8) |   522 (+12.3)
-             st:  4519 |   409 (+9.1) |   137 (+3.0) |   545 (+12.1)
-      statemate:  3045 |   286 (+9.4) |   130 (+4.3) |   414 (+13.6)
-        tarfind:  3444 |   345 (+10.0) |   147 (+4.3) |   397 (+11.5)
-             ud:  2852 |   284 (+10.0) |   115 (+4.0) |   331 (+11.6)
-    verifypin-0:  3105 |   313 (+10.1) |   132 (+4.3) |   370 (+11.9)
-       wikisort:  7147 |   594 (+8.3) |   230 (+3.2) |   816 (+11.4)
-        AVERAGE:  4297 |   380 (+8.8) |   144 (+3.4) |   490 (+11.4)
-# PATCH / REDIRECTION ANALYSIS
-        Program: lines | nb patch(patch/line) | nb redir(redir/lines)
-          crc32:  3359 |   885 (+26.3) |    30 (+0.9)
-          cubic: 12124 |  2564 (+21.1) |    47 (+0.4)
-      dhrystone:  3689 |  1042 (+28.2) |    32 (+0.9)
-            edn:  2486 |   597 (+24.0) |    25 (+1.0)
-      fibonacci:  3210 |   876 (+27.3) |    30 (+0.9)
-      huffbench:  3958 |   966 (+24.4) |    32 (+0.8)
-    matmult-int:  2223 |   585 (+26.3) |    25 (+1.1)
-         md5sum:  3611 |   950 (+26.3) |    35 (+1.0)
-         minver:  4483 |  1283 (+28.6) |    49 (+1.1)
-         mont64:  2354 |   603 (+25.6) |    23 (+1.0)
-          nbody:  4449 |  1140 (+25.6) |    31 (+0.7)
-     nettle-aes:  2905 |   608 (+20.9) |    22 (+0.8)
-  nettle-sha256:  3640 |   602 (+16.5) |    23 (+0.6)
-       nsichneu:  6464 |  1181 (+18.3) |    22 (+0.3)
-       picojpeg:  6132 |  1490 (+24.3) |    43 (+0.7)
-     primecount:  3371 |   887 (+26.3) |    29 (+0.9)
-        qrduino:  5346 |  1261 (+23.6) |    38 (+0.7)
- sglib-combined:  5274 |  1438 (+27.3) |    50 (+0.9)
-           slre:  4237 |  1114 (+26.3) |    36 (+0.8)
-             st:  4519 |  1143 (+25.3) |    33 (+0.7)
-      statemate:  3045 |   837 (+27.5) |    43 (+1.4)
-        tarfind:  3444 |   899 (+26.1) |    29 (+0.8)
-             ud:  2852 |   729 (+25.6) |    29 (+1.0)
-    verifypin-0:  3105 |   841 (+27.1) |    31 (+1.0)
-       wikisort:  7147 |  1737 (+24.3) |    63 (+0.9)
-        AVERAGE:  4297 |  1050 (+24.4) |    34 (+0.8)
-
-
-
-
-
-
-Run : with i `CFLAGS := -O3 -static -mabi=ilp32 -march=rv32im -Wall -pedantic` instead of `CFLAGS := -Os -g -static -mabi=ilp32 -march=rv32im -Wall -pedantic`
-```
-for a in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename $a)/SIM/LOG/program_encrypted_cf1_cs1_verif.log; done
-```
-Different stat
-```
-~/th/g/core-v-verif-fpga cs_integration_ex-stage +1 !3 ?10 > python3 SRC/SCRIPTS/program_analysis.py
-# PROGRAM ANALYSIS
-        Program: lines |    br |   jal |  jalr
-          crc32:  3458 |   337 (+9.7) |   152 (+4.4) |   409 (+11.8)
-          cubic: 12440 |   846 (+6.8) |   189 (+1.5) |  1362 (+10.9)
-      dhrystone:  3921 |   399 (+10.2) |   146 (+3.7) |   421 (+10.7)
-            edn:  2919 |   233 (+8.0) |   117 (+4.0) |   268 (+9.2)
-      fibonacci:  3490 |   337 (+9.7) |   129 (+3.7) |   420 (+12.0)
-      huffbench:  4661 |   390 (+8.4) |   159 (+3.4) |   506 (+10.9)
-    matmult-int:  2378 |   228 (+9.6) |   113 (+4.8) |   256 (+10.8)
-         md5sum:  3773 |   358 (+9.5) |   153 (+4.1) |   421 (+11.2)
-         minver:  5700 |   669 (+11.7) |   148 (+2.6) |   735 (+12.9)
-         mont64:  2721 |   237 (+8.7) |   111 (+4.1) |   283 (+10.4)
-          nbody:  5633 |   578 (+10.3) |   136 (+2.4) |   582 (+10.3)
-     nettle-aes:  3640 |   260 (+7.1) |   117 (+3.2) |   270 (+7.4)
-  nettle-sha256:  4589 |   260 (+5.7) |   111 (+2.4) |   263 (+5.7)
-       nsichneu:  6855 |   634 (+9.2) |   106 (+1.5) |   870 (+12.7)
-       picojpeg:  9088 |   654 (+7.2) |   178 (+2.0) |   917 (+10.1)
-     primecount:  3434 |   336 (+9.8) |   151 (+4.4) |   412 (+12.0)
-        qrduino:  8423 |   492 (+5.8) |   166 (+2.0) |   710 (+8.4)
- sglib-combined:  7095 |   563 (+7.9) |   300 (+4.2) |  1096 (+15.4)
-           slre:  4611 |   421 (+9.1) |   162 (+3.5) |   604 (+13.1)
-             st:  5194 |   481 (+9.3) |   148 (+2.8) |   600 (+11.6)
-      statemate:  3325 |   297 (+8.9) |   144 (+4.3) |   455 (+13.7)
-        tarfind:  3614 |   346 (+9.6) |   151 (+4.2) |   426 (+11.8)
-             ud:  2934 |   239 (+8.1) |   109 (+3.7) |   298 (+10.2)
-    verifypin-0:  3118 |   310 (+9.9) |   133 (+4.3) |   374 (+12.0)
-       wikisort:  9476 |   657 (+6.9) |   243 (+2.6) |  1080 (+11.4)
-        AVERAGE:  5060 |   422 (+8.4) |   151 (+3.0) |   562 (+11.1)
-# PATCH / REDIRECTION ANALYSIS
-        Program: lines | nb patch(patch/line) | nb redir(redir/lines)
-          crc32:  3458 |   898 (+26.0) |    29 (+0.8)
-          cubic: 12440 |  2594 (+20.9) |    45 (+0.4)
-      dhrystone:  3921 |   989 (+25.2) |    31 (+0.8)
-            edn:  2919 |   598 (+20.5) |    24 (+0.8)
-      fibonacci:  3490 |   920 (+26.4) |    32 (+0.9)
-      huffbench:  4661 |  1090 (+23.4) |    36 (+0.8)
-    matmult-int:  2378 |   578 (+24.3) |    24 (+1.0)
-         md5sum:  3773 |   978 (+25.9) |    38 (+1.0)
-         minver:  5700 |  1899 (+33.3) |    51 (+0.9)
-         mont64:  2721 |   612 (+22.5) |    22 (+0.8)
-          nbody:  5633 |  1526 (+27.1) |    33 (+0.6)
-     nettle-aes:  3640 |   656 (+18.0) |    27 (+0.7)
-  nettle-sha256:  4589 |   638 (+13.9) |    24 (+0.5)
-       nsichneu:  6855 |  1593 (+23.2) |    22 (+0.3)
-       picojpeg:  9088 |  1821 (+20.0) |    46 (+0.5)
-     primecount:  3434 |   896 (+26.1) |    29 (+0.8)
-        qrduino:  8423 |  1430 (+17.0) |    41 (+0.5)
- sglib-combined:  7095 |  2073 (+29.2) |    58 (+0.8)
-           slre:  4611 |  1212 (+26.3) |    34 (+0.7)
-             st:  5194 |  1375 (+26.5) |    41 (+0.8)
-      statemate:  3325 |   870 (+26.2) |    33 (+1.0)
-        tarfind:  3614 |   935 (+25.9) |    31 (+0.9)
-             ud:  2934 |   631 (+21.5) |    23 (+0.8)
-    verifypin-0:  3118 |   839 (+26.9) |    30 (+1.0)
-       wikisort:  9476 |  2078 (+21.9) |    62 (+0.7)
-        AVERAGE:  5060 |  1189 (+23.5) |    35 (+0.7)
-
-```
-
-Run with i `CFLAGS := -O2 -static -mabi=ilp32 -march=rv32im -Wall -pedantic` instead of `CFLAGS := -Os -g -static -mabi=ilp32 -march=rv32im -Wall -pedantic`
-```
-for a in SRC/PROGRAMS/* ; do make OBJ/PROGRAMS/$(basename $a)/SIM/LOG/program_encrypted_cf1_cs1_verif.log; done
-```
-
-```
-# PROGRAM ANALYSIS
-        Program: lines |    br |   jal |  jalr
-          crc32:  3400 |   336 (+9.9) |   150 (+4.4) |   398 (+11.7)
-          cubic: 12180 |   833 (+6.8) |   188 (+1.5) |  1349 (+11.1)
-      dhrystone:  3890 |   398 (+10.2) |   146 (+3.8) |   414 (+10.6)
-            edn:  2561 |   232 (+9.1) |   116 (+4.5) |   254 (+9.9)
-      fibonacci:  3471 |   336 (+9.7) |   129 (+3.7) |   417 (+12.0)
-      huffbench:  4021 |   361 (+9.0) |   155 (+3.9) |   448 (+11.1)
-    matmult-int:  2233 |   230 (+10.3) |   111 (+5.0) |   242 (+10.8)
-         md5sum:  3653 |   352 (+9.6) |   151 (+4.1) |   410 (+11.2)
-         minver:  4592 |   417 (+9.1) |   146 (+3.2) |   648 (+14.1)
-         mont64:  2654 |   237 (+8.9) |   109 (+4.1) |   279 (+10.5)
-          nbody:  4473 |   401 (+9.0) |   134 (+3.0) |   554 (+12.4)
-     nettle-aes:  3084 |   254 (+8.2) |   115 (+3.7) |   265 (+8.6)
-  nettle-sha256:  3809 |   249 (+6.5) |   111 (+2.9) |   253 (+6.6)
-       nsichneu:  6872 |   635 (+9.2) |   105 (+1.5) |   865 (+12.6)
-       picojpeg:  7003 |   565 (+8.1) |   172 (+2.5) |   752 (+10.7)
-     primecount:  3395 |   336 (+9.9) |   151 (+4.4) |   403 (+11.9)
-        qrduino:  6100 |   439 (+7.2) |   165 (+2.7) |   636 (+10.4)
- sglib-combined:  5815 |   480 (+8.3) |   287 (+4.9) |   795 (+13.7)
-           slre:  4388 |   409 (+9.3) |   159 (+3.6) |   570 (+13.0)
-             st:  4782 |   429 (+9.0) |   147 (+3.1) |   587 (+12.3)
-      statemate:  3117 |   279 (+9.0) |   143 (+4.6) |   424 (+13.6)
-        tarfind:  3477 |   340 (+9.8) |   150 (+4.3) |   406 (+11.7)
-             ud:  2917 |   278 (+9.5) |   115 (+3.9) |   339 (+11.6)
-    verifypin-0:  3101 |   312 (+10.1) |   133 (+4.3) |   372 (+12.0)
-       wikisort:  7388 |   568 (+7.7) |   233 (+3.2) |   868 (+11.7)
-        AVERAGE:  4495 |   388 (+8.6) |   149 (+3.3) |   518 (+11.5)
-# PATCH / REDIRECTION ANALYSIS
-        Program: lines | nb patch(patch/line) | nb redir(redir/lines)
-          crc32:  3400 |   887 (+26.1) |    30 (+0.9)
-          cubic: 12180 |  2562 (+21.0) |    47 (+0.4)
-      dhrystone:  3890 |   984 (+25.3) |    32 (+0.8)
-            edn:  2561 |   583 (+22.8) |    25 (+1.0)
-      fibonacci:  3471 |   916 (+26.4) |    31 (+0.9)
-      huffbench:  4021 |   988 (+24.6) |    37 (+0.9)
-    matmult-int:  2233 |   570 (+25.5) |    26 (+1.2)
-         md5sum:  3653 |   954 (+26.1) |    38 (+1.0)
-         minver:  4592 |  1288 (+28.0) |    49 (+1.1)
-         mont64:  2654 |   608 (+22.9) |    22 (+0.8)
-          nbody:  4473 |  1146 (+25.6) |    34 (+0.8)
-     nettle-aes:  3084 |   648 (+21.0) |    29 (+0.9)
-  nettle-sha256:  3809 |   611 (+16.0) |    26 (+0.7)
-       nsichneu:  6872 |  1589 (+23.1) |    23 (+0.3)
-       picojpeg:  7003 |  1548 (+22.1) |    45 (+0.6)
-     primecount:  3395 |   893 (+26.3) |    32 (+0.9)
-        qrduino:  6100 |  1299 (+21.3) |    42 (+0.7)
- sglib-combined:  5815 |  1624 (+27.9) |    62 (+1.1)
-           slre:  4388 |  1163 (+26.5) |    37 (+0.8)
-             st:  4782 |  1247 (+26.1) |    41 (+0.9)
-      statemate:  3117 |   863 (+27.7) |    56 (+1.8)
-        tarfind:  3477 |   907 (+26.1) |    33 (+0.9)
-             ud:  2917 |   729 (+25.0) |    28 (+1.0)
-    verifypin-0:  3101 |   841 (+27.1) |    31 (+1.0)
-       wikisort:  7388 |  1759 (+23.8) |    65 (+0.9)
-        AVERAGE:  4495 |  1088 (+24.2) |    37 (+0.8)
-```
-
----
-
-
 
 
 ## Folder organization
@@ -555,303 +336,205 @@ Led[5] indicates that an invalid instruction was in the decode. As the `instr_ad
 ## Annexe
 ### Results
 
-|   PROGRAM_NAME   | ENCRYPT |   MODE   |    TEST   | REASON END. |  SIM_TIME  | FIRST ERR. |       TIMESTAMP
-|:----------------:|:-------:|:--------:|:---------:|:-----------:|:----------:|:----------:|:----------------------:|
-|       crc32      |         |SAVE/TRACE|           |  VALID EXEC |    1149080 |            | Tue Mar 26 16:41:13 2024
-|       crc32      |         | SAVE_REF |           |  VALID EXEC |    1149080 |            | Tue Mar 26 16:41:29 2024
-|       crc32      | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |    1149080 |            | Tue Mar 26 16:41:32 2024
-|       cubic      |         |SAVE/TRACE|           |  VALID EXEC |    1380282 |            | Tue Mar 26 16:41:34 2024
-|       cubic      |         | SAVE_REF |           |  VALID EXEC |    1380282 |            | Tue Mar 26 16:41:55 2024
-|       cubic      | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |    1380282 |            | Tue Mar 26 16:41:58 2024
-|     dhrystone    |         |SAVE/TRACE|           |  VALID EXEC |     611550 |            | Tue Mar 26 16:41:59 2024
-|     dhrystone    |         | SAVE_REF |           |  VALID EXEC |     611550 |            | Tue Mar 26 16:42:08 2024
-|     dhrystone    | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     611550 |            | Tue Mar 26 16:42:09 2024
-|        edn       |         |SAVE/TRACE|           |  VALID EXEC |     642402 |            | Tue Mar 26 16:42:10 2024
-|        edn       |         | SAVE_REF |           |  VALID EXEC |     642402 |            | Tue Mar 26 16:42:19 2024
-|        edn       | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     642402 |            | Tue Mar 26 16:42:21 2024
-|     fibonacci    |         |SAVE/TRACE|           |  VALID EXEC |     187694 |            | Tue Mar 26 16:42:21 2024
-|     fibonacci    |         | SAVE_REF |           |  VALID EXEC |     187694 |            | Tue Mar 26 16:42:25 2024
-|     fibonacci    | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     187694 |            | Tue Mar 26 16:42:25 2024
-|     huffbench    |         |SAVE/TRACE|           |  VALID EXEC |     904196 |            | Tue Mar 26 16:42:26 2024
-|     huffbench    |         | SAVE_REF |           |  VALID EXEC |     904196 |            | Tue Mar 26 16:42:39 2024
-|     huffbench    | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     904196 |            | Tue Mar 26 16:42:41 2024
-|    matmult-int   |         |SAVE/TRACE|           |  VALID EXEC |     839262 |            | Tue Mar 26 16:42:42 2024
-|    matmult-int   |         | SAVE_REF |           |  VALID EXEC |     839262 |            | Tue Mar 26 16:42:54 2024
-|    matmult-int   | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     839262 |            | Tue Mar 26 16:42:56 2024
-|      md5sum      |         |SAVE/TRACE|           |  VALID EXEC |     681136 |            | Tue Mar 26 16:42:57 2024
-|      md5sum      |         | SAVE_REF |           |  VALID EXEC |     681136 |            | Tue Mar 26 16:43:06 2024
-|      md5sum      | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     681136 |            | Tue Mar 26 16:43:08 2024
-|      minver      |         |SAVE/TRACE|           |  VALID EXEC |     785076 |            | Tue Mar 26 16:43:09 2024
-|      minver      |         | SAVE_REF |           |  VALID EXEC |     785076 |            | Tue Mar 26 16:43:21 2024
-|      minver      | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     785076 |            | Tue Mar 26 16:43:23 2024
-|      mont64      |         |SAVE/TRACE|           |  VALID EXEC |     515094 |            | Tue Mar 26 16:43:24 2024
-|      mont64      |         | SAVE_REF |           |  VALID EXEC |     515094 |            | Tue Mar 26 16:43:31 2024
-|      mont64      | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     515094 |            | Tue Mar 26 16:43:33 2024
-|       nbody      |         |SAVE/TRACE|           |  VALID EXEC |    4387282 |            | Tue Mar 26 16:43:38 2024
-|       nbody      |         | SAVE_REF |           |  VALID EXEC |    4387282 |            | Tue Mar 26 16:44:35 2024
-|       nbody      | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |    4387282 |            | Tue Mar 26 16:44:46 2024
-|    nettle-aes    |         |SAVE/TRACE|           |  VALID EXEC |     540220 |            | Tue Mar 26 16:44:47 2024
-|    nettle-aes    |         | SAVE_REF |           |  VALID EXEC |     540220 |            | Tue Mar 26 16:44:54 2024
-|    nettle-aes    | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     540220 |            | Tue Mar 26 16:44:55 2024
-|   nettle-sha256  |         |SAVE/TRACE|           |  VALID EXEC |     277932 |            | Tue Mar 26 16:44:56 2024
-|   nettle-sha256  |         | SAVE_REF |           |  VALID EXEC |     277932 |            | Tue Mar 26 16:45:01 2024
-|   nettle-sha256  | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     277932 |            | Tue Mar 26 16:45:01 2024
-|     nsichneu     |         |SAVE/TRACE|           |  VALID EXEC |     306970 |            | Tue Mar 26 16:45:03 2024
-|     nsichneu     |         | SAVE_REF |           |  VALID EXEC |     306970 |            | Tue Mar 26 16:45:08 2024
-|     nsichneu     | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     306970 |            | Tue Mar 26 16:45:08 2024
-|     picojpeg     |         |SAVE/TRACE|           |  VALID EXEC |    1927668 |            | Tue Mar 26 16:45:11 2024
-|     picojpeg     |         | SAVE_REF |           |  VALID EXEC |    1927668 |            | Tue Mar 26 16:45:37 2024
-|     picojpeg     | ENCRYPT |   VERIF  |  FAILURE  |  REF ERROR  |      75190 |      75169 | Tue Mar 26 16:45:38 2024
-|    primecount    |         |SAVE/TRACE|           |  VALID EXEC |     896720 |            | Tue Mar 26 16:45:39 2024
-|    primecount    |         | SAVE_REF |           |  VALID EXEC |     896720 |            | Tue Mar 26 16:45:51 2024
-|    primecount    | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     896720 |            | Tue Mar 26 16:45:54 2024
-|      qrduino     |         |SAVE/TRACE|           |  VALID EXEC |    1672566 |            | Tue Mar 26 16:45:56 2024
-|      qrduino     |         | SAVE_REF |           |  VALID EXEC |    1672566 |            | Tue Mar 26 16:46:19 2024
-|      qrduino     | ENCRYPT |   VERIF  |  FAILURE  |  REF ERROR  |     109746 |     109725 | Tue Mar 26 16:46:20 2024
-|  sglib-combined  |         |SAVE/TRACE|           |  VALID EXEC |     688540 |            | Tue Mar 26 16:46:21 2024
-|  sglib-combined  |         | SAVE_REF |           |  VALID EXEC |     688540 |            | Tue Mar 26 16:46:31 2024
-|  sglib-combined  | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     688540 |            | Tue Mar 26 16:46:33 2024
-|       slre       |         |SAVE/TRACE|           |  VALID EXEC |     306600 |            | Tue Mar 26 16:46:34 2024
-|       slre       |         | SAVE_REF |           |  VALID EXEC |     306600 |            | Tue Mar 26 16:46:39 2024
-|       slre       | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     306600 |            | Tue Mar 26 16:46:39 2024
-|        st        |         |SAVE/TRACE|           |  VALID EXEC |    1126622 |            | Tue Mar 26 16:46:41 2024
-|        st        |         | SAVE_REF |           |  VALID EXEC |    1126622 |            | Tue Mar 26 16:46:57 2024
-|        st        | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |    1126622 |            | Tue Mar 26 16:46:59 2024
-|     statemate    |         |SAVE/TRACE|           |  VALID EXEC |     240826 |            | Tue Mar 26 16:47:00 2024
-|     statemate    |         | SAVE_REF |           |  VALID EXEC |     240826 |            | Tue Mar 26 16:47:04 2024
-|     statemate    | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     240826 |            | Tue Mar 26 16:47:04 2024
-|      tarfind     |         |SAVE/TRACE|           |  VALID EXEC |     717312 |            | Tue Mar 26 16:47:06 2024
-|      tarfind     |         | SAVE_REF |           |  VALID EXEC |     717312 |            | Tue Mar 26 16:47:18 2024
-|      tarfind     | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     717312 |            | Tue Mar 26 16:47:20 2024
-|        ud        |         |SAVE/TRACE|           |  VALID EXEC |     588562 |            | Tue Mar 26 16:47:21 2024
-|        ud        |         | SAVE_REF |           |  VALID EXEC |     588562 |            | Tue Mar 26 16:47:30 2024
-|        ud        | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |     588562 |            | Tue Mar 26 16:47:32 2024
-|    verifypin_0   |         |SAVE/TRACE|           |  VALID EXEC |      18938 |            | Tue Mar 26 16:47:32 2024
-|    verifypin_0   |         | SAVE_REF |           |  VALID EXEC |      18938 |            | Tue Mar 26 16:47:34 2024
-|    verifypin_0   | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |      18938 |            | Tue Mar 26 16:47:34 2024
-|     wikisort     |         |SAVE/TRACE|           |  VALID EXEC |    3579694 |            | Tue Mar 26 16:47:38 2024
-|     wikisort     |         | SAVE_REF |           |  VALID EXEC |    3579694 |            | Tue Mar 26 16:48:27 2024
-|     wikisort     | ENCRYPT |   VERIF  |  SUCCESS  |  VALID EXEC |    3579694 |            | Tue Mar 26 16:48:35 2024
 
+```
+for program in SRC/PROGRAMS/* ; do for cs in 1 2 3 4 5 6 7 8 9; do make OBJ/PROGRAMS/$(basename ${program})/SIM/LOG/program_encrypted_cf2_cs${cs}_verif.log; done; done
+```
+After executing the previous command you should get these lines: (some lines are missing because there were already simulated)
 
-|   PROGRAM_NAME   | ENCRYPT |C_F|   MODE   |    TEST   | REASON END. |  SIM_TIME  | FIRST ERR. |       TIMESTAMP         
-|:----------------:|:-------:|:-:|:--------:|:---------:|:-----------:|:----------:|:----------:|:----------------------:|
-|       crc32      |         |   |SAVE/TRACE|           |  VALID EXEC |    1149080 |            | Thu Mar 28 09:41:03 2024
-|       crc32      | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    1149080 |            | Thu Mar 28 09:44:59 2024
-|       cubic      |         |   |SAVE/TRACE|           |  VALID EXEC |    1380282 |            | Thu Mar 28 09:45:02 2024
-|       cubic      | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    1380282 |            | Thu Mar 28 09:45:25 2024
-|     dhrystone    |         |   |SAVE/TRACE|           |  VALID EXEC |     611550 |            | Thu Mar 28 09:45:26 2024
-|     dhrystone    | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     611550 |            | Thu Mar 28 09:45:36 2024
-|        edn       |         |   |SAVE/TRACE|           |  VALID EXEC |     642402 |            | Thu Mar 28 09:45:37 2024
-|        edn       | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     642402 |            | Thu Mar 28 09:45:47 2024
-|     fibonacci    | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     187694 |            | Thu Mar 28 09:45:48 2024
-|     huffbench    |         |   |SAVE/TRACE|           |  VALID EXEC |     904196 |            | Thu Mar 28 09:45:49 2024
-|     huffbench    | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     904196 |            | Thu Mar 28 09:46:03 2024
-|    matmult-int   |         |   |SAVE/TRACE|           |  VALID EXEC |     839262 |            | Thu Mar 28 09:46:04 2024
-|    matmult-int   | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     839262 |            | Thu Mar 28 09:46:17 2024
-|      md5sum      |         |   |SAVE/TRACE|           |  VALID EXEC |     681136 |            | Thu Mar 28 09:46:19 2024
-|      md5sum      | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     681136 |            | Thu Mar 28 09:46:29 2024
-|      minver      |         |   |SAVE/TRACE|           |  VALID EXEC |     785076 |            | Thu Mar 28 09:46:31 2024
-|      minver      | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     785076 |            | Thu Mar 28 09:46:43 2024
-|      mont64      |         |   |SAVE/TRACE|           |  VALID EXEC |     515094 |            | Thu Mar 28 09:46:44 2024
-|      mont64      | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     515094 |            | Thu Mar 28 09:46:52 2024
-|       nbody      |         |   |SAVE/TRACE|           |  VALID EXEC |    4387282 |            | Thu Mar 28 09:46:57 2024
-|       nbody      | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    4387282 |            | Thu Mar 28 09:48:02 2024
-|    nettle-aes    |         |   |SAVE/TRACE|           |  VALID EXEC |     540220 |            | Thu Mar 28 09:48:03 2024
-|    nettle-aes    | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     540220 |            | Thu Mar 28 09:48:11 2024
-|   nettle-sha256  |         |   |SAVE/TRACE|           |  VALID EXEC |     277932 |            | Thu Mar 28 09:48:12 2024
-|   nettle-sha256  | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     277932 |            | Thu Mar 28 09:48:17 2024
-|     nsichneu     |         |   |SAVE/TRACE|           |  VALID EXEC |     306970 |            | Thu Mar 28 09:48:18 2024
-|     nsichneu     | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     306970 |            | Thu Mar 28 09:48:24 2024
-|     picojpeg     |         |   |SAVE/TRACE|           |  VALID EXEC |    1927668 |            | Thu Mar 28 09:48:27 2024
-|     picojpeg     | ENCRYPT | 1 |   VERIF  |  FAILURE  |  REF ERROR  |      75190 |      75169 | Thu Mar 28 09:48:53 2024
-|    primecount    |         |   |SAVE/TRACE|           |  VALID EXEC |     896720 |            | Thu Mar 28 09:48:54 2024
-|    primecount    | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     896720 |            | Thu Mar 28 09:49:08 2024
-|      qrduino     |         |   |SAVE/TRACE|           |  VALID EXEC |    1672566 |            | Thu Mar 28 09:49:10 2024
-|      qrduino     | ENCRYPT | 1 |   VERIF  |  FAILURE  |  REF ERROR  |     109746 |     109725 | Thu Mar 28 09:49:32 2024
-|  sglib-combined  |         |   |SAVE/TRACE|           |  VALID EXEC |     688540 |            | Thu Mar 28 09:49:34 2024
-|  sglib-combined  | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     688540 |            | Thu Mar 28 09:49:45 2024
-|       slre       |         |   |SAVE/TRACE|           |  VALID EXEC |     306600 |            | Thu Mar 28 09:49:46 2024
-|       slre       | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     306600 |            | Thu Mar 28 09:49:52 2024
-|        st        |         |   |SAVE/TRACE|           |  VALID EXEC |    1126622 |            | Thu Mar 28 09:49:53 2024
-|        st        | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    1126622 |            | Thu Mar 28 09:50:11 2024
-|     statemate    |         |   |SAVE/TRACE|           |  VALID EXEC |     240826 |            | Thu Mar 28 09:50:12 2024
-|     statemate    | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     240826 |            | Thu Mar 28 09:50:16 2024
-|      tarfind     |         |   |SAVE/TRACE|           |  VALID EXEC |     717312 |            | Thu Mar 28 09:50:17 2024
-|      tarfind     | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     717312 |            | Thu Mar 28 09:50:29 2024
-|        ud        |         |   |SAVE/TRACE|           |  VALID EXEC |     588562 |            | Thu Mar 28 09:50:30 2024
-|        ud        | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     588562 |            | Thu Mar 28 09:50:39 2024
-|    verifypin_0   |         |   |SAVE/TRACE|           |  VALID EXEC |      18938 |            | Thu Mar 28 09:50:40 2024
-|    verifypin_0   | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |      18938 |            | Thu Mar 28 09:50:41 2024
-|     wikisort     |         |   |SAVE/TRACE|           |  VALID EXEC |    3579694 |            | Thu Mar 28 09:50:45 2024
-|     wikisort     | ENCRYPT | 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    3579694 |            | Thu Mar 28 09:51:39 2024
-|       crc32      | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2298139 |            | Thu Mar 28 09:51:46 2024
-|       cubic      | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2760543 |            | Thu Mar 28 09:51:49 2024
-|     dhrystone    | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1223079 |            | Thu Mar 28 09:51:50 2024
-|        edn       | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1284783 |            | Thu Mar 28 09:51:52 2024
-|     fibonacci    | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     375367 |            | Thu Mar 28 09:51:52 2024
-|     huffbench    | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1808371 |            | Thu Mar 28 09:51:54 2024
-|    matmult-int   | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1678503 |            | Thu Mar 28 09:51:56 2024
-|      md5sum      | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1362251 |            | Thu Mar 28 09:51:57 2024
-|      minver      | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1570131 |            | Thu Mar 28 09:51:59 2024
-|      mont64      | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1030167 |            | Thu Mar 28 09:52:00 2024
-|       nbody      | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    8774543 |            | Thu Mar 28 09:52:09 2024
-|    nettle-aes    | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1080419 |            | Thu Mar 28 09:52:11 2024
-|   nettle-sha256  | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     555843 |            | Thu Mar 28 09:52:11 2024
-|     nsichneu     | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613919 |            | Thu Mar 28 09:52:12 2024
-|     picojpeg     | ENCRYPT | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     150359 |     150338 | Thu Mar 28 09:52:12 2024
-|    primecount    | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1793419 |            | Thu Mar 28 09:52:14 2024
-|      qrduino     | ENCRYPT | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Thu Mar 28 09:52:15 2024
-|  sglib-combined  | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1377059 |            | Thu Mar 28 09:52:16 2024
-|       slre       | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613179 |            | Thu Mar 28 09:52:17 2024
-|        st        | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2253223 |            | Thu Mar 28 09:52:19 2024
-|     statemate    | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     481631 |            | Thu Mar 28 09:52:20 2024
-|      tarfind     | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1434603 |            | Thu Mar 28 09:52:21 2024
-|        ud        | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1177103 |            | Thu Mar 28 09:52:23 2024
-|    verifypin_0   | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |      37855 |            | Thu Mar 28 09:52:23 2024
-|     wikisort     | ENCRYPT | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    7159367 |            | Thu Mar 28 09:52:30 2024
-|       crc32      | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    3447198 |            | Thu Mar 28 09:52:33 2024
-|       cubic      | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    4140804 |            | Thu Mar 28 09:52:36 2024
-|     dhrystone    | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    1834608 |            | Thu Mar 28 09:52:37 2024
-|        edn       | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    1927164 |            | Thu Mar 28 09:52:39 2024
-|     fibonacci    | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |     563040 |            | Thu Mar 28 09:52:39 2024
-|     huffbench    | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    2712546 |            | Thu Mar 28 09:52:41 2024
-|    matmult-int   | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    2517744 |            | Thu Mar 28 09:52:43 2024
-|      md5sum      | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    2043366 |            | Thu Mar 28 09:52:44 2024
-|      minver      | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    2355186 |            | Thu Mar 28 09:52:46 2024
-|      mont64      | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    1545240 |            | Thu Mar 28 09:52:47 2024
-|       nbody      | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |   13161804 |            | Thu Mar 28 10:07:11 2024
-|    nettle-aes    | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    1620618 |            | Thu Mar 28 09:52:56 2024
-|   nettle-sha256  | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |     833754 |            | Thu Mar 28 09:52:57 2024
-|     nsichneu     | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |     920868 |            | Thu Mar 28 09:52:58 2024
-|     picojpeg     | ENCRYPT | 3 |   VERIF  |  FAILURE  |  REF ERROR  |     225528 |     225507 | Thu Mar 28 09:52:58 2024
-|    primecount    | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    2690118 |            | Thu Mar 28 09:53:00 2024
-|      qrduino     | ENCRYPT | 3 |   VERIF  |  FAILURE  |  REF ERROR  |     329196 |     329175 | Thu Mar 28 09:53:00 2024
-|  sglib-combined  | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    2065578 |            | Thu Mar 28 09:53:02 2024
-|       slre       | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |     919758 |            | Thu Mar 28 09:53:03 2024
-|        st        | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    3379824 |            | Thu Mar 28 09:53:05 2024
-|     statemate    | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |     722436 |            | Thu Mar 28 09:53:06 2024
-|      tarfind     | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    2151894 |            | Thu Mar 28 09:53:07 2024
-|        ud        | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |    1765644 |            | Thu Mar 28 09:53:09 2024
-|    verifypin_0   | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |      56772 |            | Thu Mar 28 09:53:09 2024
-|     wikisort     | ENCRYPT | 3 |   VERIF  |  SUCCESS  |  VALID EXEC |   10739040 |            | Thu Mar 28 10:08:03 2024
-|       crc32      | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    6894375 |            | Thu Mar 28 09:53:33 2024
-|       cubic      | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    8281587 |            | Thu Mar 28 09:53:36 2024
-|     dhrystone    | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    3669195 |            | Thu Mar 28 09:53:38 2024
-|        edn       | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    3854307 |            | Thu Mar 28 09:53:40 2024
-|     fibonacci    | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    1126059 |            | Thu Mar 28 09:53:40 2024
-|     huffbench    | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    5425071 |            | Thu Mar 28 09:53:42 2024
-|    matmult-int   | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    5035467 |            | Thu Mar 28 09:53:45 2024
-|      md5sum      | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    4086711 |            | Thu Mar 28 09:53:46 2024
-|      minver      | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    4710351 |            | Thu Mar 28 09:53:49 2024
-|      mont64      | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    3090459 |            | Thu Mar 28 09:53:50 2024
-|       nbody      | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |   26323587 |            | Thu Mar 28 10:07:23 2024
-|    nettle-aes    | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    3241215 |            | Thu Mar 28 09:53:56 2024
-|   nettle-sha256  | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    1667487 |            | Thu Mar 28 09:53:57 2024
-|     nsichneu     | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    1841715 |            | Thu Mar 28 09:53:58 2024
-|     picojpeg     | ENCRYPT | 6 |   VERIF  |  FAILURE  |  REF ERROR  |     451035 |     451014 | Thu Mar 28 09:53:58 2024
-|    primecount    | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    5380215 |            | Thu Mar 28 09:54:01 2024
-|      qrduino     | ENCRYPT | 6 |   VERIF  |  FAILURE  |  REF ERROR  |     658371 |     658350 | Thu Mar 28 09:54:01 2024
-|  sglib-combined  | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    4131135 |            | Thu Mar 28 09:54:03 2024
-|       slre       | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    1839495 |            | Thu Mar 28 09:54:04 2024
-|        st        | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    6759627 |            | Thu Mar 28 09:54:07 2024
-|     statemate    | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    1444851 |            | Thu Mar 28 09:54:08 2024
-|      tarfind     | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    4303767 |            | Thu Mar 28 09:54:09 2024
-|        ud        | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    3531267 |            | Thu Mar 28 09:54:11 2024
-|    verifypin_0   | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |     113523 |            | Thu Mar 28 09:54:11 2024
-|     wikisort     | ENCRYPT | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |   21478059 |            | Thu Mar 28 10:08:13 2024
-
-
-##### ASCON with CS association
-
-|   PROGRAM_NAME   | ENCRYPT |C_F|   MODE   |    TEST   | REASON END. |  SIM_TIME  | FIRST ERR. |       TIMESTAMP         
-|:----------------:|:-------:|:-:|:--------:|:---------:|:-----------:|:----------:|:----------:|:----------------------:|
-|       crc32      |         |   | SAVE_REF |           |  VALID EXEC |    1149080 |            | Mon Apr 22 17:58:24 2024
-|       crc32      |         |   |SAVE/TRACE|           |  VALID EXEC |    1149080 |            | Mon Apr 22 17:58:26 2024
-|       crc32      | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    1149080 |            | Mon Apr 22 17:58:45 2024
-|       cubic      |         |   | SAVE_REF |           |  VALID EXEC |    1380282 |            | Mon Apr 22 17:58:46 2024
-|       cubic      |         |   |SAVE/TRACE|           |  VALID EXEC |    1380282 |            | Mon Apr 22 17:58:49 2024
-|       cubic      | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    1380282 |            | Mon Apr 22 17:59:14 2024
-|     dhrystone    |         |   | SAVE_REF |           |  VALID EXEC |     611550 |            | Mon Apr 22 17:59:15 2024
-|     dhrystone    |         |   |SAVE/TRACE|           |  VALID EXEC |     611550 |            | Mon Apr 22 17:59:16 2024
-|     dhrystone    | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     611550 |            | Mon Apr 22 17:59:27 2024
-|        edn       |         |   | SAVE_REF |           |  VALID EXEC |     642402 |            | Mon Apr 22 17:59:28 2024
-|        edn       |         |   |SAVE/TRACE|           |  VALID EXEC |     642402 |            | Mon Apr 22 17:59:29 2024
-|        edn       | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     642402 |            | Mon Apr 22 17:59:41 2024
-|     fibonacci    |         |   | SAVE_REF |           |  VALID EXEC |     187694 |            | Mon Apr 22 17:59:41 2024
-|     fibonacci    |         |   |SAVE/TRACE|           |  VALID EXEC |     187694 |            | Mon Apr 22 17:59:42 2024
-|     fibonacci    | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     187694 |            | Mon Apr 22 17:59:46 2024
-|     huffbench    |         |   | SAVE_REF |           |  VALID EXEC |     904196 |            | Mon Apr 22 17:59:47 2024
-|     huffbench    |         |   |SAVE/TRACE|           |  VALID EXEC |     904196 |            | Mon Apr 22 17:59:49 2024
-|     huffbench    | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     904196 |            | Mon Apr 22 18:00:05 2024
-|    matmult-int   |         |   | SAVE_REF |           |  VALID EXEC |     839262 |            | Mon Apr 22 18:00:06 2024
-|    matmult-int   |         |   |SAVE/TRACE|           |  VALID EXEC |     839262 |            | Mon Apr 22 18:00:07 2024
-|    matmult-int   | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     839262 |            | Mon Apr 22 18:00:22 2024
-|      md5sum      |         |   | SAVE_REF |           |  VALID EXEC |     681136 |            | Mon Apr 22 18:00:23 2024
-|      md5sum      |         |   |SAVE/TRACE|           |  VALID EXEC |     681136 |            | Mon Apr 22 18:00:24 2024
-|      md5sum      | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     681136 |            | Mon Apr 22 18:00:37 2024
-|      minver      |         |   | SAVE_REF |           |  VALID EXEC |     785076 |            | Mon Apr 22 18:00:37 2024
-|      minver      |         |   |SAVE/TRACE|           |  VALID EXEC |     785076 |            | Mon Apr 22 18:00:39 2024
-|      minver      | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     785076 |            | Mon Apr 22 18:00:53 2024
-|      mont64      |         |   | SAVE_REF |           |  VALID EXEC |     515094 |            | Mon Apr 22 18:00:54 2024
-|      mont64      |         |   |SAVE/TRACE|           |  VALID EXEC |     515094 |            | Mon Apr 22 18:00:55 2024
-|      mont64      | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     515094 |            | Mon Apr 22 18:01:04 2024
-|       nbody      |         |   | SAVE_REF |           |  VALID EXEC |    4387282 |            | Mon Apr 22 18:01:07 2024
-|       nbody      |         |   |SAVE/TRACE|           |  VALID EXEC |    4387282 |            | Mon Apr 22 18:01:13 2024
-|       nbody      | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    4387282 |            | Mon Apr 22 18:02:28 2024
-|    nettle-aes    |         |   | SAVE_REF |           |  VALID EXEC |     540220 |            | Mon Apr 22 18:02:29 2024
-|    nettle-aes    |         |   |SAVE/TRACE|           |  VALID EXEC |     540220 |            | Mon Apr 22 18:02:30 2024
-|    nettle-aes    | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     540220 |            | Mon Apr 22 18:02:40 2024
-|   nettle-sha256  |         |   | SAVE_REF |           |  VALID EXEC |     277932 |            | Mon Apr 22 18:02:41 2024
-|   nettle-sha256  |         |   |SAVE/TRACE|           |  VALID EXEC |     277932 |            | Mon Apr 22 18:02:42 2024
-|   nettle-sha256  | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     277932 |            | Mon Apr 22 18:02:48 2024
-|     nsichneu     |         |   | SAVE_REF |           |  VALID EXEC |     306970 |            | Mon Apr 22 18:02:49 2024
-|     nsichneu     |         |   |SAVE/TRACE|           |  VALID EXEC |     306970 |            | Mon Apr 22 18:02:50 2024
-|     nsichneu     | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     306970 |            | Mon Apr 22 18:02:57 2024
-|     picojpeg     |         |   | SAVE_REF |           |  VALID EXEC |    1927668 |            | Mon Apr 22 18:02:59 2024
-|     picojpeg     |         |   |SAVE/TRACE|           |  VALID EXEC |    1927668 |            | Mon Apr 22 18:03:02 2024
-|     picojpeg     | instr+cs| 1 |   VERIF  |  FAILURE  |  REF ERROR  |      75190 |      75169 | Mon Apr 22 18:03:31 2024
-|    primecount    |         |   | SAVE_REF |           |  VALID EXEC |     896720 |            | Mon Apr 22 18:03:32 2024
-|    primecount    |         |   |SAVE/TRACE|           |  VALID EXEC |     896720 |            | Mon Apr 22 18:03:33 2024
-|    primecount    | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     896720 |            | Mon Apr 22 18:03:50 2024
-|      qrduino     |         |   | SAVE_REF |           |  VALID EXEC |    1672566 |            | Mon Apr 22 18:03:52 2024
-|      qrduino     |         |   |SAVE/TRACE|           |  VALID EXEC |    1672566 |            | Mon Apr 22 18:03:54 2024
-|      qrduino     | instr+cs| 1 |   VERIF  |  FAILURE  |  REF ERROR  |     109746 |     109725 | Mon Apr 22 18:04:20 2024
-|  sglib-combined  |         |   | SAVE_REF |           |  VALID EXEC |     688540 |            | Mon Apr 22 18:04:21 2024
-|  sglib-combined  |         |   |SAVE/TRACE|           |  VALID EXEC |     688540 |            | Mon Apr 22 18:04:22 2024
-|  sglib-combined  | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     688540 |            | Mon Apr 22 18:04:35 2024
-|       slre       |         |   | SAVE_REF |           |  VALID EXEC |     306600 |            | Mon Apr 22 18:04:36 2024
-|       slre       |         |   |SAVE/TRACE|           |  VALID EXEC |     306600 |            | Mon Apr 22 18:04:37 2024
-|       slre       | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     306600 |            | Mon Apr 22 18:04:43 2024
-|        st        |         |   | SAVE_REF |           |  VALID EXEC |    1126622 |            | Mon Apr 22 18:04:44 2024
-|        st        |         |   |SAVE/TRACE|           |  VALID EXEC |    1126622 |            | Mon Apr 22 18:04:46 2024
-|        st        | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    1126622 |            | Mon Apr 22 18:05:05 2024
-|     statemate    |         |   | SAVE_REF |           |  VALID EXEC |     240826 |            | Mon Apr 22 18:05:06 2024
-|     statemate    |         |   |SAVE/TRACE|           |  VALID EXEC |     240826 |            | Mon Apr 22 18:05:07 2024
-|     statemate    | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     240826 |            | Mon Apr 22 18:05:12 2024
-|      tarfind     |         |   | SAVE_REF |           |  VALID EXEC |     717312 |            | Mon Apr 22 18:05:13 2024
-|      tarfind     |         |   |SAVE/TRACE|           |  VALID EXEC |     717312 |            | Mon Apr 22 18:05:14 2024
-|      tarfind     | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     717312 |            | Mon Apr 22 18:05:27 2024
-|        ud        |         |   | SAVE_REF |           |  VALID EXEC |     588562 |            | Mon Apr 22 18:05:27 2024
-|        ud        |         |   |SAVE/TRACE|           |  VALID EXEC |     588562 |            | Mon Apr 22 18:05:28 2024
-|        ud        | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |     588562 |            | Mon Apr 22 18:05:39 2024
-|    verifypin-0   |         |   | SAVE_REF |           |  VALID EXEC |      18938 |            | Mon Apr 22 18:05:39 2024
-|    verifypin-0   |         |   |SAVE/TRACE|           |  VALID EXEC |      18938 |            | Mon Apr 22 18:05:39 2024
-|    verifypin-0   | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |      18938 |            | Mon Apr 22 18:05:41 2024
-|     wikisort     |         |   | SAVE_REF |           |  VALID EXEC |    3579694 |            | Mon Apr 22 18:05:44 2024
-|     wikisort     |         |   |SAVE/TRACE|           |  VALID EXEC |    3579694 |            | Mon Apr 22 18:05:49 2024
-|     wikisort     | instr+cs| 1 |   VERIF  |  SUCCESS  |  VALID EXEC |    3579694 |            | Mon Apr 22 18:06:51 2024
-|    verifypin-0   |         |   | SAVE_REF |           |  VALID EXEC |      18938 |            | Tue Apr 23 17:26:38 2024
-|    verifypin-0   |         |   |SAVE/TRACE|           |  VALID EXEC |      18938 |            | Tue Apr 23 17:26:39 2024
-|    verifypin-0   |  instr  | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |     113523 |            | Tue Apr 23 17:26:48 2024
-|      md5sum      |         |   | SAVE_REF |           |  VALID EXEC |     681136 |            | Tue Apr 23 17:26:58 2024
-|      md5sum      |         |   |SAVE/TRACE|           |  VALID EXEC |     681136 |            | Tue Apr 23 17:27:01 2024
-|      md5sum      |  instr  | 6 |   VERIF  |  SUCCESS  |  VALID EXEC |    4086711 |            | Tue Apr 23 17:27:15 2024
+```
+|       crc32      |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2298139 |            | Fri Jun 27 17:33:47 2025
+|       crc32      |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2298139 |            | Fri Jun 27 17:33:51 2025
+|       crc32      |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2298139 |            | Fri Jun 27 17:33:56 2025
+|       crc32      |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2298139 |            | Fri Jun 27 17:34:00 2025
+|       crc32      |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2298139 |            | Fri Jun 27 17:34:05 2025
+|       crc32      |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2298139 |            | Fri Jun 27 17:34:14 2025
+|       crc32      |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2298139 |            | Fri Jun 27 17:34:24 2025
+|       cubic      |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2760543 |            | Fri Jun 27 17:34:31 2025
+|       cubic      |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2760543 |            | Fri Jun 27 17:34:39 2025
+|       cubic      |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2760543 |            | Fri Jun 27 17:34:46 2025
+|       cubic      |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2760543 |            | Fri Jun 27 17:34:54 2025
+|       cubic      |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2760543 |            | Fri Jun 27 17:35:02 2025
+|       cubic      |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2760543 |            | Fri Jun 27 17:35:09 2025
+|       cubic      |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2760543 |            | Fri Jun 27 17:35:17 2025
+|     dhrystone    |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1223079 |            | Fri Jun 27 17:35:20 2025
+|     dhrystone    |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1223079 |            | Fri Jun 27 17:35:23 2025
+|     dhrystone    |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1223079 |            | Fri Jun 27 17:35:27 2025
+|     dhrystone    |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1223079 |            | Fri Jun 27 17:35:29 2025
+|     dhrystone    |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1223079 |            | Fri Jun 27 17:35:33 2025
+|     dhrystone    |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1223079 |            | Fri Jun 27 17:35:35 2025
+|     dhrystone    |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1223079 |            | Fri Jun 27 17:35:39 2025
+|        edn       |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1284783 |            | Fri Jun 27 17:35:41 2025
+|        edn       |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1284783 |            | Fri Jun 27 17:35:44 2025
+|        edn       |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1284783 |            | Fri Jun 27 17:35:47 2025
+|        edn       |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1284783 |            | Fri Jun 27 17:35:49 2025
+|        edn       |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1284783 |            | Fri Jun 27 17:35:52 2025
+|        edn       |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1284783 |            | Fri Jun 27 17:35:55 2025
+|        edn       |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1284783 |            | Fri Jun 27 17:35:57 2025
+|     fibonacci    |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     375367 |            | Fri Jun 27 17:35:59 2025
+|     fibonacci    |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     375367 |            | Fri Jun 27 17:36:01 2025
+|     fibonacci    |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     375367 |            | Fri Jun 27 17:36:03 2025
+|     fibonacci    |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     375367 |            | Fri Jun 27 17:36:04 2025
+|     fibonacci    |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     375367 |            | Fri Jun 27 17:36:06 2025
+|     fibonacci    |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     375367 |            | Fri Jun 27 17:36:08 2025
+|     fibonacci    |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     375367 |            | Fri Jun 27 17:36:10 2025
+|     huffbench    |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1808371 |            | Fri Jun 27 17:36:13 2025
+|     huffbench    |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1808371 |            | Fri Jun 27 17:36:17 2025
+|     huffbench    |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1808371 |            | Fri Jun 27 17:36:20 2025
+|     huffbench    |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1808371 |            | Fri Jun 27 17:36:24 2025
+|     huffbench    |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1808371 |            | Fri Jun 27 17:36:28 2025
+|     huffbench    |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1808371 |            | Fri Jun 27 17:36:31 2025
+|     huffbench    |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1808371 |            | Fri Jun 27 17:36:35 2025
+|    matmult-int   |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1678503 |            | Fri Jun 27 17:36:38 2025
+|    matmult-int   |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1678503 |            | Fri Jun 27 17:36:41 2025
+|    matmult-int   |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1678503 |            | Fri Jun 27 17:36:44 2025
+|    matmult-int   |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1678503 |            | Fri Jun 27 17:36:48 2025
+|    matmult-int   |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1678503 |            | Fri Jun 27 17:36:51 2025
+|    matmult-int   |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1678503 |            | Fri Jun 27 17:36:54 2025
+|    matmult-int   |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1678503 |            | Fri Jun 27 17:36:57 2025
+|      md5sum      |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1362251 |            | Fri Jun 27 17:37:00 2025
+|      md5sum      |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1362251 |            | Fri Jun 27 17:37:03 2025
+|      md5sum      |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1362251 |            | Fri Jun 27 17:37:06 2025
+|      md5sum      |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1362251 |            | Fri Jun 27 17:37:09 2025
+|      md5sum      |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1362251 |            | Fri Jun 27 17:37:13 2025
+|      md5sum      |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1362251 |            | Fri Jun 27 17:37:16 2025
+|      md5sum      |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1362251 |            | Fri Jun 27 17:37:19 2025
+|      minver      |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1570131 |            | Fri Jun 27 17:37:22 2025
+|      minver      |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1570131 |            | Fri Jun 27 17:37:25 2025
+|      minver      |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1570131 |            | Fri Jun 27 17:37:29 2025
+|      minver      |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1570131 |            | Fri Jun 27 17:37:32 2025
+|      minver      |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1570131 |            | Fri Jun 27 17:37:36 2025
+|      minver      |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1570131 |            | Fri Jun 27 17:37:40 2025
+|      minver      |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1570131 |            | Fri Jun 27 17:37:44 2025
+|      mont64      |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1030167 |            | Fri Jun 27 17:37:46 2025
+|      mont64      |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1030167 |            | Fri Jun 27 17:37:49 2025
+|      mont64      |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1030167 |            | Fri Jun 27 17:37:52 2025
+|      mont64      |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1030167 |            | Fri Jun 27 17:37:55 2025
+|      mont64      |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1030167 |            | Fri Jun 27 17:37:57 2025
+|      mont64      |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1030167 |            | Fri Jun 27 17:38:00 2025
+|      mont64      |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1030167 |            | Fri Jun 27 17:38:02 2025
+|       nbody      |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    8774543 |            | Fri Jun 27 17:38:14 2025
+|       nbody      |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    8774543 |            | Fri Jun 27 17:38:27 2025
+|       nbody      |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    8774543 |            | Fri Jun 27 17:38:40 2025
+|       nbody      |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    8774543 |            | Fri Jun 27 17:38:53 2025
+|       nbody      |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    8774543 |            | Fri Jun 27 17:39:05 2025
+|       nbody      |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    8774543 |            | Fri Jun 27 17:39:17 2025
+|       nbody      |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    8774543 |            | Fri Jun 27 17:39:29 2025
+|    nettle-aes    |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1080419 |            | Fri Jun 27 17:39:33 2025
+|    nettle-aes    |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1080419 |            | Fri Jun 27 17:39:36 2025
+|    nettle-aes    |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1080419 |            | Fri Jun 27 17:39:38 2025
+|    nettle-aes    |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1080419 |            | Fri Jun 27 17:39:41 2025
+|    nettle-aes    |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1080419 |            | Fri Jun 27 17:39:44 2025
+|    nettle-aes    |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1080419 |            | Fri Jun 27 17:39:46 2025
+|    nettle-aes    |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1080419 |            | Fri Jun 27 17:39:49 2025
+|   nettle-sha256  |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     555843 |            | Fri Jun 27 17:39:51 2025
+|   nettle-sha256  |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     555843 |            | Fri Jun 27 17:39:53 2025
+|   nettle-sha256  |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     555843 |            | Fri Jun 27 17:39:55 2025
+|   nettle-sha256  |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     555843 |            | Fri Jun 27 17:39:57 2025
+|   nettle-sha256  |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     555843 |            | Fri Jun 27 17:39:59 2025
+|   nettle-sha256  |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     555843 |            | Fri Jun 27 17:40:02 2025
+|   nettle-sha256  |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     555843 |            | Fri Jun 27 17:40:04 2025
+|     nsichneu     |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613919 |            | Fri Jun 27 17:40:08 2025
+|     nsichneu     |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613919 |            | Fri Jun 27 17:40:11 2025
+|     nsichneu     |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613919 |            | Fri Jun 27 17:40:14 2025
+|     nsichneu     |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613919 |            | Fri Jun 27 17:40:17 2025
+|     nsichneu     |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613919 |            | Fri Jun 27 17:40:20 2025
+|     nsichneu     |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613919 |            | Fri Jun 27 17:40:22 2025
+|     nsichneu     |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613919 |            | Fri Jun 27 17:40:25 2025
+|     picojpeg     |   instr+cs2   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     150359 |     150338 | Fri Jun 27 17:40:28 2025
+|     picojpeg     |   instr+cs3   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     150359 |     150338 | Fri Jun 27 17:40:30 2025
+|     picojpeg     |   instr+cs4   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     150359 |     150338 | Fri Jun 27 17:40:32 2025
+|     picojpeg     |   instr+cs5   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     150359 |     150338 | Fri Jun 27 17:40:35 2025
+|     picojpeg     |   instr+cs7   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     150359 |     150338 | Fri Jun 27 17:40:37 2025
+|     picojpeg     |   instr+cs8   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     150359 |     150338 | Fri Jun 27 17:40:39 2025
+|     picojpeg     |   instr+cs9   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     150359 |     150338 | Fri Jun 27 17:40:41 2025
+|    primecount    |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1793419 |            | Fri Jun 27 17:40:45 2025
+|    primecount    |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1793419 |            | Fri Jun 27 17:40:49 2025
+|    primecount    |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1793419 |            | Fri Jun 27 17:40:52 2025
+|    primecount    |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1793419 |            | Fri Jun 27 17:40:56 2025
+|    primecount    |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1793419 |            | Fri Jun 27 17:40:59 2025
+|    primecount    |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1793419 |            | Fri Jun 27 17:41:03 2025
+|    primecount    |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1793419 |            | Fri Jun 27 17:41:06 2025
+|      qrduino     |   instr+cs2   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Fri Jun 27 17:41:09 2025
+|      qrduino     |   instr+cs3   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Fri Jun 27 17:41:11 2025
+|      qrduino     |   instr+cs4   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Fri Jun 27 17:41:13 2025
+|      qrduino     |   instr+cs5   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Fri Jun 27 17:41:15 2025
+|      qrduino     |   instr+cs7   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Fri Jun 27 17:41:18 2025
+|      qrduino     |   instr+cs8   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Fri Jun 27 17:41:20 2025
+|      qrduino     |   instr+cs9   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Fri Jun 27 17:41:22 2025
+|    qrduino_fix   |   instr+cs2   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Fri Jun 27 17:41:24 2025
+|    qrduino_fix   |   instr+cs3   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Fri Jun 27 17:41:26 2025
+|    qrduino_fix   |   instr+cs4   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Fri Jun 27 17:41:28 2025
+|    qrduino_fix   |   instr+cs5   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Fri Jun 27 17:41:31 2025
+|    qrduino_fix   |   instr+cs7   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Fri Jun 27 17:41:33 2025
+|    qrduino_fix   |   instr+cs8   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Fri Jun 27 17:41:35 2025
+|    qrduino_fix   |   instr+cs9   | 2 |   VERIF  |  FAILURE  |  REF ERROR  |     219471 |     219450 | Fri Jun 27 17:41:38 2025
+|  sglib-combined  |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1377059 |            | Fri Jun 27 17:41:41 2025
+|  sglib-combined  |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1377059 |            | Fri Jun 27 17:41:45 2025
+|  sglib-combined  |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1377059 |            | Fri Jun 27 17:41:49 2025
+|  sglib-combined  |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1377059 |            | Fri Jun 27 17:41:53 2025
+|  sglib-combined  |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1377059 |            | Fri Jun 27 17:41:56 2025
+|  sglib-combined  |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1377059 |            | Fri Jun 27 17:42:00 2025
+|  sglib-combined  |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1377059 |            | Fri Jun 27 17:42:03 2025
+|       slre       |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613179 |            | Fri Jun 27 17:42:05 2025
+|       slre       |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613179 |            | Fri Jun 27 17:42:08 2025
+|       slre       |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613179 |            | Fri Jun 27 17:42:10 2025
+|       slre       |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613179 |            | Fri Jun 27 17:42:12 2025
+|       slre       |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613179 |            | Fri Jun 27 17:42:15 2025
+|       slre       |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613179 |            | Fri Jun 27 17:42:18 2025
+|       slre       |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     613179 |            | Fri Jun 27 17:42:20 2025
+|        st        |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2253223 |            | Fri Jun 27 17:42:25 2025
+|        st        |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2253223 |            | Fri Jun 27 17:42:29 2025
+|        st        |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2253223 |            | Fri Jun 27 17:42:34 2025
+|        st        |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2253223 |            | Fri Jun 27 17:42:38 2025
+|        st        |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2253223 |            | Fri Jun 27 17:42:42 2025
+|        st        |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2253223 |            | Fri Jun 27 17:42:47 2025
+|        st        |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    2253223 |            | Fri Jun 27 17:42:51 2025
+|     statemate    |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     481631 |            | Fri Jun 27 17:42:53 2025
+|     statemate    |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     481631 |            | Fri Jun 27 17:42:55 2025
+|     statemate    |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     481631 |            | Fri Jun 27 17:42:57 2025
+|     statemate    |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     481631 |            | Fri Jun 27 17:42:59 2025
+|     statemate    |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     481631 |            | Fri Jun 27 17:43:01 2025
+|     statemate    |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     481631 |            | Fri Jun 27 17:43:02 2025
+|     statemate    |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |     481631 |            | Fri Jun 27 17:43:04 2025
+|      tarfind     |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1434603 |            | Fri Jun 27 17:43:08 2025
+|      tarfind     |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1434603 |            | Fri Jun 27 17:43:11 2025
+|      tarfind     |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1434603 |            | Fri Jun 27 17:43:14 2025
+|      tarfind     |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1434603 |            | Fri Jun 27 17:43:17 2025
+|      tarfind     |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1434603 |            | Fri Jun 27 17:43:20 2025
+|      tarfind     |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1434603 |            | Fri Jun 27 17:43:23 2025
+|      tarfind     |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1434603 |            | Fri Jun 27 17:43:26 2025
+|        ud        |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1177103 |            | Fri Jun 27 17:43:29 2025
+|        ud        |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1177103 |            | Fri Jun 27 17:43:32 2025
+|        ud        |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1177103 |            | Fri Jun 27 17:43:34 2025
+|        ud        |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1177103 |            | Fri Jun 27 17:43:37 2025
+|        ud        |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1177103 |            | Fri Jun 27 17:43:40 2025
+|        ud        |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1177103 |            | Fri Jun 27 17:43:43 2025
+|        ud        |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    1177103 |            | Fri Jun 27 17:43:46 2025
+|    verifypin-0   |               |   | SAVE_REF |           |  VALID EXEC |      18938 |            | Fri Jun 27 17:43:46 2025
+|    verifypin-0   |   instr+cs1   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |      37855 |            | Fri Jun 27 17:43:46 2025
+|    verifypin-0   |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |      37855 |            | Fri Jun 27 17:43:48 2025
+|    verifypin-0   |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |      37855 |            | Fri Jun 27 17:43:49 2025
+|    verifypin-0   |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |      37855 |            | Fri Jun 27 17:43:51 2025
+|    verifypin-0   |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |      37855 |            | Fri Jun 27 17:43:52 2025
+|    verifypin-0   |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |      37855 |            | Fri Jun 27 17:43:53 2025
+|    verifypin-0   |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |      37855 |            | Fri Jun 27 17:43:55 2025
+|    verifypin-0   |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |      37855 |            | Fri Jun 27 17:43:56 2025
+|     wikisort     |               |   | SAVE_REF |           |  VALID EXEC |    3579694 |            | Fri Jun 27 17:44:00 2025
+|     wikisort     |   instr+cs1   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    7159367 |            | Fri Jun 27 17:44:10 2025
+|     wikisort     |   instr+cs2   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    7159367 |            | Fri Jun 27 17:44:22 2025
+|     wikisort     |   instr+cs3   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    7159367 |            | Fri Jun 27 17:44:34 2025
+|     wikisort     |   instr+cs4   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    7159367 |            | Fri Jun 27 17:44:45 2025
+|     wikisort     |   instr+cs5   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    7159367 |            | Fri Jun 27 17:44:56 2025
+|     wikisort     |   instr+cs7   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    7159367 |            | Fri Jun 27 17:45:07 2025
+|     wikisort     |   instr+cs8   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    7159367 |            | Fri Jun 27 17:45:18 2025
+|     wikisort     |   instr+cs9   | 2 |   VERIF  |  SUCCESS  |  VALID EXEC |    7159367 |            | Fri Jun 27 17:45:30 2025
+```
 
 
 
 ## ToExplain:
-- goals of this project (simulate, verify, implentatio nverilator (fast), questa vivado (on chip simu validation)
-- jalr_successors.csv
+- goals of this project (simulate, verify, implentation) with verilator (fast), questa vivado (on chip simu validation)
+- jalr_successors.csv (destination of indirect jumps are infer with simulation, we make the assumption that indirect jump destination are known).
 - new cv32e40p branch: adding comments to ignore specifically Verilator Warnings
 - BRAM not reset with rst_sw_i ... need to program again...
