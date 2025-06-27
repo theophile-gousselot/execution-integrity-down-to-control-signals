@@ -25,7 +25,6 @@ else:
     CS_VECTOR_ARCH_LIB.append({'id': ['mult_en', 'mult_operator', 'mult_signed_mode', 'ctrl_transfer_target_mux_sel', 'ctrl_transfer_insn_in_dec', 'ctrl_transfer_insn_in_id'], 'ex': ['mult_en', 'mult_operator', 'mult_signed_mode']})
     CS_VECTOR_ARCH_LIB.append({'id': ['rega_used_dec', 'regb_used_dec', 'regc_mux', 'regc_used_dec', 'regfile_alu_we_dec', 'regfile_alu_we', 'regfile_mem_we', 'csr_status', 'csr_access'], 'ex': ['regfile_mem_we', 'regfile_alu_we', 'csr_access'], 'wb': ['regfile_mem_we']})
     CS_VECTOR_ARCH_LIB.append({'id': ['data_type', 'data_sign_ext', 'data_we', 'data_req'], 'ex': ['data_type', 'data_sign_ext', 'data_we', 'data_req'], 'wb': ['data_type', 'data_sign_ext', 'data_we']})
-
     CS_VECTOR_ARCH_LIB.append({'id': ['alu_en'], 'ex': ['alu_en'], 'wb': ['regfile_mem_we', 'regfile_mem_waddr', 'data_type', 'data_sign_ext', 'data_we']})
     CS_VECTOR_ARCH_LIB.append({'id': ['branch_in_ex'], 'ex': ['branch_in_ex']})
     CS_VECTOR_ARCH_LIB.append({'id': ['regfile_addr_ra', 'regfile_addr_rb', 'regfile_alu_waddr'], 'ex': ['regfile_alu_waddr']})

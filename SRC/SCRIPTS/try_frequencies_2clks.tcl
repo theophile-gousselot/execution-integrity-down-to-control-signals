@@ -90,6 +90,7 @@ proc TryFreq {fmin fmax step nb_hw_perm} {
         report_utilization -hierarchical -file "${prefix}_report_utilization_hierarchical.rpt"
         report_timing_summary -delay_type min_max -report_unconstrained -check_timing_verbose -max_paths 5 -nworst 4 -input_pins -file "${prefix}_timing.rpt"
         report_design_analysis -timing -extend -congestion -complexity -file "${prefix}_design-analysis.rpt"
+        report_power -file "${prefix}_report_power.rpt"
 
     }
 }
