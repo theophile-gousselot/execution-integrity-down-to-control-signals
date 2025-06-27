@@ -2,7 +2,7 @@
 
 ### Prerequisites
 #### RISC-V Toolchain
-1. Download a RISC-V toolchain. The one used in the paper is available: TODO link with access to the toolchain
+1. Download a RISC-V toolchain. The one used in the paper is available: [https://github.com/theophile-gousselot/corev-openhw-gcc-ubuntu2004-20211104.git](https://github.com/theophile-gousselot/corev-openhw-gcc-ubuntu2004-20211104.git)
 
 2. It is recommended to extract the toolchain in `/opt/corev`. However, if you intend to extract in another location the toolchain, you can create a symbolic link. If you install corev somewhere else, you should edit the `RISCV` variable in `Makefile` or add `RISCV=<path/to/corev>` everytime you execute the `make` command. 
 ``` bash
