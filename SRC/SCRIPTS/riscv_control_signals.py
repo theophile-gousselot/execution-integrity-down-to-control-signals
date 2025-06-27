@@ -26,11 +26,11 @@ else:
     CS_VECTOR_ARCH_LIB.append({'id': ['rega_used_dec', 'regb_used_dec', 'regc_mux', 'regc_used_dec', 'regfile_alu_we_dec', 'regfile_alu_we', 'regfile_mem_we', 'csr_status', 'csr_access'], 'ex': ['regfile_mem_we', 'regfile_alu_we', 'csr_access'], 'wb': ['regfile_mem_we']})
     CS_VECTOR_ARCH_LIB.append({'id': ['data_type', 'data_sign_ext', 'data_we', 'data_req'], 'ex': ['data_type', 'data_sign_ext', 'data_we', 'data_req'], 'wb': ['data_type', 'data_sign_ext', 'data_we']})
 
-    CS_VECTOR_ARCH_LIB.append({'id': ['imm_b']})
+    CS_VECTOR_ARCH_LIB.append({'id': ['alu_en'], 'ex': ['alu_en'], 'wb': ['regfile_mem_we', 'regfile_mem_waddr', 'data_type', 'data_sign_ext', 'data_we']})
     CS_VECTOR_ARCH_LIB.append({'id': ['branch_in_ex'], 'ex': ['branch_in_ex']})
     CS_VECTOR_ARCH_LIB.append({'id': ['regfile_addr_ra', 'regfile_addr_rb', 'regfile_alu_waddr'], 'ex': ['regfile_alu_waddr']})
-    CS_VECTOR_ARCH_LIB.append({'wb': ['regfile_mem_waddr']})
-    CS_VECTOR_ARCH_LIB.append({'id': ['regfile_mem_waddr'], 'ex': ['regfile_mem_waddr'], 'wb': ['regfile_mem_waddr']})
+    CS_VECTOR_ARCH_LIB.append({'id': ['data_type'], 'ex': ['data_type'], 'wb': ['data_type']})
+    CS_VECTOR_ARCH_LIB.append({'id': ['rega_used_dec', 'regfile_addr_ra'], 'ex': ['regfile_alu_waddr']})
 
 
 GEN_INCLUDE_IN_CV32E40P_SV_FILES = ['id_from_decoder', 'id_from_id', 'ex', 'wb_from_ex', 'wb_from_lsu']
@@ -117,7 +117,10 @@ SIGNAL_DESCRIPTION['regfile_mem_waddr']            = {'used': True, 'src': 'inst
 SIGNAL_DESCRIPTION['regfile_addr_ra']              = {'used': True, 'src': 'instr_in_id', 'width': 6, 'stages': ['id'], 'reset_val': 0b0, 'sv_names': {'id_from_id': 'regfile_addr_ra_id'}} # Register Source
 SIGNAL_DESCRIPTION['regfile_addr_rb']              = {'used': True, 'src': 'instr_in_id', 'width': 6, 'stages': ['id'], 'reset_val': 0b0, 'sv_names': {'id_from_id': 'regfile_addr_rb_id'}} # Register Source
 SIGNAL_DESCRIPTION['regfile_addr_rc']              = {'used': False, 'src': 'instr_in_id', 'width': 6, 'stages': ['id'], 'reset_val': 0b0, 'sv_names': {'id_from_id': 'regfile_addr_rc_id'}} # useful only if FPU
+SIGNAL_DESCRIPTION['reg_d_ex_is_reg_a']            = {'used': True, 'src': 'cs_in_id', 'width': 1, 'stages': ['id'], 'reset_val': 0b0, 'depends': ['rega_used_dec', 'regfile_addr_ra', 'regfile_mem_waddr'], 'sv_names': {'id_from_id': 'reg_d_ex_is_reg_a_id'}} 
+SIGNAL_DESCRIPTION['reg_d_alu_is_reg_a']           = {'used': True, 'src': 'cs_in_id', 'width': 1, 'stages': ['id'], 'reset_val': 0b0, 'depends': ['rega_used_dec', 'regfile_addr_ra', 'regfile_alu_waddr'], 'sv_names': {'id_from_id': 'reg_d_alu_is_reg_a_id'}} 
 SIGNAL_DESCRIPTION['branch_in_ex']                 = {'used': True, 'src': 'cs_in_id', 'width': 1, 'stages': ['id', 'ex'], 'we_signals': True, 'reset_val': 0b0, 'id_invalid_ex_ready': 0b0, 'depends': ['ctrl_transfer_insn_in_id'], 'sv_names': {'id_from_id': 'branch_in_ex_id', 'ex': 'branch_in_ex'}}
+
 
 
 
@@ -496,10 +499,23 @@ class Control_signals:
 
             # CONTROL SIGNALS WHICH DEPENDS ON OTHER CONTROL SIGNALS
             if self.CS_VECTOR_DESCRIPTION[cs_name]['src'] == 'cs_in_id':
-                hard_fct = getattr(riscv_control_signals_combinational, cs_name) # call hard function from cs_name
-                cs_vector |= hard_fct(instr, cs_vector, cs_vector_dict, self.CS_VECTOR_DESCRIPTION) << self.CS_VECTOR_DESCRIPTION[cs_name]['position']
+                #hard_fct = getattr(riscv_control_signals_combinational, cs_name) # call hard function from cs_name
+                #cs_vector |= hard_fct(instr, cs_vector, cs_vector_dict, self.CS_VECTOR_DESCRIPTION) << self.CS_VECTOR_DESCRIPTION[cs_name]['position']
+                None
+
 
         return cs_vector
+
+
+    def update_id_combinatorial_cs_vector(self, cs_vector_dict):
+        # Generate Control signals which depends (combitional) on control signals
+        for cs_name in self.CS_VECTOR_DESCRIPTION.keys():
+
+            # CONTROL SIGNALS WHICH DEPENDS ON OTHER CONTROL SIGNALS
+            if self.CS_VECTOR_DESCRIPTION[cs_name]['src'] == 'cs_in_id':
+                hard_fct = getattr(riscv_control_signals_combinational, cs_name) # call hard function from cs_name
+                cs_vector_dict['id'] |= hard_fct(cs_vector_dict, self.CS_VECTOR_DESCRIPTION) << self.CS_VECTOR_DESCRIPTION[cs_name]['position']
+        return cs_vector_dict
 
 
     def decode_tab_to_instr_metadata(self, instr):

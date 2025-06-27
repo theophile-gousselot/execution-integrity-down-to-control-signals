@@ -19,8 +19,8 @@ BRANCH_JALR = 0b10
 BRANCH_COND = 0b11 # conditional branches
 
 
-def extract_cs(cs_vector, cs, CS_VECTOR_DESCRIPTION):
-    return ((cs_vector >> CS_VECTOR_DESCRIPTION[cs]['position']) & ((1 << CS_VECTOR_DESCRIPTION[cs]['width']) - 1))
+def extract_cs(cs_vector, signal, CS_VECTOR_DESCRIPTION):
+    return ((cs_vector >> CS_VECTOR_DESCRIPTION[signal]['position']) & ((1 << CS_VECTOR_DESCRIPTION[signal]['width']) - 1))
 
 def instr2fct7_3_opcode(instr):
     return (((instr >> 25) << 8) | (((instr >> 12) & 0b111) << 5) | ((instr >> 2) & 0b11111))
@@ -69,6 +69,33 @@ def regfile_addr_rb(instr):
 
 def regfile_addr_rc(instr):
     raise ValueError(f'Error, FPU not supported regfile_addr_rc is not used and is constant to 0')
+
+
+
+def reg_d_alu_is_reg_a(cs_vector_dict, CS_VECTOR_DESCRIPTION):
+    #regfile_alu_waddr_fw = extract_cs(cs_vector_dict['if'], 'regfile_alu_waddr', CS_VECTOR_DESCRIPTION)
+    #regfile_addr_ra = extract_cs(current_cs_vector_from_decoder, 'regfile_addr_ra', CS_VECTOR_DESCRIPTION)
+    #rega_used_dec = extract_cs(current_cs_vector_from_decoder, 'rega_used_dec', CS_VECTOR_DESCRIPTION)
+    regfile_alu_waddr_fw = extract_cs(cs_vector_dict['ex'], 'regfile_alu_waddr', CS_VECTOR_DESCRIPTION)
+    regfile_addr_ra = extract_cs(cs_vector_dict['id'], 'regfile_addr_ra', CS_VECTOR_DESCRIPTION)
+    rega_used_dec = extract_cs(cs_vector_dict['id'], 'rega_used_dec', CS_VECTOR_DESCRIPTION)
+
+#    print(hex(instr), regfile_alu_waddr_fw, rega_used_dec, regfile_addr_ra)
+    if (regfile_alu_waddr_fw == regfile_addr_ra) and (rega_used_dec == 1) and (regfile_addr_ra != 0):
+        return 1
+    else:
+        return 0
+
+def reg_d_ex_is_reg_a(instr, current_cs_vector_from_decoder, cs_vector_dict, CS_VECTOR_DESCRIPTION):
+    regfile_mem_waddr_ex = extract_cs(cs_vector_dict['id'], 'regfile_mem_waddr', CS_VECTOR_DESCRIPTION)
+    regfile_addr_ra = extract_cs(current_cs_vector_from_decoder, 'regfile_addr_ra', CS_VECTOR_DESCRIPTION)
+    rega_used_dec = extract_cs(current_cs_vector_from_decoder, 'rega_used_dec', CS_VECTOR_DESCRIPTION)
+
+    if (regfile_mem_waddr_ex == regfile_addr_ra) and (rega_used_dec == 1) and (regfile_addr_ra != 0):
+        print(hex(instr), regfile_mem_waddr_ex, rega_used_dec, regfile_addr_ra)
+        return 1
+    else:
+        return 0
 
 def branch_in_ex(instr, current_cs_vector_from_decoder, cs_vector_dict, CS_VECTOR_DESCRIPTION):
     ctrl_transfer_insn_in_id = extract_cs(current_cs_vector_from_decoder, 'ctrl_transfer_insn_in_id', CS_VECTOR_DESCRIPTION)

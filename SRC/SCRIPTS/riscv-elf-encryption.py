@@ -12,6 +12,7 @@ from ascon_fct import ascon_initialize, ascon_process_one_encryption, ascon_perm
 from riscv_code import Code, zfint
 from riscv_instruction import *
 from riscv_control_signals import Control_signals
+from riscv_control_signals_combinational import extract_cs
 
 ###### Arguments ######
 parser = argparse.ArgumentParser(description="Encrypt an elf file.")
@@ -52,6 +53,7 @@ OBJ_PATH = os.path.dirname(ELF_PATH)
 STATES_DEC_CSV_PATH = f"{ELF_PATH[:-4]}_states_dec.csv"
 STATES_HEX_CSV_PATH = f"{ELF_PATH[:-4]}_states_hex.csv"
 STATES_HEX_DBG_CSV_PATH = f"{ELF_PATH[:-4]}_states_hex_debug.csv"
+STATES_CS_HEX_DBG_CSV_PATH = f"{ELF_PATH[:-4]}_states_cs_hex_debug.csv"
 
 
 ###### Parameters ######
@@ -217,6 +219,10 @@ def encrypt_elf():
     ascon_states_hex = ""
     ascon_states_dec = ""
     ascon_states_hex_dbg = ""
+    ascon_states_cs_hex_dbg = "<STAGE>: <CS_VECTOR>"
+    for signal in list(reversed(cs.SIGNAL_SET)):
+        ascon_states_cs_hex_dbg += f"{signal} "
+    ascon_states_cs_hex_dbg += "(same for all stages)\n"
 
 
     # Encrypt every instruction in the range
@@ -227,6 +233,7 @@ def encrypt_elf():
         other_lines_dbg = f"{'state_not_patched':<24}:{pc_pc_instr},{state2str(S)}\n"
 
         if CS_MODE:
+            #print(extract_cs(cs_vector_dict['if'], 'regfile_alu_waddr', cs.CS_VECTOR_DESCRIPTION))
             # Extract info from cs_decoder 
             cs_decoder_instr = cs.instr_to_cs_vector(instr, cs_vector_dict)
             instr_metadata = cs.decode_tab_to_instr_metadata(instr)
@@ -275,7 +282,7 @@ def encrypt_elf():
                 else:
                     cs_vector_dict['wb'] = cs_vector_dict['id']
 
-            else:
+            else: # NEVER
                 if wb_ready:
                     cs_vector_dict['wb'] = ((cs_vector_dict['wb'] & cs.MASK_CS_VECTOR_EX_INVALID_WB_READY) | cs.CS_VECTOR_EX_INVALID_WB_READY)
 
@@ -286,8 +293,8 @@ def encrypt_elf():
             # Update CS_VECTOR_EX
             if id_invalid:
                 if ex_ready:
-                    cs_vector_dict['ex'] = (cs_vector_dict['ex'] & cs.MASK_CS_VECTOR_ID_INVALID_EX_READY) | cs.CS_VECTOR_ID_INVALID_EX_READY
-                else:
+                    cs_vector_dict['ex'] = (cs.CS_VECTOR_RESET) | cs.CS_VECTOR_ID_INVALID_EX_READY
+                else: # Never
                     cs_vector_dict['ex'] = cs_vector_dict['ex']
 
             # When instr at PC+4 of a multicycle instruction is decrypted, the multicycle instr is still in EX
@@ -303,6 +310,8 @@ def encrypt_elf():
 
             # Update CS_VECTOR_ID
             cs_vector_dict['id'] = cs_vector_dict['if'] & cs.DEASSERT_WE_MASK if deassert_we else cs_vector_dict['if']
+            # here update cs_in_id signals
+            cs_vector_dict = cs.update_id_combinatorial_cs_vector(cs_vector_dict)
 
             instr_minus4 = instr
             cs_vector_dict['if'] = cs_decoder_instr
@@ -357,6 +366,15 @@ def encrypt_elf():
             first_line_dbg = f"{'='*125}{reverse_bytes(plain_elf[addr_elf:addr_elf + 4]).hex()}\n"
         ascon_states_hex_dbg += first_line_dbg + other_lines_dbg
 
+        ascon_states_cs_hex_dbg += f"{pc_pc_instr:<24}"
+        for stage in cs_vector_dict.keys():
+            ascon_states_cs_hex_dbg += f"{stage}: " + f"{hex(cs_vector_dict[stage])[2:].zfill(cs.CS_VECTOR_WIDTH//4+1):>6}= "
+            for signal in list(reversed(cs.SIGNAL_SET)):
+                signal_val = extract_cs(cs_vector_dict[stage], signal, cs.CS_VECTOR_DESCRIPTION)
+                ascon_states_cs_hex_dbg += f"{hex(signal_val)[2:].zfill(cs.SIGNAL_DESCRIPTION[signal]['width']//4+1)} "
+            ascon_states_cs_hex_dbg += "   "
+        ascon_states_cs_hex_dbg += "\n"
+
 
     # After the area of encryption the elf is not encrypted (just copy/paste)
     cipher_elf += plain_elf[address_stop_encrypt:]
@@ -373,6 +391,8 @@ def encrypt_elf():
     with open(STATES_HEX_DBG_CSV_PATH, 'w', encoding="utf-8") as file:
         file.write(ascon_states_hex_dbg)
 
+    with open(STATES_CS_HEX_DBG_CSV_PATH, 'w', encoding="utf-8") as file:
+        file.write(ascon_states_cs_hex_dbg)
 
 
 if __name__ == "__main__":

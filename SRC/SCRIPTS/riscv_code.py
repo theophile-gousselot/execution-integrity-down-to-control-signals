@@ -278,6 +278,7 @@ class Code:
                 if self.cs_mode and i == 0:
                     correction_str += f",Ssrc:{h(state1)},Sdest:{h(state2)}"
 
+                    #TODO: (self.cs.CS_VECTOR_RESET & self.cs.DEASSERT_WE_MASK) can be replaced by (self.cs.CS_VECTOR_RESET ) only
 
                     # When a branch is taken the signal we_deassert will be raised for two cycles!
                     # addr_src = addr_disc + 8
@@ -285,18 +286,19 @@ class Code:
                     if disc_type == 'b':
                         br_corr_deassert = {}
                         if 'id' in self.cs.CS_VECTOR_ARCH.keys():
-                            # WE signals are deasserted when branch is teken (in ex), not the case in linear execution.
+                            # WE signals are deasserted when branch is taken (in ex), not the case in linear execution.
                             # state1 used is the one when branch is not taken, therefore WE siganls are not deasserted.
                             # This is why, a correction term must be applied. For more info, read: cfi_riscv_equation.pdf (secition Patch at cycplus0: correction)
                             br_corr_deassert['id'] = self.instrs[addr_src].cs_vector_dict['id'] & (self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)
+                            #TODO: here manage to tacke forwarding by removing dependancy!
                             correction_str += f",ID:{h(br_corr_deassert['id'])}({h(self.instrs[addr_src].cs_vector_dict['id'])} & {h(self.cs.CS_VECTOR_ALL_ONE ^ self.cs.DEASSERT_WE_MASK)})"
                         if 'ex' in self.cs.CS_VECTOR_ARCH.keys():
                             # WE signals are deasserted, they are equal to 0. Others signals are reset to default value.
                             # For more info, read: cfi_riscv_equation.pdf (secition Patch at cycplus0: correction)
-                            br_corr_deassert['ex'] = self.instrs[addr_src].cs_vector_dict['ex'] ^ (self.cs.CS_VECTOR_RESET & self.cs.DEASSERT_WE_MASK)
-                            correction_str += f",EX:{h(br_corr_deassert['ex'])}({h(self.instrs[addr_src].cs_vector_dict['ex'])} ^ {h(self.cs.CS_VECTOR_RESET & self.cs.DEASSERT_WE_MASK)})"
+                            br_corr_deassert['ex'] = self.instrs[addr_src].cs_vector_dict['ex'] ^ (self.cs.CS_VECTOR_RESET) # & self.cs.DEASSERT_WE_MASK)
+                            correction_str += f",EX:{h(br_corr_deassert['ex'])}({h(self.instrs[addr_src].cs_vector_dict['ex'])} ^ {h(self.cs.CS_VECTOR_RESET)} & {h(self.cs.DEASSERT_WE_MASK)})"
 
-                        if 'wb' in self.cs.CS_VECTOR_ARCH.keys():
+                        if True or 'wb' in self.cs.CS_VECTOR_ARCH.keys():
                             if self.check_load_stall(self.instrs[addr_disc+4], self.instrs[addr_disc+8]):
                                 # If there is a load_stall between disc+4 and disc+8, a load_stall will happen for a cycle, the one where
                                 # control-signal of addr_disc is in WB. There is no decryption during tis cycle (load_stall => if_invalid)
@@ -306,7 +308,7 @@ class Code:
                                 correction_str += f",WB:{h(br_corr_deassert['wb'])} ({h(self.instrs[addr_src].cs_vector_dict['wb'])} ^ {h(self.instrs[addr_src].cs_vector_dict['ex'])}) /!\\"
                             else:
                                 # Obvious: transforms CS of addr_disc into the CS in WB when addr_src decrypted.
-                                br_corr_deassert['wb'] = self.instrs[addr_src].cs_vector_dict['wb'] ^ self.instrs[addr_src+4].cs_vector_dict['wb']
+                                br_corr_deassert['wb'] = self.instrs[addr_src].cs_vector_dict['wb'] ^ self.instrs[addr_src+4].cs_vector_dict['wb'] #addr_disc+3
                                 correction_str += f",WB:{h(br_corr_deassert['wb'])} ({h(self.instrs[addr_src].cs_vector_dict['wb'])} ^ {h(self.instrs[addr_src+4].cs_vector_dict['wb'])})"
 
                         brplus4_mask = self.cs.cs_vector_dict_to_xored_int(br_corr_deassert)
@@ -366,15 +368,17 @@ class Code:
                         correction_str_cycplus1_ex = f",EX:{h(self.instrs[addr_dest+4].cs_vector_dict['ex'])} ^ {h(self.cs.CS_VECTOR_RESET)}"
                         correction_str += f",CYCPLUS1={correction_str_cycplus1_ex}"
 
-                        if self.check_load_stall(self.instrs[addr_dest+4], self.instrs[addr_dest+8]):
-                            # There is no self.instrs[addr_disc+8].cs_vector_dict['ex'] in wb any more (it move away at the cycle of load_stall)
-                            cs_corr_cycplus1_dict['wb'] =  self.instrs[addr_dest+4].cs_vector_dict['wb'] ^ self.cs.CS_VECTOR_RESET
-                            correction_str_cycplus1_wb = f",WB:{h(self.instrs[addr_dest+4].cs_vector_dict['wb'])} ^ {h(self.cs.CS_VECTOR_RESET)}"
-                        else:
 
-                            # TODO UNDERSTAND THIS ONE from cfi_riscv_equation (MAYBE THERE IS NO NEED OF if check_load_stall(...
-                            cs_corr_cycplus1_dict['wb'] = self.instrs[addr_dest+4].cs_vector_dict['wb'] ^ self.instrs[addr_disc+8].cs_vector_dict['ex'] # keep this line only
-                            correction_str_cycplus1_wb = f",WB:{h(self.instrs[addr_dest+4].cs_vector_dict['wb'])} ^ {h(self.instrs[addr_disc+8].cs_vector_dict['ex'])}"
+                        #if self.check_load_stall(self.instrs[addr_dest+4], self.instrs[addr_dest+8]):
+                            # There is no self.instrs[addr_disc+8].cs_vector_dict['ex'] in wb any more (it move away at the cycle of load_stall)
+                        #cs_corr_cycplus1_dict['wb'] =  self.instrs[addr_dest+4].cs_vector_dict['wb'] ^ self.cs.CS_VECTOR_RESET
+                        cs_corr_cycplus1_dict['wb'] = self.instrs[addr_dest+4].cs_vector_dict['wb'] ^ self.instrs[addr_disc+8].cs_vector_dict['ex'] # keep this line only
+                        correction_str_cycplus1_wb = f",WB:{h(self.instrs[addr_dest+4].cs_vector_dict['wb'])} ^ {h(self.cs.CS_VECTOR_RESET)}"
+                       # else:
+
+                       #     # TODO UNDERSTAND THIS ONE from cfi_riscv_equation (MAYBE THERE IS NO NEED OF if check_load_stall(...
+                       #     cs_corr_cycplus1_dict['wb'] = self.instrs[addr_dest+4].cs_vector_dict['wb'] ^ self.instrs[addr_disc+8].cs_vector_dict['ex'] # keep this line only
+                       #     correction_str_cycplus1_wb = f",WB:{h(self.instrs[addr_dest+4].cs_vector_dict['wb'])} ^ {h(self.instrs[addr_disc+8].cs_vector_dict['ex'])}"
 
                         # At addr_dest+8 decryption, there is CS_VECTOR_RESET in WB
                         cs_corr_cycplus2_dict = {'wb': self.instrs[addr_dest+8].cs_vector_dict['wb'] ^ self.cs.CS_VECTOR_RESET}

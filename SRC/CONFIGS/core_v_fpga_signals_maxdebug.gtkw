@@ -1,24 +1,24 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Tue Jul  9 12:26:39 2024
+[*] Fri Feb 14 14:43:01 2025
 [*]
-[dumpfile] "/home/theophile/these/gitlab_emse/integrity/core-v-verif-fpga_extra-clone/core-v-verif-fpga/OBJ/PROGRAMS/md5sum/SIM/VCD/program_encrypted_cf1_cs7.vcd"
-[dumpfile_mtime] "Tue Jul  9 12:22:05 2024"
-[dumpfile_size] 394437298
-[savefile] "/home/theophile/these/gitlab_emse/integrity/core-v-verif-fpga_extra-clone/core-v-verif-fpga/SRC/CONFIGS/core_v_fpga_signals_maxdebug.gtkw"
-[timestart] 363
-[size] 1858 1016
-[pos] 1141 27
-*-2.861887 381 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[dumpfile] "/home/theophile/these/gitlab_emse/integrity/core-v-verif-fpga/OBJ/PROGRAMS/mont64/SIM/VCD/program_encrypted_cf1_cs1.vcd"
+[dumpfile_mtime] "Thu Feb 13 14:12:30 2025"
+[dumpfile_size] 5577557102
+[savefile] "/home/theophile/these/gitlab_emse/integrity/core-v-verif-fpga/SRC/CONFIGS/core_v_fpga_signals_maxdebug.gtkw"
+[timestart] 555
+[size] 1920 1043
+[pos] 2159 25
+*-2.861887 573 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.core_v_verif_fpga.
 [treeopen] TOP.core_v_verif_fpga.ascon_decryption_i.
 [treeopen] TOP.core_v_verif_fpga.cv32e40p_core_i.
 [treeopen] TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.
 [sst_width] 336
-[signals_width] 545
+[signals_width] 532
 [sst_expanded] 1
-[sst_vpaned_height] 425
+[sst_vpaned_height] 438
 @200
 -TOP I/O
 @28
@@ -32,7 +32,7 @@ TOP.rst_i
 -
 -TOP SIGNALS
 @22
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.cs_vector_i*
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.cs_vector_i[28:0]
 @200
 -
 -CV32E40P
@@ -48,28 +48,44 @@ TOP.core_v_verif_fpga.cv32e40p_core_i.instr_rdata_i[31:0]
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.instr_rdata_cipher_i[31:0]
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.instr_rdata_plain_o[31:0]
 TOP.core_v_verif_fpga.cv32e40p_core_i.instr_rdata_id[31:0]
+@28
+TOP.core_v_verif_fpga.cv32e40p_core_i.alu_en_ex
+TOP.core_v_verif_fpga.cv32e40p_core_i.mult_en_ex
+TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.deassert_we
 @200
 -
+@22
+TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.alu_operator[6:0]
+TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.alu_operator_ex_o[6:0]
+@201
+-
 @28
+TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.deassert_we
 TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.load_stall
 TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.illegal_insn_dec
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.invalid_addr_redirection_s
-@201
--
+TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.data_type_id[1:0]
+TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.regfile_we_id
+TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.regfile_we_ex_o
+TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.jr_stall
+@22
+TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.regfile_waddr_id[5:0]
+TOP.core_v_verif_fpga.cv32e40p_core_i.regfile_waddr_ex[5:0]
+TOP.core_v_verif_fpga.cv32e40p_core_i.regfile_waddr_fw_wb_o[5:0]
 @200
+-
 -DECODE
 @28
 TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.alu_en
 TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.alu_en_ex_o
+TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.load_stall
 @200
 -
-@28
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.dec_alu_en_i
-@200
 -
 @28
 TOP.core_v_verif_fpga.cv32e40p_core_i.if_valid_o
 TOP.core_v_verif_fpga.cv32e40p_core_i.id_valid_o
+TOP.core_v_verif_fpga.cv32e40p_core_i.id_stage_i.ex_valid_i
 @200
 -
 -ALU
@@ -143,24 +159,18 @@ TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.state_perm2reg[319:0]
 -
 -PATCHES
 @28
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.dec_alu_en_i
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.apply_patch_i
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.apply_patch_cs_i
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.apply_patch_cs_cycplus1_reg
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.apply_patch_cs_cycplus1_s
 @22
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_cs_cycplus1_reg*
-@28
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.apply_patch_cs_cycplus2_s
-@22
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_cs_cycplus2_reg_reg*
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_cs_cycplus1_reg[7:0]
 @28
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.sel_addr_redirected_i
 @22
 TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_to_ascon_s[319:0]
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_if_reg_s*
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_id_reg_s*
-TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_ex_reg_s*
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_if_reg_s[327:0]
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_id_reg_s[327:0]
+TOP.core_v_verif_fpga.ascon_decryption_i.ascon_datapath_i.patch_of_instr_in_ex_reg_s[327:0]
 @200
 -
 [pattern_trace] 1

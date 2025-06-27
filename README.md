@@ -98,6 +98,9 @@ python3 SRC/SCRIPTS/control_signal_analysis.py
 python3 SRC/SCRIPTS/control_signal_analysis.py
 ```
 
+2. Custom control signal selection
+order od control signal in `cs_vector` is imposed by `assign cs_vector_id_o = {cs_vector_id_from_decoder_s, cs_vector_id_from_id_s};`. look at systemverilog generated in `OBJ/RTL`
+
 3. Software fix to respect limitation of 12 successors of jalr if on of them is a br/jal
 Qrduino and picojpeg do not respect the limitation because of multiple calls to setmask, 
 We insert after compilation, assembling but before link, nop at the place a branch/jal destination of the concerned jalr.
