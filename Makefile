@@ -45,7 +45,7 @@ SOFT_SCRIPTS		:= $(filter %.py,$(wildcard  SRC/SCRIPTS/*))
 #==== CV32E40P ====#
 CV_CORE_PKG 		:= $(SV_RTL_DIR)/iea_cv32e40p_fpga_dev
 CV_CORE_BRANCH 		:= iea_cv32e40p_fpga_dev
-CV_CORE_REPO   		:= git@github.com:theophile-gousselot/cv32e40p_cfi.git
+CV_CORE_REPO   		:= https://github.com/theophile-gousselot/cv32e40p_cfi.git
 
 
 
