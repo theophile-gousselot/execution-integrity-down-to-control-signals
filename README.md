@@ -62,7 +62,7 @@ for a in SRC/PROGRAMS/* ; do for cf in 1 2 3 6 ; do for cs in 1 2 3 4 5 6 7 8 9;
 or
 ``` bash
 PROGRAMS_REDUCED=("cubic" "dhrystone" "sglib-combined" "slre" "st" "statemate" "tarfind" "ud" "wikisort")
-for program in ${PROGRAMS_REDUCED} ; do make OBJ/PROGRAMS/$(basename ${program})/SIM/LOG/program_encrypted_verif.log; done
+for program in ${PROGRAMS_REDUCED} ; do make OBJ/PROGRAMS/$(basename ${program})/SIM/LOG/program_encrypted_cf1_cs1_verif.log; done
 ```
 
 7. Every time a simulation is performed, a log file is generated :
